@@ -121,5 +121,6 @@ internal static class Program
             " engine-independent assertions (NOT Unity/FBX validation).");
         CalibrationChecks.Run();
         BodyBridgeChecks.Run();
+        ReprojectionChecks.Run();
     }
 }
