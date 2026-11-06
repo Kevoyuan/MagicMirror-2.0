@@ -35,7 +35,7 @@
 2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability.
 3. Add optional segmentation and, if needed, versioned media/pose association; avoid same-frame mismatches.
 4. Run the actual Unity 6.3 Editor with synthetic TCP demo and full-body schematic; fix compile/runtime issues.
-5. Run one real webcam, test left/right and temporal alignment, disconnect/reconnect, alpha compositing, and report FPS/latency.
+5. Run one real webcam, test left/right and temporal alignment, disconnect/reconnect, alpha compositing, and report FPS/latency. **M3 offline preparation:** a full-FBX hierarchy inventory audit now validates provenance, counts, paths and unverified motion candidates; it is not an actual FBX or Unity import test.
 6. Only then fetch/import the pinned **intact** Z-Anatomy FBX and annotate real joints.
 
 ## Cross-cutting acceptance principles
