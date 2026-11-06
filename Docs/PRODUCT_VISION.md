@@ -1,5 +1,7 @@
 # MagicMirror 2.0 — Product Vision
 
+> **Platform pivot proposal (2026-11-06):** The primary future user experience is a **standalone native phone app**: open, point camera at one person, automatically show and animate a semitransparent standard reference skeleton. Native on-device MediaPipe and GPU rendering, without Unity, Python sidecar, server, computer or wearable **at runtime**. This document below describes the older desktop-first vision; it remains for historical engineering context. See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [Mobile-native roadmap](MOBILE_NATIVE_ROADMAP.md) for the proposed product direction. No mobile app is yet built.
+
 **Version:** 2.1 · **Date:** 2026-11-06 · **Platforms:** Windows and macOS desktops  
 **Core concept:** Anatomical X-Ray Mirror — an interactive, educational **reference** anatomy overlay.
 
