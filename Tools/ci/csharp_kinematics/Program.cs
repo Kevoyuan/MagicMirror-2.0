@@ -125,5 +125,6 @@ internal static class Program
         CaptureWindowChecks.Run();
         AtlasPlannerChecks.Run();
         CameraRegistrationChecks.Run();
+        CameraPoseGateChecks.Run();
     }
 }
