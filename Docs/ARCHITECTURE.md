@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — Active Architecture (MediaPipe only)
 
-> **Legacy desktop architecture / current codebase only.** A new **mobile-native, phone-only** product direction is proposed in [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md). The existing Python TCP → Unity flow documented below remains a research prototype and will **not** be shipped as a runtime requirement of the future phone app. No native app implementation exists yet.
+> **ARCHIVED desktop-only architecture.** The accepted product is **phone-only**: native iOS/Android camera → on-device MediaPipe → phone GPU skeleton rendering, with no Unity/Python runtime or Windows/macOS shipping plan. See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [active mobile roadmap](MOBILE_NATIVE_ROADMAP.md). The Python TCP → Unity pipeline documented below remains usable solely as research/algorithm reference. No native app implementation exists yet.
 
 **Architecture status:** ADR-001 accepted, 2026-11-06.  
 **Implementation status:** Phase 4B source exists; Unity Editor compilation and end-to-end camera/anatomy validation remain pending.
