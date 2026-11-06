@@ -30,6 +30,14 @@ python3 -m pip install "opencv-python>=4.10,<5" "numpy>=1.26,<3"
 python3 -m Tools.pose_sidecar.main --demo-video --demo-scenario wave
 ~~~
 
+The actual **C# two-bone IK mathematics** can be compiled and tested even
+without Unity, camera or Z-Anatomy assets:
+~~~bash
+dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
+~~~
+This tests fixed reference lengths, flexion limits and degenerate bends,
+not Unity rendering, anatomy identity or calibrated camera motion.
+
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
@@ -51,6 +59,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ROADMAP.md — M0 through M9, implementation gates
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
+- Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries
