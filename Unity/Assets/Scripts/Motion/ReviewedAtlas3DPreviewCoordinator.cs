@@ -50,14 +50,14 @@ namespace MagicMirror.Motion
             FullBodyAtlasRetargeter retargeter,
             FullBodyAtlasProfile atlasProfile)
         {
-            if (isActiveAndEnabled && source != null)
+            if (Application.isPlaying && isActiveAndEnabled && source != null)
                 source.FrameReceived -= OnPoseFrame;
             source = stream;
             atlasRetargeter = retargeter;
             profile = atlasProfile;
             capturing = false;
             capture = null;
-            if (isActiveAndEnabled && source != null)
+            if (Application.isPlaying && isActiveAndEnabled && source != null)
                 source.FrameReceived += OnPoseFrame;
         }
 
