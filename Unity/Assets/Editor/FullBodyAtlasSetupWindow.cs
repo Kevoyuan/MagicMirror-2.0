@@ -131,6 +131,7 @@ namespace MagicMirror.Editor
             asset.wholeSkeletonPrefab = sourcePrefab;
             asset.schematicDemo = false;
             asset.referencePoseReviewed = false;
+            asset.midHipAnchorReviewed = false;
             asset.assetLicensesReviewed = false;
             // Real shoulder anchors and per-region mappings intentionally
             // remain unset: never infer exact anatomy from object names alone.

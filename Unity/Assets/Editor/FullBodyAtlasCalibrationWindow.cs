@@ -20,6 +20,7 @@ namespace MagicMirror.Editor
         {
             LeftShoulder,
             RightShoulder,
+            MidHip,
             SegmentStart,
             SegmentEnd
         }
@@ -98,6 +99,23 @@ namespace MagicMirror.Editor
             EditorGUILayout.LabelField("Select a joint center", EditorStyles.boldLabel);
             anchor = (EditableAnchor)EditorGUILayout.EnumPopup("Edit Anchor", anchor);
 
+            if (anchor == EditableAnchor.MidHip)
+            {
+                EditorGUILayout.HelpBox(
+                    "M5: manually place the source-atlas MID-HIP joint center " +
+                    "and review it against the original intact FBX before " +
+                    "confirming. A mesh name or pivot alone does not establish " +
+                    "a correct anatomical joint center.", MessageType.Warning);
+                bool reviewed = EditorGUILayout.Toggle(
+                    "Mid-Hip Reviewed", profile.midHipAnchorReviewed);
+                if (reviewed != profile.midHipAnchorReviewed)
+                {
+                    Undo.RecordObject(profile, "Review Atlas Mid-Hip Anchor");
+                    profile.midHipAnchorReviewed = reviewed;
+                    EditorUtility.SetDirty(profile);
+                }
+            }
+
             if (profile.groups != null && profile.groups.Count > 0)
             {
                 var labels = new string[profile.groups.Count];
@@ -175,7 +193,7 @@ namespace MagicMirror.Editor
 
             EditorGUILayout.HelpBox(
                 "Green = left shoulder, Cyan = right shoulder, "
-                + "Yellow = selected region anchor. Changes affect ONLY "
+                + "Magenta = reviewed mid-hip candidate, Yellow = selected anchor. Changes affect ONLY "
                 + "the ScriptableObject, not Z-Anatomy original FBX.",
                 MessageType.None);
         }
@@ -232,6 +250,7 @@ namespace MagicMirror.Editor
         {
             return anchor == EditableAnchor.LeftShoulder ||
                    anchor == EditableAnchor.RightShoulder ||
+                   anchor == EditableAnchor.MidHip ||
                    (profile.groups != null && profile.groups.Count > 0);
         }
 
@@ -244,6 +263,8 @@ namespace MagicMirror.Editor
                     return profile.atlasLeftShoulderLocal;
                 case EditableAnchor.RightShoulder:
                     return profile.atlasRightShoulderLocal;
+                case EditableAnchor.MidHip:
+                    return profile.atlasMidHipLocal;
                 case EditableAnchor.SegmentStart:
                     return profile.groups[selectedGroupIndex].atlasStartLocal;
                 default:
@@ -263,6 +284,11 @@ namespace MagicMirror.Editor
                     break;
                 case EditableAnchor.RightShoulder:
                     profile.atlasRightShoulderLocal = newLocal;
+                    break;
+                case EditableAnchor.MidHip:
+                    profile.atlasMidHipLocal = newLocal;
+                    // Moving this handle invalidates prior anatomical review.
+                    profile.midHipAnchorReviewed = false;
                     break;
                 case EditableAnchor.SegmentStart:
                     profile.groups[selectedGroupIndex].atlasStartLocal = newLocal;
@@ -286,6 +312,9 @@ namespace MagicMirror.Editor
             Handles.color = Color.cyan;
             DrawFixedMarker(root.TransformPoint(profile.atlasRightShoulderLocal),
                             "RIGHT SHOULDER");
+            Handles.color = Color.magenta;
+            DrawFixedMarker(root.TransformPoint(profile.atlasMidHipLocal),
+                            "MID-HIP (VERIFY)");
 
             if (!CanEditSelectedAnchor())
                 return;

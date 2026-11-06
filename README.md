@@ -73,6 +73,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
+- Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas calibration and reprojection gates
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries
