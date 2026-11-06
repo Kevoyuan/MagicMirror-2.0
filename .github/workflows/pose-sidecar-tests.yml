@@ -22,6 +22,20 @@ jobs:
         run: python -m compileall -q Tools/pose_sidecar
       - name: Run self-contained framing/demo tests
         run: python -m unittest discover -s Tools/pose_sidecar/tests -v
+      - name: Generate and audit deterministic 20 FPS dropout trace
+        run: |
+          python -m Tools.pose_sidecar.benchmark --scenario dropout --fps 20 --seconds 6 --write-trace "$RUNNER_TEMP/magicmirror-pose.jsonl" --report "$RUNNER_TEMP/magicmirror-quality.json"
+          python -m Tools.pose_sidecar.benchmark --input "$RUNNER_TEMP/magicmirror-pose.jsonl"
+          python - "$RUNNER_TEMP/magicmirror-quality.json" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert data["traceSource"] == "synthetic"
+          assert data["frameCount"] == 120
+          assert data["missingCorePoseFrames"] == 4
+          assert data["approxMaxMissingCorePoseMs"] == 200
+          assert data["observedSourceFps"] == 20
+          print("PASS: deterministic synthetic M1 dropout trace contract")
+          PY
       - name: Explain limitations
         run: echo 'MediaPipe inference, Unity C# compilation and camera runtime are NOT tested here.'
 
