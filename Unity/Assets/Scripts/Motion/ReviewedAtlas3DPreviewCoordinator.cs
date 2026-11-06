@@ -129,8 +129,11 @@ namespace MagicMirror.Motion
             if (capture.AcceptedFrames < capture.RequiredFrames)
                 return;
 
-            BodySimilarityCalibration calibration;
-            PoseCaptureQuality quality;
+            // Initialize even if the review gate fails before TryFreeze:
+            // C# short-circuit evaluation must never leave out values stale.
+            BodySimilarityCalibration calibration =
+                default(BodySimilarityCalibration);
+            PoseCaptureQuality quality = default(PoseCaptureQuality);
             bool reviewed = profile != null && !profile.schematicDemo &&
                             profile.referencePoseReviewed &&
                             profile.midHipAnchorReviewed &&
