@@ -74,7 +74,18 @@ namespace MagicMirror.Motion
         private long last3DFrameId = -1;
         private long last3DTimestampMs = -1;
         private int authorized3DStreamSessionId;
-        [Header("Reviewed 3D diagnostic only (no camera alignment)")]
+        // Real source-camera overlay is a SEPARATE explicit manual gate.
+        // Diagnostic 3D motion cannot silently become AR after startup.
+        private bool cameraOverlayAuthorized;
+        private BodyWorldPinholeCamera reviewedOverlayCamera;
+        private AtlasCameraSpaceRegistration atlasCameraMapping;
+        private PinholeCameraFrustum sourceProjectionFrustum;
+        private float sourceProjectionMaximumP90;
+        private bool cameraProjectionChanged;
+        private bool originalAnatomyOrthographic;
+        private float originalAnatomyNearClip;
+        private float originalAnatomyFarClip;
+        [Header("Reviewed 3D diagnostic only (camera overlay OFF by default)")]
         [SerializeField, Range(0f, 20f)] private float minLimbFlexionDegrees = 0f;
         [SerializeField, Range(40f, 175f)] private float maxLimbFlexionDegrees = 150f;
 
@@ -135,9 +146,70 @@ namespace MagicMirror.Motion
             return true;
         }
 
+        /// <summary>
+        /// SECOND, explicit permission gate. Only a reviewed source camera
+        /// in the exact frozen MediaPipe BODY-WORLD coordinate frame may
+        /// project the original full FBX into Unity's transparent camera.
+        /// A separate per-frame 2D/3D joint consistency gate is required.
+        /// No unreviewed FOV or guessed camera transform is accepted.
+        /// </summary>
+        public bool TryEnableReviewedCameraOverlay(
+            BodyWorldPinholeCamera camera,
+            PinholeCameraFrustum frustum,
+            float maximumModelP90BySourceWidth,
+            bool operatorReviewedPhysicalCamera)
+        {
+            cameraOverlayAuthorized = false;
+            if (!operatorReviewedPhysicalCamera ||
+                !IsReviewed3DPreviewActive ||
+                atlasRoot == null || anatomyCamera == null ||
+                !camera.IsConfigured ||
+                camera.ImageWidth <= 0 || camera.ImageHeight <= 0 ||
+                !float.IsFinite(maximumModelP90BySourceWidth) ||
+                maximumModelP90BySourceWidth <= 0f ||
+                maximumModelP90BySourceWidth > 0.1f ||
+                frustum.nearClip <= 0f ||
+                frustum.farClip <= frustum.nearClip ||
+                !float.IsFinite(frustum.left) ||
+                !float.IsFinite(frustum.right) ||
+                !float.IsFinite(frustum.bottom) ||
+                !float.IsFinite(frustum.top) ||
+                frustum.right <= frustum.left ||
+                frustum.top <= frustum.bottom ||
+                !HasUniformPositiveFBXRootScale())
+                return false;
+
+            AtlasCameraSpaceRegistration mapping;
+            if (!AtlasCameraSpaceRegistration.TryCreate(
+                    frozen3DCalibration, camera, out mapping))
+                return false;
+
+            reviewedOverlayCamera = camera;
+            atlasCameraMapping = mapping;
+            sourceProjectionFrustum = frustum;
+            sourceProjectionMaximumP90 = maximumModelP90BySourceWidth;
+            cameraOverlayAuthorized = true;
+            return true;
+        }
+
+        private bool HasUniformPositiveFBXRootScale()
+        {
+            if (atlasRoot == null)
+                return false;
+            Vector3 s = atlasRoot.localScale;
+            return Finite3D(s) && s.x > 0.00001f &&
+                   Mathf.Abs(s.y - s.x) < s.x * 0.001f &&
+                   Mathf.Abs(s.z - s.x) < s.x * 0.001f;
+        }
+
         /// <summary>Explicitly leave the 3D diagnostic and return to 2D mode.</summary>
         public void DisableReviewed3DPreview()
         {
+            ResetCameraProjection();
+            reviewed3DPreviewRequested = false;
+            cameraOverlayAuthorized = false;
+            reviewedOverlayCamera = default(BodyWorldPinholeCamera);
+            atlasCameraMapping = default(AtlasCameraSpaceRegistration);
             reviewed3DPreviewRequested = false;
             reviewed3DPreviewAuthorized = false;
             frozen3DCalibration = default(BodySimilarityCalibration);
@@ -543,6 +615,22 @@ namespace MagicMirror.Motion
             last3DTimestampMs = frame.timestampMs;
             lastPoseTime = Time.realtimeSinceStartup;
 
+            if (cameraOverlayAuthorized)
+            {
+                CameraPoseConsistencyReport audit;
+                if (!BodyWorldCameraConsistency.TryValidate(
+                        frame, reviewedOverlayCamera,
+                        confidenceThreshold, sourceProjectionMaximumP90,
+                        out audit) ||
+                    audit.StreamSessionId != authorized3DStreamSessionId ||
+                    audit.SourceFrameId != frame.frameId)
+                {
+                    reviewed3DPreviewAuthorized = false;
+                    Hide3DPreview();
+                    return;
+                }
+            }
+
             // Always start from the source's immutable original renderer
             // transforms, never integrate motion into a previous frame.
             foreach (MovingMesh entry in movingMeshes)
@@ -616,6 +704,14 @@ namespace MagicMirror.Motion
                     entry.transform.SetPositionAndRotation(
                         entry.computedPosition, entry.computedRotation);
             }
+            if (cameraOverlayAuthorized &&
+                !ApplyReviewedSourceCameraRegistration())
+            {
+                reviewed3DPreviewAuthorized = false;
+                Hide3DPreview();
+                return;
+            }
+
             hasPose = true;
             lastPoseTime = Time.realtimeSinceStartup;
             atlasContainer.SetActive(true);
