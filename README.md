@@ -12,6 +12,22 @@ live webcam image, with future muscle, organ and guided-learning layers.
 > SkeletalSystem100.fbx motion are NOT yet verified.** This is a research
 > prototype, not a clinical scanner or personalized anatomical reconstruction.
 
+## M2 offline integration test
+
+No local Unity installation is needed to test the real Python producer and
+its loopback TCP framing. The test starts the sidecar **as a subprocess**,
+receives multiple ordered PoseFrame v1 packets, disconnects and reconnects,
+and verifies that a new connection starts its own frame sequence:
+
+~~~bash
+python3 -m unittest Tools.pose_sidecar.tests.test_sidecar_integration -v
+~~~
+
+If OpenCV/NumPy are installed, it also receives and validates actual JPEG
+bytes from the `--demo-video` source. GitHub Actions performs both variants.
+It does **not** prove that Unity compiled, that a real camera inferred a pose,
+or that the Z-Anatomy model is aligned.
+
 ## First steps (without Unity or a webcam)
 
 ~~~bash
