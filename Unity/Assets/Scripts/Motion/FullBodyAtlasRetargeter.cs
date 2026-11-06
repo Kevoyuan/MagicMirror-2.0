@@ -63,6 +63,74 @@ namespace MagicMirror.Motion
         private bool hasPose;
         private float lastPoseTime = -100f;
 
+        // M4/M5 diagnostic preview, NEVER automatically enabled by the
+        // default 2D mirror or by a synthetic pose/camera. Three-dimensional
+        // atlas motion stays in original FBX ROOT-LOCAL coordinates; its
+        // visual placement over a live RGB camera still requires M5 hardware
+        // registration and is NOT validated by this preview.
+        private bool reviewed3DPreviewRequested;
+        private bool reviewed3DPreviewAuthorized;
+        private BodySimilarityCalibration frozen3DCalibration;
+        private long last3DFrameId = -1;
+        private long last3DTimestampMs = -1;
+        [Header("Reviewed 3D diagnostic only (no camera alignment)")]
+        [SerializeField, Range(0f, 20f)] private float minLimbFlexionDegrees = 0f;
+        [SerializeField, Range(40f, 175f)] private float maxLimbFlexionDegrees = 150f;
+
+        public bool IsReviewed3DPreviewActive
+        {
+            get { return reviewed3DPreviewRequested && reviewed3DPreviewAuthorized; }
+        }
+
+        /// <summary>
+        /// Explicit review gate: the normal 2D renderer is not switched to
+        /// model-world motion until ONE real intact FBX has been reviewed,
+        /// the session has collected stable real PoseFrames, and an operator
+        /// has approved diagnostic (NOT AR) playback. The returned 3D pose
+        /// remains in FBX local coordinates; NO camera extrinsics implied.
+        /// </summary>
+        public bool TryEnableReviewed3DPreview(
+            BodySimilarityCalibration frozenCalibration,
+            PoseCaptureQuality capture,
+            bool operatorApprovedDiagnosticPreview)
+        {
+            string error;
+            if (!Application.isPlaying || atlasRoot == null ||
+                profile == null || profile.schematicDemo ||
+                !operatorApprovedDiagnosticPreview ||
+                !frozenCalibration.IsValid || !frozenCalibration.PreservesHandedness ||
+                capture.AcceptedFrames < 12 ||
+                capture.FirstFrameId < 0 ||
+                capture.LastFrameId <= capture.FirstFrameId ||
+                capture.LastTimestampMs <= capture.FirstTimestampMs ||
+                float.IsNaN(capture.MaximumJointDriftInShoulderWidths) ||
+                capture.MaximumJointDriftInShoulderWidths < 0f ||
+                capture.MaximumJointDriftInShoulderWidths > 0.06f ||
+                !profile.Validate(out error) ||
+                !profile.ValidateHierarchy(out error))
+                return false;
+
+            frozen3DCalibration = frozenCalibration;
+            last3DFrameId = capture.LastFrameId;
+            last3DTimestampMs = capture.LastTimestampMs;
+            reviewed3DPreviewRequested = true;
+            reviewed3DPreviewAuthorized = true;
+            hasPose = false;
+            if (atlasContainer != null) atlasContainer.SetActive(false);
+            return true;
+        }
+
+        /// <summary>Explicitly leave the 3D diagnostic and return to 2D mode.</summary>
+        public void DisableReviewed3DPreview()
+        {
+            reviewed3DPreviewRequested = false;
+            reviewed3DPreviewAuthorized = false;
+            frozen3DCalibration = default(BodySimilarityCalibration);
+            last3DFrameId = last3DTimestampMs = -1;
+            hasPose = false;
+            if (atlasContainer != null) atlasContainer.SetActive(false);
+        }
+
         public void Configure(PoseStreamReceiver source, Camera camera,
                               FullBodyAtlasProfile atlasProfile)
         {
@@ -128,6 +196,7 @@ namespace MagicMirror.Motion
             if (poseSource != null) poseSource.FrameReceived -= OnPoseFrame;
             if (atlasContainer != null) atlasContainer.SetActive(false);
             if (poseSmoother != null) poseSmoother.Reset();
+            DisableReviewed3DPreview();
             hasPose = false;
         }
 
@@ -146,6 +215,10 @@ namespace MagicMirror.Motion
             {
                 hasPose = false;
                 if (atlasContainer != null) atlasContainer.SetActive(false);
+                // Old confidence/identity cannot be used to animate another
+                // sidecar session; an explicit fresh reference capture is needed.
+                if (reviewed3DPreviewRequested)
+                    reviewed3DPreviewAuthorized = false;
             }
         }
 
@@ -291,7 +364,14 @@ namespace MagicMirror.Motion
 
         private void OnPoseFrame(PoseFrame frame)
         {
-            if (atlasRoot == null || frame == null || !frame.IsValid)
+            if (atlasRoot == null)
+                return;
+            if (reviewed3DPreviewRequested)
+            {
+                OnReviewed3DPreviewFrame(frame);
+                return;
+            }
+            if (frame == null || !frame.IsValid)
                 return;
 
             float receiveTime = Time.realtimeSinceStartup;
