@@ -1,16 +1,17 @@
-# MagicMirror Mobile — delivery roadmap (proposal, 2026-11-06)
+# MagicMirror Mobile — exclusive product delivery roadmap (2026-11-06)
 
 **User promise:** launch a phone app, point one phone camera at a person,
 see a semi-transparent standard *reference* skeleton automatically follow
 their movement. Entirely on device: no computer, Unity, Python service,
 cloud AI, account or wearable. The runtime is **not implemented yet**.
 
-**Authority:** ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md is the proposed
-primary-mobile architecture. The old ROADMAP.md remains a historical
-desktop engineering roadmap until the product pivot is approved and an
-actual mobile implementation begins.
+**Authority:** ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md records the accepted
+**smartphone-only** product scope. This is the sole active product delivery
+roadmap. Docs/ROADMAP.md is archived desktop engineering history. We are
+not planning or shipping Windows/macOS versions, and Unity or Python will
+not be required in the installed iOS/Android runtime.
 
-## Vertical slices; each must build and run on a physical handset
+## Active smartphone milestones; each must build and run on a physical handset
 
 | Milestone | Deliverable | Exit gate |
 | --- | --- | --- |
@@ -106,7 +107,7 @@ asset audit, but it must be labelled as such and cannot be represented as
 the final verified Z-Anatomy full atlas. The final product acceptance also
 requires reviewed anatomical content and appropriate device benchmarks.
 
-## Next executable task
+## Next executable task (smartphone only)
 
 Start **Mobile-0 + Mobile-1** together: a buildable native iOS camera +
 MediaPipe Tasks 33-point live overlay with frame/latency diagnostics.
@@ -116,4 +117,5 @@ on-device Pose Landmarker sample as a tested starting point:
 https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
 
 An Android build should follow a shared pose/rig contract, not fork
-different anatomical fitting algorithms.
+different anatomical fitting algorithms. Do not return to any desktop
+shipping milestone after completing a mobile phase.
