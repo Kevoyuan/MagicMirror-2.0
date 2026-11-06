@@ -106,6 +106,7 @@ jobs:
           python -m Tools.pose_sidecar.smoke_runtime --profile "${{ matrix.profile }}" --frames 3 --report "$RUNNER_TEMP/m1-model.json"
           python - "$RUNNER_TEMP/m1-model.json" "${{ matrix.profile }}" <<'PY'
           import json, sys
+          from Tools.pose_sidecar.download_model import EXPECTED_MODEL_BYTES, EXPECTED_MODEL_SHA256
           data = json.load(open(sys.argv[1], encoding="utf-8"))
           profile = sys.argv[2]
           assert data["mediapipeVersion"] == "0.10.35"
@@ -114,8 +115,9 @@ jobs:
           assert data["frames"] == 3
           assert len(data["posesPerFrame"]) == 3
           assert data["modelFileName"] == f"pose_landmarker_{profile}.task"
-          assert len(data["modelSha256"]) == 64
-          print("PASS: real", profile, "VIDEO model smoke")
+          assert data["modelSha256"] == EXPECTED_MODEL_SHA256[profile]
+          assert data["modelSizeBytes"] == EXPECTED_MODEL_BYTES[profile]
+          print("PASS: verified", profile, "bundle size/SHA-256 + actual VIDEO inference")
           PY
       - name: Scope disclaimer
         run: echo 'Synthetic blank-frame model/API smoke only; NOT real-person accuracy, target FPS, segmentation, Unity or AR.'
