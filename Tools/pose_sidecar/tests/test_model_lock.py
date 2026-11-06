@@ -41,10 +41,28 @@ class ModelLockTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unknown"):
             verify_model_bytes("another-model", b"x" * 100_001)
 
-    def test_full_and_heavy_still_unpinned(self):
+    def test_all_three_profiles_are_locked_to_verified_ci_bundles(self):
+        self.assertEqual(set(EXPECTED_MODEL_SHA256), {"lite", "full", "heavy"})
+        self.assertEqual(EXPECTED_MODEL_BYTES, {
+            "lite": 5_777_746,
+            "full": 9_398_198,
+            "heavy": 30_664_242,
+        })
+        for profile in ("lite", "full", "heavy"):
+            checksum = EXPECTED_MODEL_SHA256[profile]
+            self.assertEqual(len(checksum), 64)
+            int(checksum, 16)
+
+    def test_full_and_heavy_reject_changed_bytes_even_if_size_matches(self):
+        payload = b"full-heavy-test" * 10_000
         for profile in ("full", "heavy"):
-            self.assertNotIn(profile, EXPECTED_MODEL_SHA256)
-            verify_model_bytes(profile, b"x" * 100_001)
+            with self.subTest(profile=profile):
+                with (patch.dict(EXPECTED_MODEL_SHA256, {profile: hashlib.sha256(payload).hexdigest()}),
+                      patch.dict(EXPECTED_MODEL_BYTES, {profile: len(payload)})):
+                    verify_model_bytes(profile, payload)
+                    altered = payload[:-1] + bytes([payload[-1] ^ 1])
+                    with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                        verify_model_bytes(profile, altered)
 
     def test_real_runtime_missing_model_fails_before_mediapipe_import(self):
         with TemporaryDirectory() as tmp:

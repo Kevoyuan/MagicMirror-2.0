@@ -77,3 +77,47 @@ jobs:
           echo 'Blank synthetic image only, no real-person detection benchmark.'
           echo 'Lite SHA-256/size locked; Full/Heavy not yet locked or runtime-tested.'
           echo 'No Unity, real camera, end-to-end latency or anatomy FBX validation.'
+
+  real-mediapipe-profile-matrix:
+    name: MediaPipe real model smoke (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [full, heavy]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native GLES/EGL runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgles2 libegl1 libgl1
+      - name: Install tested Python runtime
+        run: python -m pip install -r Tools/pose_sidecar/requirements.txt
+      - name: Fetch model outside Git and check local integrity
+        run: |
+          python -m Tools.pose_sidecar.download_model --profile "${{ matrix.profile }}"
+          python -m Tools.pose_sidecar.download_model --profile "${{ matrix.profile }}" --verify-only
+      - name: Execute MediaPipe VIDEO model on blank synthetic images
+        run: |
+          python -m Tools.pose_sidecar.smoke_runtime --profile "${{ matrix.profile }}" --frames 3 --report "$RUNNER_TEMP/m1-model.json"
+          python - "$RUNNER_TEMP/m1-model.json" "${{ matrix.profile }}" <<'PY'
+          import json, sys
+          from Tools.pose_sidecar.download_model import EXPECTED_MODEL_BYTES, EXPECTED_MODEL_SHA256
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          profile = sys.argv[2]
+          assert data["mediapipeVersion"] == "0.10.35"
+          assert data["mode"] == "VIDEO"
+          assert data["landmarkSchema"] == 33
+          assert data["frames"] == 3
+          assert len(data["posesPerFrame"]) == 3
+          assert data["modelFileName"] == f"pose_landmarker_{profile}.task"
+          assert data["modelSha256"] == EXPECTED_MODEL_SHA256[profile]
+          assert data["modelSizeBytes"] == EXPECTED_MODEL_BYTES[profile]
+          print("PASS: verified", profile, "bundle size/SHA-256 + actual VIDEO inference")
+          PY
+      - name: Scope disclaimer
+        run: echo 'Synthetic blank-frame model/API smoke only; NOT real-person accuracy, target FPS, segmentation, Unity or AR.'

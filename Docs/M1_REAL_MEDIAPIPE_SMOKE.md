@@ -44,9 +44,7 @@ is **mutable**. The Lite downloader now refuses a changed file based on the
 fixed size and SHA-256 lock, including when an existing local file is reused.
 The test does not redistribute Google model binaries.
 
-**Important:** Lite has a tested checksum, but **Full and Heavy still have
-no binary SHA-256 locks and have not completed this real inference check**.
-Do not claim all three profiles are reproducible yet.
+**Follow-up:** Full and Heavy have now also completed Linux VIDEO-mode runtime checks, and all three model sizes and SHA-256 digests are locked. See `Docs/M1_ALL_PROFILES_RUNTIME.md`. This does NOT establish real-person performance or Windows/macOS runtime compatibility.
 
 ## Linux runtime dependency discovered by the test
 
@@ -76,8 +74,7 @@ it does not establish equivalent Windows/macOS packaging requirements.
 ## Next acceptance gates
 
 1. Run real camera inference with a consented person on Windows and macOS.
-2. Verify the **Full and Heavy** model bytes and package compatibility;
-   record source SHA-256 for each profile.
+2. Verify the model/profile runtime and package compatibility on **Windows and macOS** and on real-person test clips; Linux Full/Heavy checksums are now pinned.
 3. Evaluate accuracy against appropriately labeled real pose sequences.
 4. Compare inference time under consistent hardware, frame size and load.
 5. Run Unity, validate source-video↔pose correspondence and compositor,
