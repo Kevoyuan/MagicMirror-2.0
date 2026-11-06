@@ -1,40 +1,45 @@
-name: Anatomy asset tooling checks
+name: Whole atlas source and inventory checks
 
 on:
   push:
     paths:
       - 'Tools/anatomy_tools/**'
-      - 'Assets-Manifest/arm_bone_mapping.template.json'
+      - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
   pull_request:
     paths:
       - 'Tools/anatomy_tools/**'
-      - 'Assets-Manifest/arm_bone_mapping.template.json'
+      - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
 
 jobs:
-  anatomy-tools-python:
+  atlas-inventory-python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Python syntax
-        run: python -m compileall -q Tools/anatomy_tools
-      - name: Name hint tests (stdlib)
-        run: python -m unittest discover -s Tools/anatomy_tools/tests -v
-      - name: Mapping JSON shape
+      - name: Validate Python tool syntax and manifest JSON
         run: |
-          python -m json.tool Assets-Manifest/arm_bone_mapping.template.json >/dev/null
+          python -m compileall -q Tools/anatomy_tools
+          python -m json.tool Assets-Manifest/asset_sources.json > /dev/null
+      - name: Validate pinned whole-FBX provenance against downloader
+        run: |
           python - <<'PY'
           import json
-          with open("Assets-Manifest/arm_bone_mapping.template.json") as f:
-              data = json.load(f)
-          assert len(data["bones"]) == 6
-          assert all(not x["verified"] and x["localStart"] is None
-                     and x["localEnd"] is None for x in data["bones"])
-          print("Unverified anchors correctly remain unset.")
+          from pathlib import Path
+          from Tools.anatomy_tools.audit_unity_inventory import pinned_source_issues
+          manifest = json.loads(Path("Assets-Manifest/asset_sources.json").read_text())
+          issues = pinned_source_issues(manifest)
+          assert not issues, issues
+          print("PASS: complete skeletal FBX source pin consistent")
           PY
-      - name: Scope
-        run: echo "No Blender FBX imports, Unity compile, or real camera rendering are tested here."
+      - name: Run inventory and source-verification tests (no Blender or Unity)
+        run: |
+          python -m unittest discover -s Tools/anatomy_tools/tests -v
+          python -m Tools.anatomy_tools.audit_unity_inventory --help > /dev/null
+      - name: Scope disclaimer
+        run: |
+          echo 'Tests cover pinned manifest and synthetic renderer inventory only.'
+          echo 'They do NOT fetch a real FBX, inspect anatomy, run Blender, compile Unity or prove rig/asset license correctness.'
