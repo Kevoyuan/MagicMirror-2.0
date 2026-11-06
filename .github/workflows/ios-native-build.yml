@@ -1,0 +1,51 @@
+name: iOS native SwiftUI + MediaPipe build
+
+on:
+  push:
+    paths:
+      - 'Mobile/iOS/**'
+      - '.github/workflows/ios-native-build.yml'
+  pull_request:
+    paths:
+      - 'Mobile/iOS/**'
+      - '.github/workflows/ios-native-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios-build-for-testing:
+    name: Compile real iOS app and XCTest target
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report Xcode and Swift
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Generate Xcode project reproducibly
+        run: |
+          if ! command -v xcodegen >/dev/null; then
+            brew install xcodegen
+          fi
+          bash Mobile/iOS/Scripts/fetch_model.sh
+          cd Mobile/iOS
+          xcodegen generate --spec project.yml
+      - name: Compile complete SwiftUI app and XCTest (iOS Simulator)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Mobile/iOS/MagicMirror.xcodeproj \
+            -scheme MagicMirror \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MagicMirrorDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing
+      - name: Clarify test scope
+        if: always()
+        run: |
+          echo 'Compilation is not a physical camera, frame alignment, or 3D anatomy validation.'
+          echo 'No TestFlight, signed iPhone build or real motion performance has been measured.'
