@@ -25,8 +25,8 @@ namespace MagicMirror.Motion
             PoseFrame frame,
             TrackedTwoLinkLimb limb,
             float confidenceThreshold,
-            float firstAtlasLength,
-            float secondAtlasLength,
+            float firstLengthInWorldUnits,
+            float secondLengthInWorldUnits,
             float minFlexionDegrees,
             float maxFlexionDegrees,
             out TwoBoneSolution result)
@@ -65,12 +65,16 @@ namespace MagicMirror.Motion
                 return false;
 
             // The model's middle joint provides only a bend-plane HINT.
-            // The hinge solver uses source-atlas reference segment lengths,
-            // refusing invalid or collinear observations rather than inventing
-            // joint centers. Output coordinates are STILL MediaPipe world space.
+            // Lengths must be CALIBRATED into the same coordinate frame and
+            // unit scale as these estimated MediaPipe world landmarks. Passing
+            // raw unscaled FBX mesh lengths is NOT VALID. Until an atlas-to-pose
+            // calibration is reviewed, the result is diagnostic only, and
+            // cannot drive original anatomical mesh transforms directly.
+            // Reject invalid / collinear observations rather than inventing
+            // bend planes. Output remains MediaPipe-estimated world space.
             return TwoBoneKinematics.TrySolve(
                 shoulderOrHip, wristOrAnkle, estimatedElbowOrKnee,
-                firstAtlasLength, secondAtlasLength,
+                firstLengthInWorldUnits, secondLengthInWorldUnits,
                 minFlexionDegrees, maxFlexionDegrees, out result);
         }
 
