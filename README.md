@@ -50,6 +50,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
 - Docs/ROADMAP.md — M0 through M9, implementation gates
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
+- Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md — reproducible pose traces and validity boundaries
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
