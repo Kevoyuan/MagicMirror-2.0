@@ -21,7 +21,7 @@
 ## Current M0 implementation checklist
 
 - [x] Document ADR-001: MediaPipe is the only active pose tracker.
-- [x] Preserve OpenPose legacy directory without relying on it.
+- [x] Keep the old OpenPose project in the original historical repository; the standalone 2.0 repo contains only MediaPipe-based active code.
 - [x] Deprecate the independent six-FBX extraction documentation.
 - [x] Define PoseFrame v1 and future breaking-change policy.
 - [x] Unify vision, architecture, roadmap and README navigation.
