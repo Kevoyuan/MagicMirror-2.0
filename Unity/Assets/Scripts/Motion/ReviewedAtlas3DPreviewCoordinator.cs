@@ -117,6 +117,13 @@ namespace MagicMirror.Motion
         {
             if (!capturing || capture == null)
                 return;
+            if (frame == null || frame.streamSessionId <= 0)
+            {
+                capturing = false;
+                Debug.LogWarning("MagicMirror: no trusted TCP session. " +
+                    "Refusing reference pose capture.");
+                return;
+            }
             if (!capture.TryAdd(frame))
             {
                 capturing = false;
