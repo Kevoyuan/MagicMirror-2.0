@@ -113,6 +113,7 @@ namespace MagicMirror.Motion
             frozen3DCalibration = frozenCalibration;
             last3DFrameId = capture.LastFrameId;
             last3DTimestampMs = capture.LastTimestampMs;
+            lastPoseTime = Time.realtimeSinceStartup;
             reviewed3DPreviewRequested = true;
             reviewed3DPreviewAuthorized = true;
             hasPose = false;
@@ -211,14 +212,18 @@ namespace MagicMirror.Motion
             if (Input.GetKeyDown(KeyCode.Alpha4)) SetViewMode(FullBodyViewMode.LegsOnly);
 #endif
 
-            if (hasPose && Time.realtimeSinceStartup - lastPoseTime > staleAfterSeconds)
+            bool stale = Time.realtimeSinceStartup - lastPoseTime > staleAfterSeconds;
+            if (stale && reviewed3DPreviewRequested)
+            {
+                // Revoke even if a preceding low-confidence frame had hidden
+                // the preview. Reacquisition needs a fresh reviewed capture.
+                reviewed3DPreviewAuthorized = false;
+                Hide3DPreview();
+            }
+            else if (hasPose && stale)
             {
                 hasPose = false;
                 if (atlasContainer != null) atlasContainer.SetActive(false);
-                // Old confidence/identity cannot be used to animate another
-                // sidecar session; an explicit fresh reference capture is needed.
-                if (reviewed3DPreviewRequested)
-                    reviewed3DPreviewAuthorized = false;
             }
         }
 
@@ -517,6 +522,7 @@ namespace MagicMirror.Motion
             }
             last3DFrameId = frame.frameId;
             last3DTimestampMs = frame.timestampMs;
+            lastPoseTime = Time.realtimeSinceStartup;
 
             // Always start from the source's immutable original renderer
             // transforms, never integrate motion into a previous frame.
