@@ -120,5 +120,6 @@ internal static class Program
         Console.WriteLine("MAGICMIRROR_M4_TWO_BONE_CSHARP_PASS: " + checks +
             " engine-independent assertions (NOT Unity/FBX validation).");
         CalibrationChecks.Run();
+        BodyBridgeChecks.Run();
     }
 }
