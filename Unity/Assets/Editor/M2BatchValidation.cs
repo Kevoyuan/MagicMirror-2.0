@@ -35,8 +35,10 @@ namespace MagicMirror.Editor
                 PoseFrameGuardSelfCheck.Run();
                 current = "M4 two-bone world landmark bridge";
                 M4TwoBoneWorldSelfCheck.Run();
+                current = "M5 body-to-atlas 3D calibration";
+                M5BodyCalibrationSelfCheck.Run();
 
-                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — six synthetic Editor suites. "
+                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — seven synthetic Editor suites. "
                     + "Physical camera, real FBX, visual alignment and FPS NOT verified.");
                 EditorApplication.Exit(0);
             }
