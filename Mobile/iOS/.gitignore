@@ -1,0 +1,9 @@
+# XcodeGen output
+MagicMirror.xcodeproj/
+*.xcworkspace/
+DerivedData/
+build/
+.swiftpm/
+# Downloaded/verified model, packaged into app via XcodeGen resources
+Resources/*.task
+.DS_Store
