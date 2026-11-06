@@ -70,6 +70,12 @@ left/right/chirality errors. A 3D reflection is *never applied silently*
 by this code. Actual source-world camera axis semantics, facing-direction
 selection and reprojection remain an M5 hardware acceptance gate.
 
+A bounded, median-based multi-frame reference capture implementation,
+`ReferencePoseCaptureWindow`, and a C# camera-reprojection diagnostic
+are now available and unit-tested in `Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md`.
+Actual camera intrinsics/extrinsics and Unity overlay runtime are still
+unmeasured.
+
 Calibration must be captured in a controlled, explicitly confirmed
 reference pose and **frozen across motion** until re-calibration. Running
 a brand-new similarity fit independently on each animation frame would
@@ -105,9 +111,10 @@ executed assertion totals.
    anatomically verified left/right shoulders and the NEW mid-hip anchor,
    and manually confirm their reviewed/provenance/asset license fields.
 4. Check source atlas units and axes, and source-right/source-left identity.
-5. Capture multiple stable reference frames under explicit user control,
-   calibrate once and freeze the result. Add facing-direction and mirror
-   convention checks, plus camera extrinsics/reprojection tests.
+5. Integrate the now-authored bounded stable reference-capture window under
+   explicit user control, freeze once, and obtain **physical** camera
+   intrinsics/extrinsics and facing-direction conventions. Run real camera
+   reprojection tests; the C# synthetic diagnostics are not actual results.
 6. Apply the transform only in the reviewed full-atlas rig, keeping all
    original FBX geometry immutable and unmapped anatomy in the rest pose.
 7. Validate real shoulder/hip reprojection, connected limb motion,
