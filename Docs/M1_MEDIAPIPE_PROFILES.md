@@ -1,6 +1,6 @@
 # Phase M1 — MediaPipe profile selection and processing metrics
 
-**Status:** Source implementation committed; Python CI verification required. **No actual camera/model/GPU benchmark yet.** This is the first M1 increment only.
+**Status:** Lite, Full and Heavy model loading and VIDEO inference on blank synthetic images have passed Ubuntu CI with MediaPipe 0.10.35; all three model byte sizes and SHA-256 digests are locked. **No real webcam/person, Unity compile, Windows/macOS runtime or GPU benchmark yet.** See `Docs/M1_ALL_PROFILES_RUNTIME.md`.
 
 ## Why
 
@@ -21,7 +21,7 @@ python3 -m Tools.pose_sidecar.download_model --profile full
 python3 -m Tools.pose_sidecar.download_model --profile heavy
 ~~~
 
-Or download all three: `python3 -m Tools.pose_sidecar.download_model --all`. Bundles are downloaded from the official Google-hosted `float16/latest` URL into gitignored `Tools/pose_sidecar/models/`. **The URLs are not immutable or SHA-256 pinned yet.** Capture checksums and validate actual model behavior before reproducible release claims.
+Or download all three: `python3 -m Tools.pose_sidecar.download_model --all`. Bundles are downloaded from the official Google-hosted `float16/latest` URL into gitignored `Tools/pose_sidecar/models/`. **The URLs remain mutable; Lite, Full and Heavy are now guarded by their CI-verified SHA-256 digests and exact byte sizes.** The downloader rejects changed blobs instead of silently accepting a different official `latest` model. See `Docs/M1_ALL_PROFILES_RUNTIME.md`.
 
 Use the existing Unity Phase 1 scene and a real camera:
 
@@ -54,4 +54,4 @@ python3 -m unittest discover -s Tools/pose_sidecar/tests -v
 python3 Tools/ci/check_mediapipe_only.py
 ~~~
 
-Before marking M1 complete, run side-by-side actual camera/model tests, record OS and device, freeze the working Python/MediaPipe dependency versions, verify model SHA-256, evaluate motion stability with held-out clips, and measure true Unity display latency. Optional segmentation and LIVE_STREAM callback↔frame identity are **not implemented in this increment**.
+Before marking M1 complete, run side-by-side actual camera/model tests on Windows/macOS, evaluate motion stability on consented held-out clips, and measure true Unity display latency. All-profile Linux VIDEO smoke only establishes API/model compatibility on blank images. Optional segmentation and LIVE_STREAM callback↔frame identity are **not implemented in this increment**.

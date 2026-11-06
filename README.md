@@ -30,6 +30,17 @@ python3 -m pip install "opencv-python>=4.10,<5" "numpy>=1.26,<3"
 python3 -m Tools.pose_sidecar.main --demo-video --demo-scenario wave
 ~~~
 
+The Lite model can also be smoke-tested **without a camera or Unity**:
+~~~bash
+python3 -m pip install -r Tools/pose_sidecar/requirements.txt
+python3 -m Tools.pose_sidecar.download_model --profile lite
+python3 -m Tools.pose_sidecar.download_model --profile lite --verify-only
+python3 -m Tools.pose_sidecar.smoke_runtime --profile lite --frames 3
+~~~
+This executes real VIDEO inference on blank synthetic frames, not human
+pose accuracy or camera-to-display latency. Linux CI also needs GLES/EGL
+libraries; see Docs/M1_REAL_MEDIAPIPE_SMOKE.md.
+
 The production **C# kinematics, body registration, stable reference capture
 and camera reprojection math** can be compiled and tested without Unity,
 camera or Z-Anatomy assets:
@@ -59,7 +70,9 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
 - Docs/ROADMAP.md — M0 through M9, implementation gates
-- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
+- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
+- Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
+- Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
