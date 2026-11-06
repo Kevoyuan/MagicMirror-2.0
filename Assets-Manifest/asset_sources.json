@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "generatedDate": "2026-11-06",
+  "notes": "Third-party models are not included in this branch. The license on each source mesh must be audited before packaging.",
+  "sourceProjects": [
+    {
+      "name": "Z-Anatomy Blender models",
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+      "licenseDeclared": "CC BY-SA 4.0 with additional asset-specific license concerns"
+    },
+    {
+      "name": "Z-Anatomy Unity models",
+      "url": "https://github.com/LluisV/Z-Anatomy/tree/PC-Version/Resources/Models/FBX",
+      "licenseDeclared": "review source-specific terms"
+    }
+  ],
+  "models": [
+    {
+      "file": "SkeletalSystem100.fbx",
+      "bytes": 41339660,
+      "neededFor": "M3",
+      "licenseStatus": "pending-review",
+      "distributed": false,
+      "sourceRevision": "6c7f9016bd5899ac8edafd31b9900c151df42ed6",
+      "expectedGitBlobSha1": "7c62e45211bf3992bb7239170343e06e2b073865",
+      "preferredLocalPath": "Unity/Assets/ThirdParty/ZAnatomy/SkeletalSystem100.fbx",
+      "downloadTool": "python3 -m Tools.anatomy_tools.fetch_atlas --download"
+    },
+    {
+      "file": "Joints100.fbx",
+      "bytes": 9804796,
+      "neededFor": "M3",
+      "licenseStatus": "pending-review",
+      "distributed": false
+    },
+    {
+      "file": "MuscularSystem100.fbx",
+      "bytes": 37343180,
+      "neededFor": "M7",
+      "licenseStatus": "pending-review",
+      "distributed": false
+    },
+    {
+      "file": "VisceralSystem100.fbx",
+      "bytes": 18401708,
+      "neededFor": "M7",
+      "licenseStatus": "pending-review",
+      "distributed": false
+    }
+  ]
+}

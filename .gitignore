@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+m2-editor-validation.log
+*.log
+/Tools/pose_sidecar/models/*.task
+/Tools/pose_sidecar/models/*.partial
+/Unity/Assets/ThirdParty/ZAnatomy/*.fbx
