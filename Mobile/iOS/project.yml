@@ -36,11 +36,26 @@ targets:
         SUPPORTS_MACCATALYST: "NO"
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "NO"
+  MagicMirrorTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MagicMirrorTests
+    dependencies:
+      - target: MagicMirror
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_VERSION: "5.0"
 schemes:
   MagicMirror:
     build:
       targets:
         MagicMirror: all
+    test:
+      targets:
+        - MagicMirrorTests
     run:
       config: Debug
     archive:
