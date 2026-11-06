@@ -132,6 +132,8 @@ internal static class AtlasPlannerChecks
                    calibration, left, out cmd),
               "left arm reviewed atlas plan");
         VerifyChain(cmd, TrackedTwoLinkLimb.LeftArm, frame);
+        Check(cmd.streamSessionId == frame.streamSessionId,
+              "planner preserves original transport generation");
         Check(!cmd.unreachableTargetClamped,
               "reachable wrist does not need clamping");
         Check(Plan(frame, TrackedTwoLinkLimb.RightArm,
