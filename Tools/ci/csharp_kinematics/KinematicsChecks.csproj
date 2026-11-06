@@ -9,5 +9,6 @@
   <!-- Compile the SAME actual C# source file consumed by Unity, not a Python port. -->
   <ItemGroup>
     <Compile Include="../../../Unity/Assets/Scripts/Motion/TwoBoneKinematics.cs" Link="TwoBoneKinematics.cs" />
+    <Compile Include="../../../Unity/Assets/Scripts/Motion/BodySimilarityCalibration.cs" Link="BodySimilarityCalibration.cs" />
   </ItemGroup>
 </Project>
