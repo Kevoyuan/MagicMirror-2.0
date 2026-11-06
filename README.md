@@ -41,13 +41,15 @@ This executes real VIDEO inference on blank synthetic frames, not human
 pose accuracy or camera-to-display latency. Linux CI also needs GLES/EGL
 libraries; see Docs/M1_REAL_MEDIAPIPE_SMOKE.md.
 
-The actual **C# two-bone IK mathematics** can be compiled and tested even
-without Unity, camera or Z-Anatomy assets:
+The production **C# kinematics, body registration, stable reference capture
+and camera reprojection math** can be compiled and tested without Unity,
+camera or Z-Anatomy assets:
 ~~~bash
 dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
 ~~~
-This tests fixed reference lengths, flexion limits and degenerate bends,
-not Unity rendering, anatomy identity or calibrated camera motion.
+This tests original C# IK/pose-contract/registration/reprojection sources
+with constructed inputs, **not** Unity rendering, anatomy accuracy, true
+camera calibration or measured live-device performance.
 
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
@@ -73,7 +75,8 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
-- Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas calibration and reprojection gates
+- Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
+- Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries
