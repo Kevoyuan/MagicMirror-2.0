@@ -32,7 +32,7 @@
 ## Next engineering sprint (M1/M2, ordered)
 
 1. Pin one tested Python/MediaPipe pair on target Windows and macOS devices; capture versions in a reproducible environment record.
-2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability.
+2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability. **Implemented:** offline synthetic source-quality traces; **pending:** measured real-model comparison on target hardware.
 3. Add optional segmentation and, if needed, versioned media/pose association; avoid same-frame mismatches.
 4. Run the actual Unity 6.3 Editor with synthetic TCP demo and full-body schematic; fix compile/runtime issues.
 5. Run one real webcam, test left/right and temporal alignment, disconnect/reconnect, alpha compositing, and report FPS/latency.
