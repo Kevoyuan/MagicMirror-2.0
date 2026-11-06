@@ -26,7 +26,10 @@ class PoseBenchmarkTests(unittest.TestCase):
         self.assertEqual(report["corePoseVisibleRatio"], 1.0)
         self.assertEqual(report["missingCorePoseFrames"], 0)
         self.assertAlmostEqual(report["observedSourceFps"], 30.0, delta=0.1)
-        self.assertGreater(report["adjacentVisibleShoulderDisplacementP95Normalized"], 0)
+        # Walking fixture holds shoulders still; use squat to check shoulder motion.
+        squat_report = analyze_trace(generate_trace("squat", 30, 3))
+        self.assertGreater(
+            squat_report["adjacentVisibleShoulderDisplacementP95Normalized"], 0)
 
     def test_dropout_is_reported_without_fake_latency_claim(self):
         frames = generate_trace("dropout", 20, 6)
