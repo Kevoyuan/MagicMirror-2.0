@@ -79,7 +79,9 @@ namespace MagicMirror.Motion
 
             // The shoulders are fitted exactly by the reference similarity.
             // Pelvis error detects disproportionate/noisy observations and
-            // excludes bad or falsely mirrored calibration postures.
+            // excludes disproportionate/noisy reference postures. Three
+            // coplanar anchors CANNOT prove correct camera-facing orientation
+            // or detect every mirrored anatomical correspondence.
             KinematicVector3 poseTorso = poseMidHip - fromMid;
             KinematicVector3 atlasTorso = atlasMidHip - toMid;
             KinematicVector3 predictedTorso =
