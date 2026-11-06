@@ -59,6 +59,9 @@ the manually reviewed `FullBodyAtlasProfile`. Its default 2D code
 path is preserved.
 
 The 3D path uses non-destructively mapped `MeshRenderer` objects only.
+A follow-up optional, second-gate calibrated camera overlay source is
+now authored in `Docs/M5_REVIEWED_CAMERA_OVERLAY.md`. The default preview
+still remains in atlas space; no camera calibration is assumed.
 Selected rigid regions are transformed relative to the saved
 **immutable source/rest transforms** each frame; parent/child
 world poses are calculated before they are applied. Unmapped anatomy
@@ -80,10 +83,12 @@ actual user bone positions, or prove bones overlay the live RGB person.
    `atlasStartLocal` share the same reviewed elbow/knee center within
    **0.5% of the shorter segment length**. A missing partner or
    overlapping source hierarchy path blocks 3D motion.
-5. In a scene using the **existing** `PoseStreamReceiver` and
-   `FullBodyAtlasRetargeter`, add
-   `ReviewedAtlas3DPreviewCoordinator`. Assign the SAME receiver,
-   retargeter and profile in its Inspector. It opens **no second camera**.
+5. In a scene generated from the **real** full atlas profile,
+   `ReviewedAtlas3DPreviewCoordinator` is now added and configured
+   automatically with the SAME receiver/retargeter/profile.
+   It opens **no second camera**. On older scenes, add and wire the
+   component manually. Camera overlay requires a separate reviewed
+   camera profile and an extra explicit approval; disabled by default.
 6. Check the Inspector toggle confirming this is an
    **operator-approved diagnostic only**.
 7. Enter Unity Play Mode with **real non-demo** MediaPipe video.
@@ -126,14 +131,15 @@ and PoseFrame checks. It covers both arm/leg sides, hinge and segment
 connectivity, clamped motion, source packet identity, confidence,
 unreviewed reference anchors, invalid model/world data and pose limits.
 
-The newly added `M4M5AtlasMotionPreviewSelfCheck` is authored into the
-Unity batch validation as an **eighth** synthetic Editor check, to be
+The `M4M5AtlasMotionPreviewSelfCheck` and
+`M5ReviewedSourceCameraSelfCheck` are authored into the Unity batch
+validation as the **eighth/ninth** synthetic Editor checks, to be
 **executed on an actual Unity installation later**. Source syntax
 parsing is not a Unity compilation or a scene run.
 
 ## Acceptance checklist still BLOCKED by no Unity/FBX hardware gate
 
-- Real Unity Editor compiles and executes all eight synthetic suites.
+- Real Unity Editor compiles and executes all nine synthetic suites.
 - Whole Z-Anatomy FBX imports with true source-local scale and anchors.
 - Reviewed 3D prefab limb motion is visually plausible without overlap.
 - Loss/reacquisition and stream reconnect do not retain wrong identity.
