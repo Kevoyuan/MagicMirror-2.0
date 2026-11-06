@@ -37,7 +37,7 @@ namespace MagicMirror.Motion
         }
 
         private readonly List<Sample> samples;
-        private readonly int required;
+        private readonly int requiredFrameCount;
         private readonly float confidence;
         private readonly float maxDriftWidths;
         private readonly long maxGapMs;
@@ -47,7 +47,7 @@ namespace MagicMirror.Motion
         private bool hasFrame, poisoned, frozen;
 
         public int AcceptedFrames { get { return samples.Count; } }
-        public int RequiredFrames { get { return required; } }
+        public int RequiredFrames { get { return requiredFrameCount; } }
         public bool RequiresReset { get { return poisoned; } }
         public bool IsFrozen { get { return frozen; } }
 
@@ -64,7 +64,7 @@ namespace MagicMirror.Motion
                 maximumDriftInShoulderWidths > 0.5f ||
                 maximumFrameGapMs <= 0 || maximumFrameGapMs > 3000)
                 throw new ArgumentOutOfRangeException("Invalid reference capture settings.");
-            required = requiredFrames;
+            requiredFrameCount = requiredFrames;
             confidence = minimumConfidence;
             maxDriftWidths = maximumDriftInShoulderWidths;
             maxGapMs = maximumFrameGapMs;
@@ -88,7 +88,7 @@ namespace MagicMirror.Motion
         /// </summary>
         public bool TryAdd(PoseFrame frame)
         {
-            if (poisoned || frozen || samples.Count >= required)
+            if (poisoned || frozen || samples.Count >= requiredFrameCount)
                 return false;
             if (frame == null || !frame.IsValid || frame.demo ||
                 frame.mirrored || frame.worldLandmarks == null ||
@@ -140,7 +140,7 @@ namespace MagicMirror.Motion
         {
             calibration = default(BodySimilarityCalibration);
             quality = default(PoseCaptureQuality);
-            if (poisoned || frozen || samples.Count != required ||
+            if (poisoned || frozen || samples.Count != requiredFrameCount ||
                 !atlasAnchorsReviewed)
                 return false;
 
