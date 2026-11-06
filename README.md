@@ -61,7 +61,8 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
 - Docs/ROADMAP.md — M0 through M9, implementation gates
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
-- Docs/M1_REAL_MEDIAPIPE_SMOKE.md — actual Lite VIDEO-mode loading and SHA-256 lock (Linux CI)
+- Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
+- Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
