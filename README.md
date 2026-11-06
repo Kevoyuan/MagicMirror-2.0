@@ -38,9 +38,11 @@ dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.cspr
 ~~~
 This tests original C# IK/pose-contract/registration/reprojection and
 reviewed full-atlas 3D limb command sources with constructed inputs.
-The **opt-in Unity 3D diagnostic preview** is authored but not yet
-compiled/run against a real FBX; it is NOT a completed RGB anatomy overlay,
-anatomy accuracy proof, real camera calibration or measured latency.
+The **opt-in Unity 3D diagnostic** and optional **explicitly reviewed
+source-camera overlay** are authored but NOT yet compiled/run against an
+actual Unity Editor, original FBX or calibrated physical camera. The 3D
+overlay is disabled by default; this is NOT evidence of anatomical
+accuracy, completed real-world RGB alignment or measured latency.
 
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
@@ -67,6 +69,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M4_M5_WHOLE_ATLAS_3D_PREVIEW.md — explicitly gated intact-FBX 3D joint commands and diagnostic Unity preview
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
 - Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
+- Docs/M5_REVIEWED_CAMERA_OVERLAY.md — session-safe opt-in FBX→camera mapping with no guessed lens parameters
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries
