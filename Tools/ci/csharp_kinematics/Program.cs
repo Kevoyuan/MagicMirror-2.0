@@ -122,5 +122,6 @@ internal static class Program
         CalibrationChecks.Run();
         BodyBridgeChecks.Run();
         ReprojectionChecks.Run();
+        CaptureWindowChecks.Run();
     }
 }
