@@ -15,5 +15,6 @@
     <Compile Include="../../../Unity/Assets/Scripts/Tracking/PoseStreamProtocol.cs" Link="PoseStreamProtocol.cs" />
     <Compile Include="../../../Unity/Assets/Scripts/Motion/BodyWorldPinholeCamera.cs" Link="BodyWorldPinholeCamera.cs" />
     <Compile Include="../../../Unity/Assets/Scripts/Motion/AtlasReprojectionDiagnostics.cs" Link="AtlasReprojectionDiagnostics.cs" />
+    <Compile Include="../../../Unity/Assets/Scripts/Motion/ReferencePoseCaptureWindow.cs" Link="ReferencePoseCaptureWindow.cs" />
   </ItemGroup>
 </Project>
