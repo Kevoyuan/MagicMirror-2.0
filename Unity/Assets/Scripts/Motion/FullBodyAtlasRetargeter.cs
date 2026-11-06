@@ -521,6 +521,9 @@ namespace MagicMirror.Motion
                 frame == null || !frame.IsValid || frame.demo || frame.mirrored ||
                 frame.streamSessionId != authorized3DStreamSessionId)
             {
+                // A changed stream session or untrusted packet requires an
+                // explicit NEW reference capture, not just hiding one frame.
+                reviewed3DPreviewAuthorized = false;
                 Hide3DPreview();
                 return;
             }
