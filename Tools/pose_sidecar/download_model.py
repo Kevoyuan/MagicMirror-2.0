@@ -1,8 +1,8 @@
 """Download official MediaPipe Pose Landmarker task bundles into local gitignored storage.
 
-Google's 'latest' URLs are mutable. Lite is guarded by exact SHA-256 and byte
-size verified using a real MediaPipe 0.10.35 VIDEO CI runtime on Ubuntu.
-Full and Heavy remain unpinned experiments, NOT release-reproducible assets.
+Google's 'latest' URLs are mutable. Lite, Full and Heavy now have SHA-256
+and size locks from real MediaPipe 0.10.35 VIDEO CI runs on Ubuntu.
+Windows/macOS and real-person tracking have NOT been validated.
 """
 from __future__ import annotations
 
@@ -21,13 +21,19 @@ MODEL_DIR = pathlib.Path(__file__).parent / "models"
 MAX_MODEL_BYTES = 75_000_000
 
 # Downloaded and executed successfully in GitHub Linux CI on 2026-11-06:
-# MediaPipe 0.10.35 + Pose Landmarker Lite (float16).
+# MediaPipe 0.10.35 + Pose Landmarker Lite/Full/Heavy (float16).
 # The Google URL remains 'latest', so a new upstream blob will be REFUSED
 # until its checksum is reviewed and this lock intentionally updated.
 EXPECTED_MODEL_SHA256 = {
     "lite": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+    "full": "4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad",
+    "heavy": "64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b",
 }
-EXPECTED_MODEL_BYTES = {"lite": 5_777_746}
+EXPECTED_MODEL_BYTES = {
+    "lite": 5_777_746,
+    "full": 9_398_198,
+    "heavy": 30_664_242,
+}
 
 # Backwards-compatible aliases for existing Lite setup code.
 MODEL_URL = MODEL_URLS["lite"]
