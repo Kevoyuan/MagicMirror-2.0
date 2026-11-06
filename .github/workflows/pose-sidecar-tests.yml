@@ -48,6 +48,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Linux native libraries required by MediaPipe runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgles2 libegl1 libgl1
       - name: Install real MediaPipe Tasks and camera dependencies
         run: python -m pip install -r Tools/pose_sidecar/requirements.txt
       - name: Download temporary official Lite model
