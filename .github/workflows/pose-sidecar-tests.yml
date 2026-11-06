@@ -39,3 +39,41 @@ jobs:
       - name: State limitations
         run: echo 'This verifies synthetic image bytes, NOT a Unity renderer or physical camera.'
 
+
+  real-mediapipe-video-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Linux native libraries required by MediaPipe runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgles2 libegl1 libgl1
+      - name: Install real MediaPipe Tasks and camera dependencies
+        run: python -m pip install -r Tools/pose_sidecar/requirements.txt
+      - name: Download temporary official Lite model
+        run: python -m Tools.pose_sidecar.download_model --profile lite
+      - name: Verify exact Lite task bundle SHA-256 (before running inference)
+        run: python -m Tools.pose_sidecar.download_model --profile lite --verify-only
+      - name: Execute actual VIDEO inference on synthetic blank image
+        run: |
+          python -m Tools.pose_sidecar.smoke_runtime --profile lite --frames 3 --report "$RUNNER_TEMP/m1-real-runtime-report.json"
+          python - "$RUNNER_TEMP/m1-real-runtime-report.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert report["mode"] == "VIDEO"
+          assert report["frames"] == 3
+          assert report["landmarkSchema"] == 33
+          assert len(report["modelSha256"]) == 64
+          assert len(report["posesPerFrame"]) == 3
+          assert report["mediapipeVersion"]
+          print("PASS: real MediaPipe VIDEO API, wheel and task bundle loaded")
+          PY
+      - name: Scope disclaimer
+        run: |
+          echo 'Blank synthetic image only, no real-person detection benchmark.'
+          echo 'Lite SHA-256/size locked; Full/Heavy not yet locked or runtime-tested.'
+          echo 'No Unity, real camera, end-to-end latency or anatomy FBX validation.'

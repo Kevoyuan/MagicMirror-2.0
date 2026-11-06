@@ -30,6 +30,17 @@ python3 -m pip install "opencv-python>=4.10,<5" "numpy>=1.26,<3"
 python3 -m Tools.pose_sidecar.main --demo-video --demo-scenario wave
 ~~~
 
+The Lite model can also be smoke-tested **without a camera or Unity**:
+~~~bash
+python3 -m pip install -r Tools/pose_sidecar/requirements.txt
+python3 -m Tools.pose_sidecar.download_model --profile lite
+python3 -m Tools.pose_sidecar.download_model --profile lite --verify-only
+python3 -m Tools.pose_sidecar.smoke_runtime --profile lite --frames 3
+~~~
+This executes real VIDEO inference on blank synthetic frames, not human
+pose accuracy or camera-to-display latency. Linux CI also needs GLES/EGL
+libraries; see Docs/M1_REAL_MEDIAPIPE_SMOKE.md.
+
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
@@ -49,7 +60,8 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
 - Docs/ROADMAP.md — M0 through M9, implementation gates
-- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
+- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
+- Docs/M1_REAL_MEDIAPIPE_SMOKE.md — actual Lite VIDEO-mode loading and SHA-256 lock (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 

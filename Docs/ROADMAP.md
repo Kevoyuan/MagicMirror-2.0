@@ -31,7 +31,7 @@
 
 ## Next engineering sprint (M1/M2, ordered)
 
-1. Pin one tested Python/MediaPipe pair on target Windows and macOS devices; capture versions in a reproducible environment record.
+1. **Linux CI now smoke-tested** Python 3.11 + MediaPipe 0.10.35 + SHA-256-pinned Lite model on synthetic VIDEO input; Windows/macOS actual camera, Full/Heavy model locks, and real benchmark still pending. See `Docs/M1_REAL_MEDIAPIPE_SMOKE.md`.
 2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability.
 3. Add optional segmentation and, if needed, versioned media/pose association; avoid same-frame mismatches.
 4. Run the actual Unity 6.3 Editor with synthetic TCP demo and full-body schematic; fix compile/runtime issues.

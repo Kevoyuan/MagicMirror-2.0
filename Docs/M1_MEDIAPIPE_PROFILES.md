@@ -1,6 +1,6 @@
 # Phase M1 — MediaPipe profile selection and processing metrics
 
-**Status:** Source implementation committed; Python CI verification required. **No actual camera/model/GPU benchmark yet.** This is the first M1 increment only.
+**Status:** Lite model loading and VIDEO inference on blank synthetic images have now passed Ubuntu CI with MediaPipe 0.10.35. **No real webcam/person, Full/Heavy runtime tests, Unity compile, or GPU benchmark yet.** See `Docs/M1_REAL_MEDIAPIPE_SMOKE.md`.
 
 ## Why
 
@@ -21,7 +21,7 @@ python3 -m Tools.pose_sidecar.download_model --profile full
 python3 -m Tools.pose_sidecar.download_model --profile heavy
 ~~~
 
-Or download all three: `python3 -m Tools.pose_sidecar.download_model --all`. Bundles are downloaded from the official Google-hosted `float16/latest` URL into gitignored `Tools/pose_sidecar/models/`. **The URLs are not immutable or SHA-256 pinned yet.** Capture checksums and validate actual model behavior before reproducible release claims.
+Or download all three: `python3 -m Tools.pose_sidecar.download_model --all`. Bundles are downloaded from the official Google-hosted `float16/latest` URL into gitignored `Tools/pose_sidecar/models/`. **The URLs remain mutable. Lite is now guarded by its CI-verified SHA-256 and 5,777,746-byte size; Full and Heavy are not yet checksum-locked.** The downloader rejects a changed Lite blob instead of silently accepting a different official `latest` model.
 
 Use the existing Unity Phase 1 scene and a real camera:
 
@@ -54,4 +54,4 @@ python3 -m unittest discover -s Tools/pose_sidecar/tests -v
 python3 Tools/ci/check_mediapipe_only.py
 ~~~
 
-Before marking M1 complete, run side-by-side actual camera/model tests, record OS and device, freeze the working Python/MediaPipe dependency versions, verify model SHA-256, evaluate motion stability with held-out clips, and measure true Unity display latency. Optional segmentation and LIVE_STREAM callback↔frame identity are **not implemented in this increment**.
+Before marking M1 complete, run side-by-side actual camera/model tests on Windows/macOS, verify Full/Heavy model SHA-256, evaluate motion stability on consented held-out clips, and measure true Unity display latency. Linux Lite VIDEO smoke only establishes runtime compatibility for blank images. Optional segmentation and LIVE_STREAM callback↔frame identity are **not implemented in this increment**.
