@@ -88,6 +88,18 @@ Check** runs synthetic valid/invalid world landmark tests. The existing
 This test will confirm Unity-side data types and bridge logic when Unity
 6.3 is actually available; the current CI does not validate any Unity API.
 
+## Follow-up: command planner and Unity preview authored
+
+`AtlasTwoLinkMotionPlanner.cs` now joins the compiled/tested IK with the
+frozen M5 similarity calibration, generating atlas-root-local upper/lower
+rigid-region movement commands with linked elbow/knee positions. The existing
+`FullBodyAtlasRetargeter` has a new opt-in diagnostic 3D mode requiring
+reviewed whole-FBX region pairs and an explicit, stable 12-frame capture.
+See `Docs/M4_M5_WHOLE_ATLAS_3D_PREVIEW.md`.
+
+**The command planner has actual .NET CI assertions; the Unity driver
+still needs a real Editor build and whole-FBX visual validation.**
+
 ## Next genuine M4 acceptance gates
 
 - Import and inspect the one complete pinned `SkeletalSystem100.fbx`.
