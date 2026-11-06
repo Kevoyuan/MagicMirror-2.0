@@ -27,7 +27,7 @@ python Tools/ci/run_unity_m2.py --unity "C:\\Program Files\\Unity\\Hub\\Editor\\
 
 The script launches Unity with `-batchmode -nographics -quit -projectPath ... -executeMethod MagicMirror.Editor.M2BatchValidation.Run`. It requires **both** Unity exit code 0 **and** the explicit `MAGICMIRROR_M2_BATCH_PASS` log marker; stale logs are cleared before invocation. Nonzero exit, an explicit fail marker, or missing success marker fails closed. The default log is `m2-editor-validation.log` in the repository root (do not commit it).
 
-The Editor suite invokes existing checks for pose math, full-body pose, stability/hierarchy and atlas registration/paths. Passing it proves **those synthetic Editor checks were executed** and the Unity project compiled sufficiently to run the entrypoint; it does NOT prove real webcam access, MediaPipe native inference, camera/video synchronization, RenderTexture alpha, imported FBX integrity or complete AR performance.
+The Editor suite invokes six synthetic suites: pose math, full-body pose, stability/hierarchy, atlas registration/paths, TCP pose-frame ordering, and M4 constrained two-bone world-pose bridge. Passing it proves **those synthetic Editor checks were executed** and the Unity project compiled sufficiently to run the entrypoint; it does NOT prove real webcam access, MediaPipe native inference, camera/video synchronization, RenderTexture alpha, imported FBX integrity or complete AR performance.
 
 The runner itself is covered by `python3 -m unittest discover -s Tools/ci/tests -v` in CI, which does **not** launch Unity. Record the actual Editor log and hardware details before marking any M2 gate as passed.
 
@@ -45,8 +45,10 @@ In Unity, execute:
 2. `MagicMirror > Validation > Full Body Pose Self Check`
 3. `MagicMirror > Validation > Full Body Stability & Hierarchy Self Check`
 4. `MagicMirror > Validation > Atlas Registration & Path Check`
-5. `MagicMirror > Phase 1 > Create Pose Tracking Scene`; enter Play, verify moving keypoints on black preview.
-6. `MagicMirror > Phase 4 > Create Full Body Schematic Demo`; run `Phase4FullBodyAtlas.unity`.
+5. `MagicMirror > Validation > Pose Frame Integrity Self Check`
+6. `MagicMirror > Validation > Constrained Two-Bone IK Check` (synthetic M4 bridge; no real FBX/pose calibration)
+7. `MagicMirror > Phase 1 > Create Pose Tracking Scene`; enter Play, verify moving keypoints on black preview.
+8. `MagicMirror > Phase 4 > Create Full Body Schematic Demo`; run `Phase4FullBodyAtlas.unity`.
 
 Pass means **no C# compilation exceptions, no crashes, expected skeletal behavior and clean exit**. Record Unity Console logs and screenshots.
 

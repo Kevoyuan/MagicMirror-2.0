@@ -33,8 +33,10 @@ namespace MagicMirror.Editor
                 AtlasRegistrationSelfCheck.Run();
                 current = "pose frame sequencing";
                 PoseFrameGuardSelfCheck.Run();
+                current = "M4 two-bone world landmark bridge";
+                M4TwoBoneWorldSelfCheck.Run();
 
-                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — five synthetic Editor suites. "
+                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — six synthetic Editor suites. "
                     + "Physical camera, real FBX, visual alignment and FPS NOT verified.");
                 EditorApplication.Exit(0);
             }

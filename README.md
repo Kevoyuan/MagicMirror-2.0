@@ -41,6 +41,14 @@ This executes real VIDEO inference on blank synthetic frames, not human
 pose accuracy or camera-to-display latency. Linux CI also needs GLES/EGL
 libraries; see Docs/M1_REAL_MEDIAPIPE_SMOKE.md.
 
+The actual **C# two-bone IK mathematics** can be compiled and tested even
+without Unity, camera or Z-Anatomy assets:
+~~~bash
+dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
+~~~
+This tests fixed reference lengths, flexion limits and degenerate bends,
+not Unity rendering, anatomy identity or calibrated camera motion.
+
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
@@ -64,6 +72,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
+- Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries

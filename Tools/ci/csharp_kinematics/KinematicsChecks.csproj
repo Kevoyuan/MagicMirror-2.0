@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <!-- Compile the SAME actual C# source file consumed by Unity, not a Python port. -->
+  <ItemGroup>
+    <Compile Include="../../../Unity/Assets/Scripts/Motion/TwoBoneKinematics.cs" Link="TwoBoneKinematics.cs" />
+  </ItemGroup>
+</Project>
