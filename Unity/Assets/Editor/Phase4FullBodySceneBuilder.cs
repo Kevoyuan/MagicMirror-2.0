@@ -94,6 +94,18 @@ namespace MagicMirror.Editor
                 .AddComponent<FullBodyAtlasRetargeter>();
             retargeter.Configure(receiver, anatomyCamera, profile);
 
+            if (!profile.schematicDemo)
+            {
+                // Real intact FBX scene has the opt-in M4/M5 coordinator
+                // already wired to this SAME receiver and atlas instance.
+                // Its diagnostic approval and camera overlay flags both
+                // default to FALSE. No second camera is opened.
+                var coordinator = new GameObject(
+                    "Reviewed 3D Anatomy & Camera Calibration [MANUAL ONLY]")
+                    .AddComponent<ReviewedAtlas3DPreviewCoordinator>();
+                coordinator.Configure(receiver, retargeter, profile);
+            }
+
             GameObject label = GameObject.Find("Scientific Disclaimer");
             if (label != null)
             {
