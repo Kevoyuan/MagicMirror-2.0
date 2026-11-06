@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — Interactive Anatomical AR Mirror
 
-> **Proposed mobile-native product direction (2026-11-06):** Open a phone app, point its camera at one person, and see a semitransparent **standard reference** skeleton follow movement automatically. The **future phone app** will run on-device with native iOS/Android camera, MediaPipe, GPU rendering and no Unity/Python sidecar/server, desktop connection, cloud or wearable at runtime. This is a **proposal, not yet implemented mobile code**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [Mobile Roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The source and setup below describe the **existing desktop research prototype**.
+> **Product decision — smartphone-only (2026-11-06):** MagicMirror will ship **only as a standalone iOS/Android phone app**. Open → point the phone camera at one person → see a semi-transparent **standard reference skeleton** appear automatically → watch it follow movement. All inference, skeleton motion and GPU AR compositing must run on the handset; **no computer, Unity, Python sidecar/server, cloud or wearable is needed by the user**. There is **no Windows/macOS product planned**. This is the accepted scope, **not a claim that a native app has been built**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [active mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The code and commands below currently document the **archived desktop research prototype**.
 
 **Make human anatomy visible, interactive, and understandable through natural body movement.**
 
@@ -14,7 +14,7 @@ live webcam image, with future muscle, organ and guided-learning layers.
 > SkeletalSystem100.fbx motion are NOT yet verified.** This is a research
 > prototype, not a clinical scanner or personalized anatomical reconstruction.
 
-## First steps (without Unity or a webcam)
+## Existing desktop research tests (NOT the planned mobile app)
 
 ~~~bash
 python3 -m unittest discover -s Tools/pose_sidecar/tests -v
@@ -58,7 +58,7 @@ specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
 checklist. The Unity Editor and real anatomical asset are not included.
 
-## Architecture
+## Existing desktop prototype architecture (historical)
 
 - Camera + MediaPipe Tasks Pose Landmarker: Tools/pose_sidecar/
 - Timestamped same-frame PoseFrame v1 + JPEG over local TCP
@@ -66,12 +66,14 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Complete pinned Z-Anatomy FBX, **not independent re-exported bones**
 - Default local-only image processing and no recording/upload
 
-## Documentation
+## Documentation — active smartphone plan and legacy research
 
-- Docs/PRODUCT_VISION.md — final educational experience
+- Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md — accepted phone-only product decision
+- Docs/MOBILE_NATIVE_ROADMAP.md — only active mobile shipping roadmap
+- Docs/PRODUCT_VISION.md — historical desktop-first vision (superseded for product delivery)
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
-- Docs/ROADMAP.md — M0 through M9, implementation gates
+- Docs/ROADMAP.md — archived desktop M0–M9 roadmap, NOT active product delivery
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
 - Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
