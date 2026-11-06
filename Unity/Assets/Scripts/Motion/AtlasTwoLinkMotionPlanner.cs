@@ -36,6 +36,7 @@ namespace MagicMirror.Motion
         public AtlasRigidRegionCommand lower;
         public long sourceFrameId;
         public long sourceTimestampMs;
+        public int streamSessionId;
         public TrackedTwoLinkLimb limb;
         public float flexionDegrees;
         public bool unreachableTargetClamped;
@@ -137,6 +138,7 @@ namespace MagicMirror.Motion
                 },
                 sourceFrameId = frame.frameId,
                 sourceTimestampMs = frame.timestampMs,
+                streamSessionId = frame.streamSessionId,
                 limb = limb,
                 flexionDegrees = solution.flexionDegrees,
                 unreachableTargetClamped = solution.targetDistanceClamped,
