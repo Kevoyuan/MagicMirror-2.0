@@ -73,6 +73,7 @@ namespace MagicMirror.Motion
         private BodySimilarityCalibration frozen3DCalibration;
         private long last3DFrameId = -1;
         private long last3DTimestampMs = -1;
+        private int authorized3DStreamSessionId;
         [Header("Reviewed 3D diagnostic only (no camera alignment)")]
         [SerializeField, Range(0f, 20f)] private float minLimbFlexionDegrees = 0f;
         [SerializeField, Range(40f, 175f)] private float maxLimbFlexionDegrees = 150f;
@@ -114,6 +115,7 @@ namespace MagicMirror.Motion
                 capture.FirstFrameId < 0 ||
                 capture.LastFrameId <= capture.FirstFrameId ||
                 capture.LastTimestampMs <= capture.FirstTimestampMs ||
+                capture.StreamSessionId <= 0 ||
                 float.IsNaN(capture.MaximumJointDriftInShoulderWidths) ||
                 capture.MaximumJointDriftInShoulderWidths < 0f ||
                 capture.MaximumJointDriftInShoulderWidths > 0.06f ||
@@ -124,6 +126,7 @@ namespace MagicMirror.Motion
             frozen3DCalibration = frozenCalibration;
             last3DFrameId = capture.LastFrameId;
             last3DTimestampMs = capture.LastTimestampMs;
+            authorized3DStreamSessionId = capture.StreamSessionId;
             lastPoseTime = Time.realtimeSinceStartup;
             reviewed3DPreviewRequested = true;
             reviewed3DPreviewAuthorized = true;
@@ -139,6 +142,7 @@ namespace MagicMirror.Motion
             reviewed3DPreviewAuthorized = false;
             frozen3DCalibration = default(BodySimilarityCalibration);
             last3DFrameId = last3DTimestampMs = -1;
+            authorized3DStreamSessionId = 0;
             hasPose = false;
             if (atlasContainer != null) atlasContainer.SetActive(false);
         }
@@ -514,7 +518,8 @@ namespace MagicMirror.Motion
         private void OnReviewed3DPreviewFrame(PoseFrame frame)
         {
             if (!reviewed3DPreviewAuthorized || atlasContainer == null ||
-                frame == null || !frame.IsValid || frame.demo || frame.mirrored)
+                frame == null || !frame.IsValid || frame.demo || frame.mirrored ||
+                frame.streamSessionId != authorized3DStreamSessionId)
             {
                 Hide3DPreview();
                 return;
@@ -666,7 +671,8 @@ namespace MagicMirror.Motion
                     maxLimbFlexionDegrees, out planned) ||
                 !planned.isValid ||
                 planned.sourceFrameId != frame.frameId ||
-                planned.sourceTimestampMs != frame.timestampMs)
+                planned.sourceTimestampMs != frame.timestampMs ||
+                planned.streamSessionId != authorized3DStreamSessionId)
                 return false;
 
             SegmentMotion upperMotion, lowerMotion;
