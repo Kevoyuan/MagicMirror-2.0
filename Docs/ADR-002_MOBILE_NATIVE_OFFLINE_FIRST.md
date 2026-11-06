@@ -1,8 +1,8 @@
-# ADR-002 — Mobile-native, offline-first MagicMirror as the primary product
+# ADR-002 — Mobile-native, offline-first MagicMirror as the only shipping product
 
-**Status:** Proposed (product direction provided on 2026-11-06; implementation not started)
-**Scope:** User-facing mobile experience. Historical desktop Unity + Python source remains a research/reference implementation, not a phone runtime dependency.
-**Supersedes for new product delivery:** Desktop-first assumptions in PRODUCT_VISION.md, ARCHITECTURE.md and ROADMAP.md. Does NOT supersede ADR-001's MediaPipe-only principle.
+**Status:** Accepted product/platform decision (2026-11-06); native implementation NOT started.
+**Scope:** Smartphone-only product for iOS and Android. No Windows/macOS desktop application, desktop release or desktop feature parity is planned. Historical Unity + Python source may be retained as reference/test evidence, NOT a phone runtime dependency.
+**Supersedes for all new product delivery:** Desktop-first assumptions and release gates in PRODUCT_VISION.md, ARCHITECTURE.md and ROADMAP.md. Does NOT supersede ADR-001's MediaPipe-only principle.
 
 ## Product contract — the actual user's request
 
@@ -28,10 +28,12 @@ capabilities on every handset. No wearer/body-mounted sensor.
 
 ## Architectural decision
 
-The end-user application is **native to iOS/Android**, not a remote
+The ONLY end-user application is **native to iOS/Android**, not a remote
 desktop screen, WebRTC streamed Unity scene, embedded browser requiring a
 server, nor a Python process. The existing Unity 6.3/Python desktop
-proof-of-concept is NOT included in the mobile binary.
+proof-of-concept is NOT included in the mobile binary. No desktop application
+will be shipped or maintained as a parallel product. Developers may still
+use desktop tools to BUILD or TEST phone apps; users will never need them.
 
 The pipeline owns exactly **one camera** and one frame identity:
 
@@ -155,11 +157,12 @@ be reconstructed from monocular RGB. Use public-facing language like
 - Include camera consent, local-only processing, attribution and a
   permanently accessible "illustrative, nonmedical" explanation.
 
-## Open questions (do not block first proof)
+## Implementation choices not yet decided (do not change mobile-only scope)
 
-- First shipping platform is provisionally **iOS**, since one native
-  device family simplifies camera/GPU integration, with Android as a
-  planned second frontend. User has not explicitly selected a platform.
+- First implementation platform is provisionally **iOS**, since one native
+  device family simplifies camera/GPU integration. **Android is the second
+  smartphone platform**, not a desktop fallback. The user has confirmed
+  phone-only scope, but has not explicitly selected the first OS.
 - ARKit-first vs AVFoundation+Metal-first camera adapter should be
   benchmarked against frame latency/3D projection rather than guessed.
 - 3D anatomical reference rig complexity and bundle size depend on
@@ -178,7 +181,11 @@ be reconstructed from monocular RGB. Use public-facing language like
 - `Tools/ci/csharp_kinematics/` and M4/M5 tests: preserve as algorithm
   specifications/parity vectors; port math and reproduce tests in the
   mobile implementation rather than importing Unity C# code blindly.
-- M6 desktop release gate becomes superseded for the user-facing mobile
-  target; retain desktop roadmap only as a clearly labelled legacy plan.
+- All desktop release gates M2/M6–M9 are archived and will NOT be
+  developed further toward a Windows/macOS deliverable. Retain the old
+  desktop roadmap only as clearly labelled historical research context.
+- All future features, PRs and acceptance gates must advance the standalone
+  phone runtime or its offline development/validation pipeline.
 
+**Decision is final for product scope; implementation remains pending.**
 No mobile runtime or actual app is claimed to exist by this ADR.
