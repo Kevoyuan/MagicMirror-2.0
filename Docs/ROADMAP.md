@@ -1,5 +1,7 @@
 # MagicMirror 2.0 — Delivery Roadmap (v2.1)
 
+> **Historical desktop delivery plan.** The newly proposed primary target is a native offline mobile app (not an embedded or remotely streamed Unity game). See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [Mobile Native Roadmap](MOBILE_NATIVE_ROADMAP.md). The M0–M9 milestones below track the previously implemented desktop research prototype; they are **not** mobile delivery acceptance criteria and have not been marked complete by this proposal.
+
 **Last revised:** 2026-11-06.  
 **Current baseline:** `new clean repository, main branch` / Phase 4B source committed; core Unity Editor and real-camera validations **not yet executed**. This roadmap is a target, **not** a list of shipped features.
 
