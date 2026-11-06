@@ -14,6 +14,8 @@ final class MirrorViewModel {
 
     private var isActive = false
     private var mostRecentTimestamp = -1
+    private var lastPoseReceiptUptime = 0.0
+    private var expiryTask: Task<Void, Never>?
 
     init() {
         pipeline.onPose = { [weak self] result in
@@ -25,6 +27,9 @@ final class MirrorViewModel {
                 self.mostRecentTimestamp = result.timestampMilliseconds
             }
             self.snapshot = result
+            if result != nil {
+                self.lastPoseReceiptUptime = ProcessInfo.processInfo.systemUptime
+            }
         }
         pipeline.onPhase = { [weak self] phase in
             guard let self, self.isActive else { return }
@@ -39,12 +44,26 @@ final class MirrorViewModel {
         isActive = true
         isPaused = false
         mostRecentTimestamp = -1
+        expiryTask?.cancel()
+        expiryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(120))
+                guard let self, self.isActive else { return }
+                if self.snapshot != nil &&
+                   ProcessInfo.processInfo.systemUptime - self.lastPoseReceiptUptime > 0.30 {
+                    self.snapshot = nil
+                    self.phase = .searching
+                }
+            }
+        }
         pipeline.start()
     }
 
     func stop() {
         guard isActive else { return }
         isActive = false
+        expiryTask?.cancel()
+        expiryTask = nil
         snapshot = nil
         phase = .idle
         pipeline.stop()
