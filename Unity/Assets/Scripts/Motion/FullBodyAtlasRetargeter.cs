@@ -83,6 +83,17 @@ namespace MagicMirror.Motion
         }
 
         /// <summary>
+        /// Ensures the opt-in capture coordinator observes exactly the
+        /// SAME single-camera TCP receiver and intact reviewed atlas profile.
+        /// </summary>
+        public bool UsesPoseStreamAndProfile(
+            PoseStreamReceiver source, FullBodyAtlasProfile atlasProfile)
+        {
+            return poseSource != null && ReferenceEquals(poseSource, source) &&
+                   profile != null && ReferenceEquals(profile, atlasProfile);
+        }
+
+        /// <summary>
         /// Explicit review gate: the normal 2D renderer is not switched to
         /// model-world motion until ONE real intact FBX has been reviewed,
         /// the session has collected stable real PoseFrames, and an operator
