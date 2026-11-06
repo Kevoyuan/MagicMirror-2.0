@@ -51,6 +51,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ROADMAP.md — M0 through M9, implementation gates
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
+- Docs/M3_WHOLE_ATLAS_AUDIT.md — intact skeletal FBX provenance and motion-binding inventory audit
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries
