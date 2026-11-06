@@ -1,5 +1,7 @@
 # MagicMirror 2.0 — Interactive Anatomical AR Mirror
 
+> **Proposed mobile-native product direction (2026-11-06):** Open a phone app, point its camera at one person, and see a semitransparent **standard reference** skeleton follow movement automatically. The **future phone app** will run on-device with native iOS/Android camera, MediaPipe, GPU rendering and no Unity/Python sidecar/server, desktop connection, cloud or wearable at runtime. This is a **proposal, not yet implemented mobile code**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [Mobile Roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The source and setup below describe the **existing desktop research prototype**.
+
 **Make human anatomy visible, interactive, and understandable through natural body movement.**
 
 A **MediaPipe-only**, local-first, single-person educational anatomy mirror.
