@@ -50,6 +50,7 @@ struct SkinnedAtlasDrawBatch {
     let cameraMatrices: [simd_float4x4]
     let cameraParameters: SIMD4<Float> // fx, fy, cx, cy
     let viewportParameters: SIMD4<Float> // scale, xCrop, yCrop, depthRange
+    let sectionPlane: SIMD4<Float>
 
     func matches(
         frame: PoseSnapshot,
@@ -74,7 +75,8 @@ struct SkinnedAtlasDrawBatch {
         influences: [AtlasSkinInfluence],
         viewport: CGSize,
         focus: AnatomyFocus,
-        opacity: Float
+        opacity: Float,
+        sectionCut: AnatomySectionCut? = nil
     ) -> SkinnedAtlasDrawBatch? {
         guard (try? hierarchy.validateForUse()) != nil,
               atlas.manifest.reviewedForDistribution,
@@ -182,7 +184,8 @@ struct SkinnedAtlasDrawBatch {
             cameraParameters: SIMD4(
                 intrinsics.fx, intrinsics.fy, intrinsics.cx, intrinsics.cy
             ),
-            viewportParameters: SIMD4(scale, dx, dy, 0)
+            viewportParameters: SIMD4(scale, dx, dy, 0),
+            sectionPlane: sectionCut?.plane ?? SIMD4<Float>(repeating: 0)
         )
     }
 }
