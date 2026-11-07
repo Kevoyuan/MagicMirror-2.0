@@ -61,6 +61,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var cachedSkinVertexBuffer: MTLBuffer?
         private var videoPipeline: MTLRenderPipelineState?
         private var textureCache: CVMetalTextureCache?
+        private var whiteSilhouette: MTLTexture?
 
         private var alignedFrame: AlignedPoseVideoFrame?
         private var proxyPose: PoseSnapshot?
@@ -76,6 +77,22 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             cachedSkinVertexBuffer = nil
             self.device = device
             self.commands = device.makeCommandQueue()
+            // A missing MediaPipe mask retains the existing proxy output;
+            // the 1x1 confidence=1 texture is not a fabricated silhouette.
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+                pixelFormat: .r8Unorm, width: 1, height: 1,
+                mipmapped: false
+            )
+            descriptor.usage = [.shaderRead]
+            if let white = device.makeTexture(descriptor: descriptor) {
+                var value: UInt8 = 255
+                white.replace(
+                    region: MTLRegionMake2D(0, 0, 1, 1),
+                    mipmapLevel: 0,
+                    withBytes: &value, bytesPerRow: 1
+                )
+                whiteSilhouette = white
+            }
             guard let shaders = device.makeDefaultLibrary(),
                   let boneVertex = shaders.makeFunction(name: "boneVertex"),
                   let boneFragment = shaders.makeFunction(name: "boneFragment"),
@@ -226,6 +243,38 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             return result
         }
 
+        private func makeSilhouetteTexture(
+            _ mask: PoseSilhouetteMask,
+            device: MTLDevice
+        ) -> MTLTexture? {
+            let pixelFormat: MTLPixelFormat
+            switch mask.storage {
+            case .uint8: pixelFormat = .r8Unorm
+            case .float32: pixelFormat = .r32Float
+            }
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+                pixelFormat: pixelFormat,
+                width: mask.width, height: mask.height,
+                mipmapped: false
+            )
+            descriptor.usage = [.shaderRead]
+            guard let texture = device.makeTexture(
+                descriptor: descriptor
+            ) else { return nil }
+            mask.pixels.withUnsafeBytes { source in
+                guard let pointer = source.baseAddress else { return }
+                texture.replace(
+                    region: MTLRegionMake2D(
+                        0, 0, mask.width, mask.height
+                    ),
+                    mipmapLevel: 0,
+                    withBytes: pointer,
+                    bytesPerRow: mask.width * mask.storage.bytesPerPixel
+                )
+            }
+            return texture
+        }
+
         func draw(in view: MTKView) {
             guard let pass = view.currentRenderPassDescriptor,
                   let drawable = view.currentDrawable,
@@ -273,6 +322,33 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             // Never render model-only geometry over a mismatched frame.
             if canDrawAnatomy,
                let frame = alignedFrame {
+                // Frame association was verified by the single captured
+                // video frame; its optional mask is copied from the SAME
+                // PoseLandmarkerResult. UVs use the matched video crop.
+                guard let crop = VideoAspectFillCrop.bounds(
+                    source: frame.pose.imageSize,
+                    viewport: view.bounds.size
+                ), let maskTexture = frame.silhouette.flatMap({
+                    makeSilhouetteTexture($0, device: device)
+                }) ?? whiteSilhouette else {
+                    encoder.endEncoding()
+                    buffer.present(drawable)
+                    buffer.commit()
+                    return
+                }
+                var silhouetteBounds = crop
+                var viewportSize = SIMD2<Float>(
+                    Float(view.bounds.width), Float(view.bounds.height)
+                )
+                encoder.setFragmentTexture(maskTexture, index: 1)
+                encoder.setFragmentBytes(
+                    &silhouetteBounds,
+                    length: MemoryLayout<SIMD4<Float>>.stride, index: 1
+                )
+                encoder.setFragmentBytes(
+                    &viewportSize,
+                    length: MemoryLayout<SIMD2<Float>>.stride, index: 2
+                )
                 var drewSkinnedAtlas = false
                 if let skin = skinnedAtlasBatch,
                    skin.matches(
