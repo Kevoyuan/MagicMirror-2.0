@@ -428,7 +428,8 @@ final class MirrorViewModel {
 
     func isAnatomyLayerVisible(_ layer: AnatomyDisplayLayer) -> Bool {
         layer == .referenceProxy
-            ? visibleAnatomyLayers.isEmpty
+            ? (reviewedSkinnedFrames.isEmpty &&
+               reviewedRigidFrames.isEmpty)
             : visibleAnatomyLayers.contains(layer)
     }
 
