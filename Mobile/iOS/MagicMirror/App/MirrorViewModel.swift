@@ -47,6 +47,9 @@ final class MirrorViewModel {
                         > self.mostRecentTimestamp else { return }
                 self.mostRecentTimestamp = incoming.pose.timestampMilliseconds
                 let smooth = self.temporalFilter.apply(incoming.pose)
+                if self.snapshot?.imageSize != smooth?.imageSize {
+                    self.resetAutomaticCamera()
+                }
                 self.snapshot = smooth
                 let coverage = smooth?.coverage ?? .none
                 if self.currentCoverage != coverage {
@@ -230,6 +233,13 @@ final class MirrorViewModel {
                       self.isActive, !self.isPaused,
                       self.cameraEstimateEpoch == epoch else { return }
                 self.cameraEstimateTask = nil
+                guard self.snapshot?.imageSize == frame.imageSize,
+                      self.mostRecentTimestamp >= frame.timestampMilliseconds,
+                      self.mostRecentTimestamp -
+                        frame.timestampMilliseconds <= 750 else {
+                    self.automaticCameraCandidate = nil
+                    return
+                }
                 self.automaticCameraCandidate = result
             }
         }
