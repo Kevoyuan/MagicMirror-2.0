@@ -86,7 +86,7 @@ struct AnatomyLayersSheet: View {
                 .font(.system(.title2, design: .serif, weight: .semibold))
                 .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Explore the systems of the body. Currently, only the pose-driven reference proxy is available.")
+            Text("Explore six separately reviewed anatomical systems as their approved offline resources become available. The illustrative reference proxy remains the fallback.")
                 .font(.subheadline)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -107,7 +107,7 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Available structures appear first. Planned systems cannot be switched on until reviewed models and camera registration are validated.")
+            Text("Tap a verified system to display it. Only independently reviewed, camera-registered 3D resources unlock; unavailable systems remain locked.")
                 .font(.footnote)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -119,57 +119,69 @@ struct AnatomyLayersSheet: View {
     }
 
     private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            Image(systemName: layerSymbol(layer))
-                .font(.title3)
-                .foregroundStyle(layer.isAvailable
+        let available = model.canSelectAnatomyLayer(layer)
+        let selected = model.selectedAnatomyLayer == layer
+        return Button {
+            model.selectAnatomyLayer(layer)
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: layerSymbol(layer))
+                    .font(.title3)
+                    .foregroundStyle(available
+                        ? LeonardoPalette.verdigris
+                        : LeonardoPalette.mutedInk)
+                    .frame(width: 30, height: 44)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(LocalizedStringKey(layer.title))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LeonardoPalette.ink)
+                    Text(LocalizedStringKey(layer.detail))
+                        .font(.caption)
+                        .foregroundStyle(LeonardoPalette.mutedInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 3)
+
+                VStack(spacing: 4) {
+                    Image(systemName: available
+                        ? (selected ? "checkmark.circle.fill" : "circle")
+                        : "lock.fill")
+                        .font(.subheadline)
+                    Text(available
+                        ? (selected ? "SELECTED" : "READY") : "LOCKED")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(0.5)
+                }
+                .foregroundStyle(available
                     ? LeonardoPalette.verdigris
                     : LeonardoPalette.mutedInk)
-                .frame(width: 30, height: 44)
+                .frame(minWidth: 63)
                 .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(LocalizedStringKey(layer.title))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(LeonardoPalette.ink)
-                Text(LocalizedStringKey(layer.detail))
-                    .font(.caption)
-                    .foregroundStyle(LeonardoPalette.mutedInk)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Spacer(minLength: 3)
-
-            VStack(spacing: 4) {
-                Image(systemName: layer.isAvailable
-                      ? "checkmark.circle.fill" : "lock.fill")
-                    .font(.subheadline)
-                Text(layer.isAvailable
-                    ? LocalizedStringKey("REFERENCE") : LocalizedStringKey("PLANNED"))
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.5)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                available
+                    ? LeonardoPalette.agedPaper.opacity(0.50)
+                    : LeonardoPalette.ivory.opacity(0.43),
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(LeonardoPalette.copper.opacity(0.26),
+                                  lineWidth: 0.7)
             }
-            .foregroundStyle(layer.isAvailable
-                ? LeonardoPalette.verdigris
-                : LeonardoPalette.mutedInk)
-            .frame(minWidth: 63)
-            .accessibilityHidden(true)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            layer.isAvailable
-                ? LeonardoPalette.agedPaper.opacity(0.50)
-                : LeonardoPalette.ivory.opacity(0.43),
-            in: RoundedRectangle(cornerRadius: 12)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(LeonardoPalette.copper.opacity(0.26),
-                              lineWidth: 0.7)
-        }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
+        .disabled(!available)
+        .accessibilityLabel(layer.title)
+        .accessibilityHint(available
+            ? "Select an educational 3D reference system"
+            : "Requires independently reviewed and registered anatomy")
     }
 
     private var sectionStudies: some View {

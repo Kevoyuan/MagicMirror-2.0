@@ -26,10 +26,11 @@ enum AtlasSkinningPackage {
     static func load(
         bundle: Bundle = .main,
         atlas: VerifiedAnatomyAtlas,
-        hierarchy: AnatomyAtlasManifest
+        hierarchy: AnatomyAtlasManifest,
+        resourceBaseName: String = "skeleton_atlas"
     ) throws -> [AtlasSkinInfluence]? {
         guard let url = bundle.url(
-            forResource: "skeleton_atlas.skinning", withExtension: "json"
+            forResource: "\(resourceBaseName).skinning", withExtension: "json"
         ) else { return nil }
         let data = try Data(contentsOf: url, options: .mappedIfSafe)
         guard data.count <= 32_000_000 else { throw Failure.malformed }
