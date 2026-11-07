@@ -65,10 +65,30 @@ The planner does **NOT**:
 - provide an anatomical license or model hierarchy review;
 - prove it works in a real moving-person session.
 
-The separate reviewed camera projection layer and proper original
-model skin/attachment metadata are still needed. Do not wire the
-planner into the default Metal camera overlay without verifying the
-actual atlas identity, camera calibration and reprojection acceptance.
+A pure, fail-closed camera-space seam is now available in
+`CoherentAtlasCameraProjection.swift`. Before any rest vertex can be
+projected, it requires:
+
+- the exact **same source timestamp and image dimensions** as the
+  hierarchical pose;
+- explicitly reviewed source-camera extrinsics, never a guessed FOV;
+- an exact matching physical-lens intrinsic record;
+- the existing `BodyReprojectionGate` passing a same-frame landmark
+  P90 threshold no weaker than 3% of source image width;
+- a named reviewed bone ID in the coherent pose and a finite rest
+  vertex in the same atlas-root coordinate system.
+
+The projector composes atlas rest → articulated atlas point → estimated
+body world → calibrated RGB camera → source pixels → exact aspect-fill
+viewport. This is tested with **constructed** camera parameters and
+synthesized landmarks. It is **not** enabled in the default GPU renderer,
+because the reviewed mesh binding, dynamically validated real camera
+extrinsics, legal source rights and actual rig skin/vertex assignments
+are not yet available.
+
+Do not wire these helpers into the default Metal overlay without
+verifying the actual atlas identity, camera calibration and independent
+source-frame reprojection acceptance.
 
 ## Automated evidence and test plan
 
