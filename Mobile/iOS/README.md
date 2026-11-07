@@ -48,6 +48,11 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
 - `Calibration/CameraIntrinsicMatrixReader.swift`: on supported
   AVFoundation formats, read source-frame 3x3 intrinsic matrix; never
   synthesize focal length or copy a matrix from a different frame.
+- `Calibration/BodyCameraPoseEstimator.swift`: experimental automatic
+  local 6-DOF camera/body transform fit from same-frame real intrinsics
+  plus confident 2D↔3D landmarks; outputs only a gated transform.
+- `Tools/pose_math_smoke.swift`: **executed** synthetic reference
+  registration and corruption rejection in the macOS Xcode CI job.
 - `Calibration/BodyCameraProjection.swift`: pure camera-space pinhole
   projection and visible-landmark P90 registration check requiring an
   independently supplied body-to-camera transform.
