@@ -8,6 +8,18 @@ import Foundation
 struct AlignedPoseVideoFrame {
     let pose: PoseSnapshot
     let pixelBuffer: CVPixelBuffer
+    /// Optional foreground mask copied from the exact same result frame.
+    let silhouette: PoseSilhouetteMask?
+
+    init(
+        pose: PoseSnapshot,
+        pixelBuffer: CVPixelBuffer,
+        silhouette: PoseSilhouetteMask? = nil
+    ) {
+        self.pose = pose
+        self.pixelBuffer = pixelBuffer
+        self.silhouette = silhouette
+    }
 }
 
 /// Bounded, session-scoped pixel buffer ownership while MediaPipe performs
