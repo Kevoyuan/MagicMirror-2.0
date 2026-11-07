@@ -8,6 +8,7 @@ struct CoherentAtlasTriangle {
     let boneId: String
     let sourceHierarchyPath: String
     let vertices: [ProjectedAtlasRestPoint]
+    let cameraNormals: [SIMD3<Float>]
 }
 
 /// Fail-closed mesh-to-rig adapter. No draw commands are emitted unless the
@@ -82,19 +83,27 @@ enum CoherentAtlasMeshProjection {
             let end = part.vertexOffset + part.vertexCount
             for index in stride(from: part.vertexOffset, to: end, by: 3) {
                 var projected: [ProjectedAtlasRestPoint] = []
+                var normals: [SIMD3<Float>] = []
                 projected.reserveCapacity(3)
+                normals.reserveCapacity(3)
                 for j in index..<(index + 3) {
                     guard let point = projector.project(
                         boneId: binding.id,
                         restPoint: atlas.vertices[j].position,
                         viewport: viewport
+                    ),
+                    let normal = projector.cameraNormal(
+                        boneId: binding.id,
+                        restNormal: atlas.vertices[j].normal
                     ) else { return nil }
                     projected.append(point)
+                    normals.append(normal)
                 }
                 output.append(CoherentAtlasTriangle(
                     boneId: binding.id,
                     sourceHierarchyPath: part.sourceHierarchyPath,
-                    vertices: projected
+                    vertices: projected,
+                    cameraNormals: normals
                 ))
             }
         }
