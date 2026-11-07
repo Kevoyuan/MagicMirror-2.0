@@ -25,14 +25,14 @@ try:
 except ImportError as exc:
     raise SystemExit("Run using Blender: blender -b --python ... -- ...") from exc
 
-SOURCE_REPOSITORY = "https://github.com/LluisV/Z-Anatomy"
-SOURCE_COMMIT = "6c7f9016bd5899ac8edafd31b9900c151df42ed6"
-SOURCE_PATH = "Resources/Models/FBX/SkeletalSystem100.fbx"
-SOURCE_GIT_BLOB = "7c62e45211bf3992bb7239170343e06e2b073865"
-SOURCE_BYTES = 41339660
+from atlas_sources import (
+    SOURCE_REPOSITORY,
+    SOURCE_COMMIT,
+    SYSTEM_SOURCES,
+    resource_base,
+)
+
 MAX_TRIANGLE_VERTICES = 180000
-MODEL_FILE = "skeleton_atlas.mmgeom"
-MANIFEST_FILE = "skeleton_atlas.manifest.json"
 
 
 def parse_args():
@@ -41,16 +41,19 @@ def parse_args():
         raise SystemExit("Expected -- before exporter arguments")
     parser = argparse.ArgumentParser()
     parser.add_argument("--fbx", type=Path, required=True)
+    parser.add_argument("--system", choices=sorted(SYSTEM_SOURCES),
+                        default="skeleton")
     parser.add_argument("--review", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     return parser.parse_args(args[args.index("--") + 1:])
 
 
-def verify_source(path):
+def verify_source(path, system):
     payload = path.read_bytes()
     header = b"blob " + str(len(payload)).encode("ascii") + b"\0"
     actual = hashlib.sha1(header + payload).hexdigest()
-    if len(payload) != SOURCE_BYTES or actual != SOURCE_GIT_BLOB:
+    _, expected_bytes, expected_blob = SYSTEM_SOURCES[system]
+    if len(payload) != expected_bytes or actual != expected_blob:
         raise ValueError(
             f"Wrong FBX source: bytes={len(payload)}, git_blob={actual}"
         )
@@ -65,8 +68,11 @@ def full_hierarchy_path(obj):
     return "/".join(reversed(elements))
 
 
-def checked_review(path):
+def checked_review(path, system):
     data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("anatomicalSystem", "skeleton") != system:
+        raise ValueError("Reviewed system identity does not match source FBX")
+    weights_reviewed = data.get("reviewedJointWeights") is True
     if data.get("reviewedForDistribution") is not True:
         raise ValueError("Human redistribution/license review is required")
     if data.get("reviewedJointBindings") is not True:
@@ -100,13 +106,26 @@ def checked_review(path):
                 raise ValueError(f"Invalid reviewed rest anchor: {field}, {path}")
         if math.dist(entry["restFrom"], entry["restTo"]) <= 1e-5:
             raise ValueError(f"Coincident reviewed rest anchors: {path}")
+        if weights_reviewed:
+            mapping = entry.get("vertexGroupToBoneId")
+            if not isinstance(mapping, dict) or not mapping or any(
+                not isinstance(k, str) or not k.strip()
+                or not isinstance(v, str) or not v.strip()
+                for k, v in mapping.items()
+            ):
+                raise ValueError(f"Reviewed skin group mapping required: {path}")
     return data, {entry["sourceHierarchyPath"]: entry for entry in bindings}
 
 
 def main():
     args = parse_args()
-    verify_source(args.fbx)
-    review, bindings = checked_review(args.review)
+    verify_source(args.fbx, args.system)
+    review, bindings = checked_review(args.review, args.system)
+    source_path, _, _ = SYSTEM_SOURCES[args.system]
+    base = resource_base(args.system)
+    model_file = f"{base}.mmgeom"
+    manifest_file = f"{base}.manifest.json"
+    export_skin = review.get("reviewedJointWeights") is True
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     bpy.ops.import_scene.fbx(filepath=str(args.fbx))
@@ -127,6 +146,7 @@ def main():
     depsgraph = bpy.context.evaluated_depsgraph_get()
     raw = bytearray()
     parts = []
+    skin_vertices = []
     count = 0
     for source_path in sorted(source_meshes):
         obj = source_meshes[source_path]
@@ -143,6 +163,45 @@ def main():
             for triangle in mesh.loop_triangles:
                 for vid in triangle.vertices:
                     v = mesh.vertices[vid]
+                    if export_skin:
+                        group_map = entry["vertexGroupToBoneId"]
+                        reviewed_weights = []
+                        for influence in v.groups:
+                            if influence.weight <= 1e-6:
+                                continue
+                            source_group = obj.vertex_groups[influence.group].name
+                            if source_group not in group_map:
+                                raise ValueError(
+                                    f"Unreviewed source vertex group: "
+                                    f"{source_path}, {source_group}"
+                                )
+                            weight = float(influence.weight)
+                            if not math.isfinite(weight):
+                                raise ValueError("Nonfinite authored joint weight")
+                            reviewed_weights.append(
+                                (group_map[source_group], weight)
+                            )
+                        if not 1 <= len(reviewed_weights) <= 4:
+                            raise ValueError(
+                                f"Requires 1–4 audited vertex groups at "
+                                f"{source_path} vertex {vid}"
+                            )
+                        total = sum(value for _, value in reviewed_weights)
+                        if not 0.98 <= total <= 1.02:
+                            raise ValueError(
+                                f"Unnormalized authored weights at "
+                                f"{source_path} vertex {vid}: {total}"
+                            )
+                        reviewed_weights.sort(key=lambda item: -item[1])
+                        ids = [item[0] for item in reviewed_weights]
+                        weights = [item[1] / total for item in reviewed_weights]
+                        while len(ids) < 4:
+                            ids.append(ids[0])
+                            weights.append(0.0)
+                        skin_vertices.append({
+                            "boneIds": ids,
+                            "weights": weights,
+                        })
                     p = mat @ v.co
                     normal = normal_matrix @ v.normal
                     if normal.length_squared <= 1e-9:
@@ -178,7 +237,7 @@ def main():
     args.out.mkdir(parents=True, exist_ok=True)
     binary = b"MMATLAS1" + struct.pack("<I", count) + raw
     model_sha = hashlib.sha256(binary).hexdigest()
-    (args.out / MODEL_FILE).write_bytes(binary)
+    (args.out / model_file).write_bytes(binary)
     modification_notes = review["modificationNotes"] + [
         "Triangulated all reviewed source mesh surfaces; preserved names, "
         "hierarchy paths and source world-space coordinates",
@@ -187,8 +246,9 @@ def main():
         "schemaVersion": 1,
         "sourceRepository": SOURCE_REPOSITORY,
         "sourceRevision": SOURCE_COMMIT,
-        "sourcePath": SOURCE_PATH,
-        "modelFile": MODEL_FILE,
+        "sourcePath": source_path,
+        "anatomicalSystem": args.system,
+        "modelFile": model_file,
         "modelSHA256": model_sha,
         "licenseIds": ["CC BY-SA 2.1 Japan", "CC BY-SA 4.0"],
         "attribution": [
@@ -200,14 +260,26 @@ def main():
         "reviewedJointBindings": True,
         "parts": parts,
     }
-    (args.out / MANIFEST_FILE).write_text(
+    (args.out / manifest_file).write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),
         encoding="utf-8"
     )
-    (args.out / "skeleton_atlas.ATTRIBUTION.txt").write_text(
+    if export_skin:
+        skinning = {
+            "schemaVersion": 1,
+            "sourceRevision": SOURCE_COMMIT,
+            "modelSHA256": model_sha,
+            "reviewedJointWeights": True,
+            "vertices": skin_vertices,
+        }
+        (args.out / f"{base}.skinning.json").write_text(
+            json.dumps(skinning, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
+    (args.out / f"{base}.ATTRIBUTION.txt").write_text(
         "BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan\n"
         "Z-Anatomy — The open source atlas of anatomy — CC BY-SA 4.0\n"
-        f"Source: {SOURCE_REPOSITORY}, commit {SOURCE_COMMIT}, {SOURCE_PATH}\n"
+        f"Source: {SOURCE_REPOSITORY}, commit {SOURCE_COMMIT}, {source_path}\n"
         "Modifications:\n" + "\n".join(f"- {m}" for m in modification_notes) +
         "\nSee respective source licenses before distribution.\n",
         encoding="utf-8"
@@ -216,7 +288,7 @@ def main():
     # Blender export cannot claim success for an inconsistent binary/manifest.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from verify_atlas_package import verify_package
-    verify_package(args.out)
+    verify_package(args.out, system=args.system)
     print(f"Built {count} vertices / {len(parts)} reviewed meshes, sha256={model_sha}")
     print("Asset is developer-produced, NOT a human/device anatomical validation.")
 
