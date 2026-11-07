@@ -17,6 +17,7 @@ final class MirrorViewModel {
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
     var reviewedSkinnedFrames: [ReviewedSkinnedLayerFrame] = []
+    var reviewedRigidFrames: [ReviewedRigidLayerFrame] = []
     var referenceSelection: AnatomyReferenceSelection?
     var reviewedPartSelection: ReviewedAnatomySelection?
     /// A system is selectable only after its own approved registered
@@ -72,6 +73,7 @@ final class MirrorViewModel {
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
                 self.reviewedSkinnedFrames = []
+                self.reviewedRigidFrames = []
                 let reviewedCamera = smooth.flatMap {
                     self.reviewedCameraForFrame?($0)
                 }
@@ -103,6 +105,12 @@ final class MirrorViewModel {
                         self.reviewedSkinnedFrames.append(
                             ReviewedSkinnedLayerFrame(
                                 layer: layer, batch: skinned
+                            )
+                        )
+                    } else if let rigid {
+                        self.reviewedRigidFrames.append(
+                            ReviewedRigidLayerFrame(
+                                layer: layer, batch: rigid
                             )
                         )
                     }
@@ -166,6 +174,7 @@ final class MirrorViewModel {
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
                 self.reviewedSkinnedFrames = []
+                self.reviewedRigidFrames = []
                 self.referenceSelection = nil
                 self.reviewedPartSelection = nil
                 self.canSectionReviewedAtlas = false
@@ -194,6 +203,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         reviewedSkinnedFrames = []
+        reviewedRigidFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -220,6 +230,7 @@ final class MirrorViewModel {
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
                     self.reviewedSkinnedFrames = []
+                    self.reviewedRigidFrames = []
                     self.referenceSelection = nil
                     self.reviewedPartSelection = nil
                     self.canSectionReviewedAtlas = false
@@ -274,6 +285,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         reviewedSkinnedFrames = []
+        reviewedRigidFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -300,6 +312,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         reviewedSkinnedFrames = []
+        reviewedRigidFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -312,6 +325,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         reviewedSkinnedFrames = []
+        reviewedRigidFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -392,7 +406,8 @@ final class MirrorViewModel {
             return
         }
         reviewedPartSelection = nil
-        guard calibratedAtlasBatch == nil else {
+        guard calibratedAtlasBatch == nil,
+              reviewedRigidFrames.isEmpty else {
             referenceSelection = nil
             return
         }
@@ -431,6 +446,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         reviewedSkinnedFrames = []
+        reviewedRigidFrames = []
         canSectionReviewedAtlas = false
         activeSection = nil
         referenceSelection = nil
@@ -451,6 +467,7 @@ final class MirrorViewModel {
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
             reviewedSkinnedFrames = []
+            reviewedRigidFrames = []
             referenceSelection = nil
             reviewedPartSelection = nil
             canSectionReviewedAtlas = false
