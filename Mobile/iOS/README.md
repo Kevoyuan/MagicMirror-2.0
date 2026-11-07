@@ -292,7 +292,17 @@ followed by actual iPhone visual layout, VoiceOver/Dynamic Type and
 camera/overlay latency testing. This source update does **not** prove
 real-device presentation or complete reviewed anatomy.
 
-See [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
+The **whole-app native UX** now also includes an optional Field Notes sheet with
+Use / Privacy / About pages, a simple on-device diagnostics toggle, and a pure
+`MirrorPresentationState` mapper that prevents paused/stale pose from
+masquerading as live tracking or blocking camera-permission recovery.
+`MirrorPresentationStateTests.swift` contains deterministic UI-state tests.
+None of these additions requires cloud access, a second camera or a new
+navigation tab. The guide describes current privacy behavior as source-level
+claims; App Store and third-party SDK disclosures still require review.
+
+See the [complete iPhone UI journey handoff](../../Docs/IOS_UI_USER_JOURNEYS.md)
+and [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
 
 ## Coherent atlas triangle adapter (research source)
 
