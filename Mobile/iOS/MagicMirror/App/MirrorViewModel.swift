@@ -16,6 +16,9 @@ final class MirrorViewModel {
     var proxyRigPose: PoseSnapshot?
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+    var activeSection: AnatomySectionPlane?
+    var sectionOffset: Double = 0
+    var canSectionReviewedAtlas = false
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
@@ -63,9 +66,15 @@ final class MirrorViewModel {
                     },
                     viewport: self.viewportSize,
                     focus: self.focus,
-                    opacity: Float(self.opacity)
+                    opacity: Float(self.opacity),
+                    section: self.activeSection,
+                    sectionOffset: Float(self.sectionOffset)
                 )
                 self.skinnedAtlasBatch = self.reviewedAtlas?.skinnedFrame
+                self.canSectionReviewedAtlas = self.skinnedAtlasBatch != nil
+                if !self.canSectionReviewedAtlas {
+                    self.activeSection = nil
+                }
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer
@@ -94,6 +103,8 @@ final class MirrorViewModel {
                 self.reviewedAtlas?.reset()
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.canSectionReviewedAtlas = false
+                self.activeSection = nil
                 self.resetAutomaticCamera()
             }
         }
@@ -117,6 +128,8 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
         reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
@@ -136,6 +149,10 @@ final class MirrorViewModel {
                     self.reviewedAtlas?.reset()
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
+                    self.canSectionReviewedAtlas = false
+                    self.activeSection = nil
+                self.canSectionReviewedAtlas = false
+                self.activeSection = nil
                     self.resetAutomaticCamera()
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
@@ -173,6 +190,8 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
         reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
@@ -192,6 +211,8 @@ final class MirrorViewModel {
         reviewedAtlas?.reset()
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
     }
 
     func setViewportSize(_ size: CGSize) {
@@ -199,6 +220,8 @@ final class MirrorViewModel {
         viewportSize = size
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
     }
 
     private func resetAutomaticCamera() {
@@ -258,6 +281,8 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
             reviewedAtlas?.reset()
             deliveryMonitor.reset()
             deliveryReport = nil
