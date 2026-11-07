@@ -382,6 +382,17 @@ switching**, not a claim that all third-party anatomical systems have
 passed human source licensing, joint review, device calibration or
 iPhone performance checks.
 
+## Mobile-5 registered source mesh picking (2026-11-07)
+
+Implemented tap-time perspective-correct picking of currently skinned,
+source-attributed 3D mesh triangles. The picker respects bone weights,
+camera frame/crop, nearest surface depth and active half-space clip,
+and the actual Metal vertex shader highlights the verified part
+without reuploading geometry. A separate Leonardo note displays
+reviewed source display names. This is NOT observed human internal
+tissue: only legally/anatomically reviewed model source metadata
+qualifies. No unreviewed source is bundled or auto-unlocked.
+
 ## Native multi-system anatomy compositing (2026-11-07)
 
 Expanded the preexisting single-reviewed-system selector into
