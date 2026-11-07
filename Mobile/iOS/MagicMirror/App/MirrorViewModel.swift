@@ -12,6 +12,7 @@ final class MirrorViewModel {
     var alignedFrame: AlignedPoseVideoFrame?
     /// Geometry-only, fixed-length reference pose for this source frame.
     var proxyRigPose: PoseSnapshot?
+    var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
@@ -23,6 +24,10 @@ final class MirrorViewModel {
     private var lastPoseReceiptUptime = 0.0
     private var temporalFilter = PoseTemporalFilter()
     private var proxyRig = LiveProxyRigRetargeter()
+    private var reviewedAtlas: LiveReviewedAtlasRuntime?
+    private var reviewedAtlasLoad: Task<Void, Never>?
+    private var reviewedCameraForFrame: ((PoseSnapshot) -> ReviewedSourceCameraFrame?)?
+    private var viewportSize: CGSize = .zero
     private var deliveryMonitor = PoseDeliveryQualityMonitor()
     private var expiryTask: Task<Void, Never>?
 
@@ -36,6 +41,15 @@ final class MirrorViewModel {
                 let smooth = self.temporalFilter.apply(incoming.pose)
                 self.snapshot = smooth
                 self.proxyRigPose = self.proxyRig.update(smooth)
+                self.calibratedAtlasBatch = self.reviewedAtlas?.render(
+                    frame: smooth,
+                    reviewedCamera: smooth.flatMap {
+                        self.reviewedCameraForFrame?($0)
+                    },
+                    viewport: self.viewportSize,
+                    focus: self.focus,
+                    opacity: Float(self.opacity)
+                )
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer
@@ -57,6 +71,8 @@ final class MirrorViewModel {
                 self.alignedFrame = nil
                 self.proxyRigPose = nil
                 self.proxyRig.reset()
+                self.reviewedAtlas?.reset()
+                self.calibratedAtlasBatch = nil
             }
         }
         pipeline.onPhase = { [weak self] phase in
@@ -75,6 +91,8 @@ final class MirrorViewModel {
         temporalFilter.reset()
         proxyRig.reset()
         proxyRigPose = nil
+        calibratedAtlasBatch = nil
+        reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
         expiryTask?.cancel()
@@ -89,9 +107,25 @@ final class MirrorViewModel {
                     self.temporalFilter.reset()
                     self.proxyRig.reset()
                     self.proxyRigPose = nil
+                    self.reviewedAtlas?.reset()
+                    self.calibratedAtlasBatch = nil
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
                     self.phase = .searching
+                }
+            }
+        }
+        // Verify large atlas/companion USDZ assets off the main actor.
+        // No reviewed model is present in the normal app bundle.
+        if reviewedAtlas == nil {
+            reviewedAtlasLoad?.cancel()
+            reviewedAtlasLoad = Task.detached(priority: .utility) { [weak self] in
+                let assets = try? ReviewedAtlasRuntimeResources.load()
+                await MainActor.run {
+                    guard let self, self.isActive, let assets else { return }
+                    self.reviewedAtlas = LiveReviewedAtlasRuntime(
+                        resources: assets
+                    )
                 }
             }
         }
@@ -103,6 +137,8 @@ final class MirrorViewModel {
         isActive = false
         expiryTask?.cancel()
         expiryTask = nil
+        reviewedAtlasLoad?.cancel()
+        reviewedAtlasLoad = nil
         temporalFilter.reset()
         proxyRig.reset()
         proxyRigPose = nil
@@ -112,6 +148,22 @@ final class MirrorViewModel {
         alignedFrame = nil
         phase = .idle
         pipeline.stop()
+    }
+
+    /// Used only by an independently verified live camera/body registration
+    /// implementation. It is deliberately nil in the current product.
+    func installIndependentlyReviewedCameraProvider(
+        _ provider: @escaping (PoseSnapshot) -> ReviewedSourceCameraFrame?
+    ) {
+        reviewedCameraForFrame = provider
+        reviewedAtlas?.reset()
+        calibratedAtlasBatch = nil
+    }
+
+    func setViewportSize(_ size: CGSize) {
+        guard size != viewportSize else { return }
+        viewportSize = size
+        calibratedAtlasBatch = nil
     }
 
     func toggleDiagnostics() {
@@ -124,6 +176,8 @@ final class MirrorViewModel {
             temporalFilter.reset()
             proxyRig.reset()
             proxyRigPose = nil
+            calibratedAtlasBatch = nil
+            reviewedAtlas?.reset()
             deliveryMonitor.reset()
             deliveryReport = nil
             snapshot = nil
