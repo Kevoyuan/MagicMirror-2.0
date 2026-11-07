@@ -272,3 +272,20 @@ second camera, or turn off local privacy gates. Synthetic catalog XCTest
 source enforces that all unreviewed categories remain unavailable.
 
 See [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
+
+## Coherent atlas triangle adapter (research source)
+
+`Anatomy/CoherentAtlasMeshProjection.swift` connects reviewed
+`MobileAtlasManifest` triangle groups to the separate
+`AnatomyAtlasManifest` hierarchical bone IDs and to source-matched
+`CoherentAtlasCameraProjection`. Entire-mesh node paths, joint indices,
+rest anchors, triangle bounds and provenance must match; any invalid
+binding or projected vertex rejects the batch. Unlike the optional
+weak-perspective adapter, this path requires an independently reviewed
+camera transform and its P90 source reprojection gate.
+
+**This is not yet a displayed 3D atlas.** No licensed Z-Anatomy mesh has
+been shipped, and the live Metal renderer is intentionally not wired to
+this reviewed-calibration-only path. Source compilation and synthetic
+tests do not establish legal clearance, clinical validity or physical
+iPhone alignment.
