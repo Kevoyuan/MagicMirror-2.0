@@ -11,6 +11,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     let alignedFrame: AlignedPoseVideoFrame?
     let opacity: Double
     let focus: AnatomyFocus
+    /// Absent until a reviewed atlas and independently calibrated camera
+    /// can produce a validated same-frame batch. Default UI passes nil.
+    var calibratedAtlasBatch: CalibratedAtlasDrawBatch? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
 
@@ -36,7 +39,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     func updateUIView(_ view: MTKView, context: Context) {
         context.coordinator.update(
             alignedFrame: alignedFrame,
-            opacity: Float(opacity), focus: focus
+            opacity: Float(opacity), focus: focus,
+            calibratedAtlasBatch: calibratedAtlasBatch
         )
         view.draw()
     }
@@ -51,7 +55,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var alignedFrame: AlignedPoseVideoFrame?
         private var opacity: Float = 0.65
         private var focus: AnatomyFocus = .full
-        private var approvedAtlas: VerifiedAnatomyAtlas?
+        private var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -98,23 +102,21 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                 textureCache = cache
             }
 
-            // Approved atlas stays optional and still fails closed if
-            // licensing, SHA, mesh identities or anchor reviews are absent.
-            DispatchQueue.global(qos: .utility).async { [weak self] in
-                let atlas = try? VerifiedAnatomyAtlas.load()
-                DispatchQueue.main.async { [weak self] in
-                    self?.approvedAtlas = atlas
-                }
-            }
+            // Do not auto-load an uncalibrated atlas. A future asset
+            // coordinator must independently verify the mesh, coherent
+            // rig, camera extrinsics and matching-frame reprojection
+            // before passing an immutable CalibratedAtlasDrawBatch.
         }
 
         func update(
             alignedFrame: AlignedPoseVideoFrame?,
-            opacity: Float, focus: AnatomyFocus
+            opacity: Float, focus: AnatomyFocus,
+            calibratedAtlasBatch: CalibratedAtlasDrawBatch?
         ) {
             self.alignedFrame = alignedFrame
             self.opacity = max(0, min(1, opacity))
             self.focus = focus
+            self.calibratedAtlasBatch = calibratedAtlasBatch
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -189,12 +191,12 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                let frame = alignedFrame,
                let bonePipeline {
                 let geometry: [BoneMeshVertex]
-                if let approvedAtlas, frame.pose.hasTorsoAnchor {
-                    geometry = approvedAtlas.makeProjectedMesh(
-                        snapshot: frame.pose,
-                        viewport: view.bounds.size,
-                        opacity: opacity, focus: focus
-                    )
+                if let batch = calibratedAtlasBatch,
+                   batch.matches(
+                    frame: frame.pose, viewport: view.bounds.size,
+                    focus: focus, opacity: opacity
+                   ) {
+                    geometry = batch.vertices
                 } else {
                     geometry = VolumetricBoneMesh.make(
                         snapshot: frame.pose,
