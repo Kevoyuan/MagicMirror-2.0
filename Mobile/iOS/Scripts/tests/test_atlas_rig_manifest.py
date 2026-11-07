@@ -1,6 +1,7 @@
 """Synthetic parent-connected USDZ manifest tests. No licensed real FBX."""
 import copy
 import hashlib
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -9,7 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from atlas_sources import SYSTEM_SOURCES, SOURCE_COMMIT  # noqa: E402
 from atlas_rig_manifest import (  # noqa: E402
-    build_rig_manifest, RigPackageError,
+    build_rig_manifest, verify_rig_companion, RigPackageError,
 )
 from usdz_package import pack_usdc_as_usdz  # noqa: E402
 
@@ -115,6 +116,65 @@ class ReviewedUSDZRigManifestTests(unittest.TestCase):
         self.path.write_bytes(b"not a USDZ archive")
         with self.assertRaises(RigPackageError):
             self.validate()
+
+    def test_cross_checks_real_artifact_ids_sha_anchors_and_parents(self):
+        manifest = self.validate()
+        path = self.path.parent / "muscles_atlas_manifest.json"
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        report = verify_rig_companion(
+            self.path.parent, self.source, "muscles"
+        )
+        self.assertEqual(report["approved_bones"], 2)
+
+        for key, change in [
+            ("assetSHA256", "0" * 64),
+            ("sourceRevision", "wrong-source-revision"),
+            ("assetFilename", "skeleton_atlas.usdz"),
+        ]:
+            with self.subTest(key=key):
+                original = manifest[key]
+                manifest[key] = change
+                path.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaises(RigPackageError):
+                    verify_rig_companion(
+                        self.path.parent, self.source, "muscles"
+                    )
+                manifest[key] = original
+
+        manifest["bones"][1]["restStart"] = [2, 2, 2]
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(RigPackageError, "rest anchors"):
+            verify_rig_companion(self.path.parent, self.source, "muscles")
+
+        manifest["bones"][1]["restStart"] = [-0.4, 0.2, 0]
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertEqual(
+            verify_rig_companion(
+                self.path.parent, self.source, "muscles"
+            )["approved_bones"], 2
+        )
+
+    def test_missing_usdz_or_unknown_skinned_joint_fails_closed(self):
+        manifest = self.validate()
+        rig_file = self.path.parent / "muscles_atlas_manifest.json"
+        rig_file.write_text(json.dumps(manifest), encoding="utf-8")
+        skinning = self.path.parent / "muscles_atlas.skinning.json"
+        skinning.write_text(json.dumps({
+            "vertices": [{
+                "boneIds": ["upper", "missing", "upper", "upper"],
+                "weights": [1, 0, 0, 0]
+            }]
+        }), encoding="utf-8")
+        with self.assertRaisesRegex(RigPackageError, "bone IDs"):
+            verify_rig_companion(
+                self.path.parent, self.source, "muscles"
+            )
+        skinning.unlink()
+        self.path.unlink()
+        with self.assertRaisesRegex(RigPackageError, "incomplete"):
+            verify_rig_companion(
+                self.path.parent, self.source, "muscles"
+            )
 
 
 if __name__ == "__main__":
