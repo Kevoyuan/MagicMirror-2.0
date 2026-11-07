@@ -32,6 +32,11 @@ not be required in the installed iOS/Android runtime.
   explicit 3D pinhole projection, and source-landmark P90 reprojection
   tests. A genuine estimated camera/body extrinsic transform, actual
   approved USDZ bone projection and visual registration remain pending.
+  An experimental on-device 6-DOF robust camera-pose estimator with
+  12+ visible body correspondences, synthetic executable macOS smoke
+  and explicit P90 fail-closed gate is now source-implemented. It is
+  **not yet wired to real approved USDZ atlas motion** and not
+  validated against a real camera.
   See `Docs/IOS_CAMERA_PROJECTION_AND_REPROJECTION.md`.
 - **Mobile-5:** real-device FPS/thermal, accurate occlusion, privacy
   review, TestFlight and actual App Store release preparation remain pending.
