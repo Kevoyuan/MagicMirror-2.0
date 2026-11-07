@@ -132,3 +132,17 @@ are synthetic; their review flags are test fixtures, not human sign-off.
 source asset, independently reviewed physical camera extrinsics, verified
 mesh-to-bone geometry or actual phone validation. Do not treat the new
 adapter as a shortcut around these blockers.
+
+## Metal presentation integration boundary
+
+A `CalibratedAtlasDrawBatch` converts already-reviewed coherent projected
+triangles into the existing 48-byte Metal bone vertex ABI, using explicit
+illustrative flat normals and bounded clip-space depth. The renderer checks
+frame identity, image/viewport dimensions, focus and opacity before drawing.
+It no longer automatically selects a weak-perspective atlas merely because
+an approved-looking local file was found. There is **no live producer** for
+the calibrated batch without independently confirmed camera extrinsics,
+an approved coherent 3D mesh and verified joint-to-vertex bindings.
+
+Simulator compilation and test fixtures do not replace legal/anatomical
+review or real-phone visual/reprojection acceptance.

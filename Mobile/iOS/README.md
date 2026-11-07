@@ -289,3 +289,27 @@ been shipped, and the live Metal renderer is intentionally not wired to
 this reviewed-calibration-only path. Source compilation and synthetic
 tests do not establish legal clearance, clinical validity or physical
 iPhone alignment.
+
+## Calibrated atlas → Metal draw bridge (source implementation)
+
+`Rendering/CalibratedAtlasDrawBatch.swift` converts a complete validated
+`CoherentAtlasMeshProjection` result into the existing Metal vertex format.
+Its factory cannot be called with arbitrary screen coordinates: it requires
+a reviewed mesh/hierarchy pair and a separately calibrated same-frame camera
+projection. It rejects invalid opacity, missing triangles, nonfinite vertex
+positions, zero-area triangles, and oversized batches.
+
+`MetalSkeletonOverlay` now accepts an *optional* validated batch and draws
+it **only** if the source timestamp, image dimensions, view dimensions,
+region focus and opacity still match the displayed source frame. Otherwise
+it falls back to the procedural illustrative proxy. The previous automatic
+weak-perspective atlas loading in Metal has been disabled, because a matching
+mesh filename or boolean review flag alone does not establish physical
+camera extrinsics. The old weak-perspective algorithm remains research code.
+
+**Important:** the normal camera screen does not yet construct a calibrated
+batch. There is no approved Z-Anatomy asset or independently reviewed live
+camera extrinsic provider, so the app continues to render only the reference
+proxy. The generated clip-space depth and flat shading are illustrative,
+not measured tissue depth or medically accurate surface lighting. Do not
+represent this source bridge as live atlas AR or physical-device verification.

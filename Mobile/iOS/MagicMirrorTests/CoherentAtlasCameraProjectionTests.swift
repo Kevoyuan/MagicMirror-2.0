@@ -345,4 +345,91 @@ final class CoherentAtlasCameraProjectionTests: XCTestCase {
             focus: .arms
         ))
     }
+
+    func testCalibratedMetalBatchPreservesFrameFocusAndViewportIdentity() {
+        let frame = snapshot()
+        let transform = registration()
+        let projector = CoherentAtlasCameraProjection.prepare(
+            pose: rig(frame: frame, transform: transform),
+            matchingFrame: frame,
+            registration: transform, intrinsics: camera(),
+            extrinsics: extrinsics(),
+            independentCameraReviewConfirmed: true
+        )!
+        let source = meshAtlas()
+        // A nondegenerate synthetic triangle, not licensed anatomy.
+        let atlas = VerifiedAnatomyAtlas(
+            manifest: source.manifest,
+            vertices: [
+                source.vertices[0],
+                source.vertices[1],
+                AtlasRestVertex(
+                    position: SIMD3<Float>(-0.55, 0.70, 0),
+                    normal: SIMD3<Float>(0, 0, 1)
+                )
+            ]
+        )
+        let batch = CalibratedAtlasDrawBatch.build(
+            atlas: atlas, hierarchy: rigManifest(),
+            projector: projector, viewport: viewport,
+            opacity: 0.7, focus: .arms
+        )
+        XCTAssertNotNil(batch)
+        XCTAssertEqual(batch?.vertices.count, 3)
+        XCTAssertEqual(batch?.sourceTimestampMilliseconds, 1000)
+        XCTAssertEqual(batch?.sourceImageSize, frame.imageSize)
+        XCTAssertTrue(batch!.matches(
+            frame: frame, viewport: viewport,
+            focus: .arms, opacity: 0.7
+        ))
+        XCTAssertFalse(batch!.matches(
+            frame: snapshot(timestamp: 1001), viewport: viewport,
+            focus: .arms, opacity: 0.7
+        ))
+        XCTAssertFalse(batch!.matches(
+            frame: frame, viewport: CGSize(width: 390, height: 844),
+            focus: .arms, opacity: 0.7
+        ))
+        XCTAssertFalse(batch!.matches(
+            frame: frame, viewport: viewport,
+            focus: .legs, opacity: 0.7
+        ))
+        XCTAssertFalse(batch!.matches(
+            frame: frame, viewport: viewport,
+            focus: .arms, opacity: 0.6
+        ))
+        XCTAssertTrue(batch!.vertices.allSatisfy {
+            $0.position.x.isFinite && $0.position.y.isFinite &&
+            $0.position.z.isFinite && $0.color.w > 0
+        })
+    }
+
+    func testCalibratedMetalBatchRejectsDegenerateOrUnreviewedInputs() {
+        let frame = snapshot()
+        let transform = registration()
+        let projector = CoherentAtlasCameraProjection.prepare(
+            pose: rig(frame: frame, transform: transform),
+            matchingFrame: frame,
+            registration: transform, intrinsics: camera(),
+            extrinsics: extrinsics(),
+            independentCameraReviewConfirmed: true
+        )!
+        // The original fixture has three collinear points. A triangle
+        // with zero display area must not reach the GPU vertex buffer.
+        XCTAssertNil(CalibratedAtlasDrawBatch.build(
+            atlas: meshAtlas(), hierarchy: rigManifest(),
+            projector: projector, viewport: viewport,
+            opacity: 0.7, focus: .arms
+        ))
+        XCTAssertNil(CalibratedAtlasDrawBatch.build(
+            atlas: meshAtlas(path: "wrong/mesh"),
+            hierarchy: rigManifest(), projector: projector,
+            viewport: viewport, opacity: 0.7, focus: .arms
+        ))
+        XCTAssertNil(CalibratedAtlasDrawBatch.build(
+            atlas: meshAtlas(), hierarchy: rigManifest(),
+            projector: projector, viewport: viewport,
+            opacity: 0, focus: .arms
+        ))
+    }
 }
