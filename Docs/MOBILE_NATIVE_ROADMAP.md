@@ -404,3 +404,15 @@ The native app can load those independent artifacts with no runtime
 Python/network. Approved USDZ hierarchy authoring/packaging, licensing,
 anatomical bindings, full size/performance and live iPhone acceptance
 are still separate gates.
+
+## Mobile-3 source USDZ interop hardening (2026-11-07)
+
+The developer-only six-system export pipeline now creates an
+OpenUSD-spec 64-byte-aligned, uncompressed USDZ around Blender's
+binary USD crate; a strict reader checks the real local ZIP offsets,
+header flags and CRC, then cross-verifies source/hierarchy/
+MMATLAS1/skin hashes and reviewed parent links. An explicit
+`--require-rig` switch refuses partial bundles. This closes a
+source-level packaging integrity gap but does not replace a full
+USD scene audit, hardware camera registration, licensed source
+assets or physical iPhone rendering acceptance.
