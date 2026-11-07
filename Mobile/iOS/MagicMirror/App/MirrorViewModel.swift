@@ -13,11 +13,14 @@ final class MirrorViewModel {
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
+    var showDiagnostics = false
+    var deliveryReport: PoseDeliveryReport?
 
     private var isActive = false
     private var mostRecentTimestamp = -1
     private var lastPoseReceiptUptime = 0.0
     private var temporalFilter = PoseTemporalFilter()
+    private var deliveryMonitor = PoseDeliveryQualityMonitor()
     private var expiryTask: Task<Void, Never>?
 
     init() {
@@ -34,9 +37,18 @@ final class MirrorViewModel {
                         pose: $0, pixelBuffer: incoming.pixelBuffer
                     )
                 }
-                self.lastPoseReceiptUptime = ProcessInfo.processInfo.systemUptime
+                let now = ProcessInfo.processInfo.systemUptime
+                self.lastPoseReceiptUptime = now
+                if let report = self.deliveryMonitor.observe(
+                    timestampMilliseconds: incoming.pose.timestampMilliseconds,
+                    callbackUptime: now
+                ) {
+                    self.deliveryReport = report
+                }
             } else {
                 self.temporalFilter.reset()
+                self.deliveryMonitor.reset()
+                self.deliveryReport = nil
                 self.snapshot = nil
                 self.alignedFrame = nil
             }
@@ -55,6 +67,8 @@ final class MirrorViewModel {
         isPaused = false
         mostRecentTimestamp = -1
         temporalFilter.reset()
+        deliveryMonitor.reset()
+        deliveryReport = nil
         expiryTask?.cancel()
         expiryTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -65,6 +79,8 @@ final class MirrorViewModel {
                     self.snapshot = nil
                     self.alignedFrame = nil
                     self.temporalFilter.reset()
+                    self.deliveryMonitor.reset()
+                    self.deliveryReport = nil
                     self.phase = .searching
                 }
             }
@@ -78,16 +94,24 @@ final class MirrorViewModel {
         expiryTask?.cancel()
         expiryTask = nil
         temporalFilter.reset()
+        deliveryMonitor.reset()
+        deliveryReport = nil
         snapshot = nil
         alignedFrame = nil
         phase = .idle
         pipeline.stop()
     }
 
+    func toggleDiagnostics() {
+        showDiagnostics.toggle()
+    }
+
     func togglePause() {
         isPaused.toggle()
         if isPaused {
             temporalFilter.reset()
+            deliveryMonitor.reset()
+            deliveryReport = nil
             snapshot = nil
             alignedFrame = nil  // No frozen video or stale tracked bones.
         } else {
