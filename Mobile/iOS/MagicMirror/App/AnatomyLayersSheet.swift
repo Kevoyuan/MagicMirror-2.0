@@ -1,87 +1,268 @@
 import SwiftUI
 
-/// Informational native sheet. It intentionally does not offer toggles for
-/// missing Z-Anatomy meshes or decorative clipping controls.
+/// A living anatomical notebook, shown over the unchanged camera session.
+/// Real multi-system toggles and mesh sectioning remain gated until their
+/// independently reviewed 3D resources and native renderer actually exist.
 struct AnatomyLayersSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var page: NotebookPage = .systems
 
-    private let paper = Color(red: 0.953, green: 0.922, blue: 0.867)
-    private let ink = Color(red: 0.20, green: 0.176, blue: 0.153)
-    private let mutedInk = Color(red: 0.455, green: 0.408, blue: 0.353)
-    private let green = Color(red: 0.22, green: 0.404, blue: 0.365)
+    private enum NotebookPage: String, CaseIterable, Identifiable {
+        case systems = "Systems"
+        case sections = "Sections"
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Only the illustrative reference proxy is currently rendered. Other layers remain unavailable until source licensing, anatomy review and camera alignment are verified.")
-                        .font(.subheadline)
-                        .foregroundStyle(mutedInk)
+                VStack(alignment: .leading, spacing: 17) {
+                    manuscriptHeader
 
-                    VStack(spacing: 0) {
-                        ForEach(AnatomyDisplayLayer.allCases) { layer in
-                            HStack(spacing: 12) {
-                                Image(systemName: layer.isAvailable
-                                      ? "checkmark.circle.fill" : "lock")
-                                    .foregroundStyle(layer.isAvailable ? green : mutedInk)
-                                    .frame(width: 22)
-                                    .accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(layer.title).font(.subheadline.weight(.semibold))
-                                    Text(layer.detail)
-                                        .font(.caption)
-                                        .foregroundStyle(mutedInk)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                Spacer(minLength: 4)
-                                Text(layer.isAvailable ? "Current" : "Planned")
-                                    .font(.caption2.weight(.medium))
-                                    .foregroundStyle(layer.isAvailable ? green : mutedInk)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-                            .padding(.vertical, 8)
-                            .accessibilityElement(children: .combine)
-                            if layer != AnatomyDisplayLayer.allCases.last {
-                                Divider().overlay(mutedInk.opacity(0.2))
-                            }
+                    Picker("Anatomy study", selection: $page) {
+                        ForEach(NotebookPage.allCases) { item in
+                            Text(LocalizedStringKey(item.rawValue)).tag(item)
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .accessibilityLabel("Choose anatomical systems or section planes")
 
-                    Divider()
-                    Text("Section planes")
-                        .font(.headline)
-                    Text("Axial, sagittal and coronal sections require a verified 3D mesh and real clipping. No slices are available in this prototype.")
-                        .font(.subheadline)
-                        .foregroundStyle(mutedInk)
-                    HStack {
-                        ForEach(AnatomySectionPlane.allCases) { plane in
-                            Text(plane.title)
-                                .font(.caption.weight(.medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 9)
-                                .background(ink.opacity(0.06), in: Capsule())
-                                .accessibilityLabel("\(plane.title), not available")
-                        }
+                    if page == .systems {
+                        systemStudies
+                    } else {
+                        sectionStudies
                     }
-                    .accessibilityElement(children: .contain)
-                    Text("Educational reference only · not medical imaging")
-                        .font(.caption)
-                        .foregroundStyle(mutedInk)
+
+                    ManuscriptRule()
+
+                    Label(
+                        "Educational reference only · not medical imaging",
+                        systemImage: "info.circle"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityElement(children: .combine)
                 }
-                .foregroundStyle(ink)
-                .padding(20)
+                .padding(.horizontal, 19)
+                .padding(.top, 18)
+                .padding(.bottom, 30)
             }
-            .background(paper.ignoresSafeArea())
-            .navigationTitle("Anatomy layers")
+            .scrollIndicators(.hidden)
+            .background(LeonardoPalette.parchment.ignoresSafeArea())
+            .navigationTitle("Anatomy folio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
-                        .foregroundStyle(green)
+                        .foregroundStyle(LeonardoPalette.verdigris)
+                        .accessibilityLabel("Close anatomy notebook")
                 }
             }
         }
+        .tint(LeonardoPalette.verdigris)
+        .preferredColorScheme(.light)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    private var manuscriptHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("STUDI DI ANATOMIA")
+                    .font(.system(size: 11, weight: .semibold, design: .serif))
+                    .tracking(2.0)
+                    .foregroundStyle(LeonardoPalette.copperInk)
+                Spacer(minLength: 8)
+                Text("FOLIO · II")
+                    .font(.system(size: 11, weight: .medium, design: .serif))
+                    .tracking(1.3)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+            }
+
+            Text("The anatomy notebook")
+                .font(.system(.title2, design: .serif, weight: .semibold))
+                .foregroundStyle(LeonardoPalette.ink)
+
+            Text("Explore the systems of the body. Currently, only the pose-driven reference proxy is available.")
+                .font(.subheadline)
+                .foregroundStyle(LeonardoPalette.mutedInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ManuscriptRule()
+                .padding(.top, 2)
+        }
+    }
+
+    private var systemStudies: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.3.layers.3d")
+                    .foregroundStyle(LeonardoPalette.verdigris)
+                Text("ANATOMICAL SYSTEMS")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.1)
+            }
+            .foregroundStyle(LeonardoPalette.ink)
+
+            Text("Available structures appear first. Planned systems cannot be switched on until reviewed models and camera registration are validated.")
+                .font(.footnote)
+                .foregroundStyle(LeonardoPalette.mutedInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(AnatomyDisplayLayer.allCases) { layer in
+                layerRow(layer)
+            }
+        }
+    }
+
+    private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: layerSymbol(layer))
+                .font(.title3)
+                .foregroundStyle(layer.isAvailable
+                    ? LeonardoPalette.verdigris
+                    : LeonardoPalette.mutedInk)
+                .frame(width: 30, height: 44)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(LocalizedStringKey(layer.title))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LeonardoPalette.ink)
+                Text(LocalizedStringKey(layer.detail))
+                    .font(.caption)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 3)
+
+            VStack(spacing: 4) {
+                Image(systemName: layer.isAvailable
+                      ? "checkmark.circle.fill" : "lock.fill")
+                    .font(.subheadline)
+                Text(layer.isAvailable
+                    ? LocalizedStringKey("REFERENCE") : LocalizedStringKey("PLANNED"))
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.5)
+            }
+            .foregroundStyle(layer.isAvailable
+                ? LeonardoPalette.verdigris
+                : LeonardoPalette.mutedInk)
+            .frame(minWidth: 63)
+            .accessibilityHidden(true)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            layer.isAvailable
+                ? LeonardoPalette.agedPaper.opacity(0.50)
+                : LeonardoPalette.ivory.opacity(0.43),
+            in: RoundedRectangle(cornerRadius: 12)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(LeonardoPalette.copper.opacity(0.26),
+                              lineWidth: 0.7)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var sectionStudies: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.stack.3d.up")
+                    .foregroundStyle(LeonardoPalette.verdigris)
+                Text("STUDIES IN SECTION")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.1)
+            }
+            .foregroundStyle(LeonardoPalette.ink)
+
+            Text("These three anatomical planes are a future educational feature. A moving guide line is not a true 3D cut; sectioning requires a reviewed and correctly registered mesh.")
+                .font(.subheadline)
+                .foregroundStyle(LeonardoPalette.mutedInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(AnatomySectionPlane.allCases) { plane in
+                HStack(spacing: 14) {
+                    sectionDiagram(plane)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(LocalizedStringKey(plane.title))
+                            .font(.system(.headline, design: .serif))
+                        Text(LocalizedStringKey(sectionExplanation(plane)))
+                            .font(.caption)
+                            .foregroundStyle(LeonardoPalette.mutedInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    VStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .accessibilityHidden(true)
+                        Text("PLANNED")
+                            .font(.system(.caption2, weight: .semibold))
+                    }
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                }
+                .foregroundStyle(LeonardoPalette.ink)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(LeonardoPalette.ivory.opacity(0.48),
+                            in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityElement(children: .combine)
+            }
+
+            Text("NO CUTTING OR VOLUMETRIC RECONSTRUCTION IS ACTIVE")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(LeonardoPalette.mutedInk)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func sectionDiagram(_ plane: AnatomySectionPlane) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 9)
+                .strokeBorder(LeonardoPalette.copper.opacity(0.58),
+                              lineWidth: 0.8)
+            Ellipse()
+                .stroke(LeonardoPalette.mutedInk.opacity(0.65),
+                        lineWidth: 1)
+                .frame(width: 29, height: 39)
+            Rectangle()
+                .fill(LeonardoPalette.verdigris.opacity(0.88))
+                .frame(
+                    width: plane == .sagittal ? 2 : 32,
+                    height: plane == .sagittal ? 39
+                        : (plane == .axial ? 2 : 20)
+                )
+                .rotationEffect(plane == .coronal ? .degrees(90) : .zero)
+        }
+        .frame(width: 54, height: 54)
+        .accessibilityHidden(true)
+    }
+
+    private func sectionExplanation(_ plane: AnatomySectionPlane) -> String {
+        switch plane {
+        case .axial: return "Transverse · upper and lower portions"
+        case .sagittal: return "Divides left and right portions"
+        case .coronal: return "Divides front and back portions"
+        }
+    }
+
+    private func layerSymbol(_ layer: AnatomyDisplayLayer) -> String {
+        switch layer {
+        case .referenceProxy: return "figure.stand"
+        case .skeleton: return "figure.arms.open"
+        case .muscles: return "figure.strengthtraining.traditional"
+        case .organs: return "heart.text.square"
+        case .vessels: return "waveform.path.ecg"
+        case .nerves: return "point.3.connected.trianglepath.dotted"
+        case .joints: return "figure.flexibility"
+        }
     }
 }

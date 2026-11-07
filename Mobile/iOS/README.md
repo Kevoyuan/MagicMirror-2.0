@@ -271,7 +271,64 @@ clipping exists. This interface does not bundle Z-Anatomy, introduce a
 second camera, or turn off local privacy gates. Synthetic catalog XCTest
 source enforces that all unreviewed categories remain unavailable.
 
-See [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
+The next native UI refinement keeps the same AVFoundation/MediaPipe/Metal
+pipeline and improves **how** its existing controls are presented:
+
+- A slim manuscript-style camera header with accessible 44-point diagnostics
+  control; tracking states now distinguish preparing, blocked and interrupted
+  camera states from actual pose acquisition.
+- A quiet paper/sepia/verdigris control dock with a notebook folio rule,
+  focus Picker, compact Layers/Opacity/Pause buttons, and an always-readable
+  reference disclaimer. At accessibility text sizes, action buttons stack.
+- A two-page native **Systems / Sections** anatomy notebook. Systems list
+  identifies only the current proxy as available; future licensed anatomical
+  layers and real 3D section planes remain clearly unavailable. The section
+  drawings are visual *concept cues*, not a running clipping engine.
+- Respect for Reduce Motion when opening the opacity adjustment, with no
+  changes to pose landmarks, retargeting, camera ownership or Metal geometry.
+
+**Verification required:** Xcode arm64 Simulator build-for-testing via CI,
+followed by actual iPhone visual layout, VoiceOver/Dynamic Type and
+camera/overlay latency testing. This source update does **not** prove
+real-device presentation or complete reviewed anatomy.
+
+The **whole-app native UX** now also includes an optional Field Notes sheet with
+Use / Privacy / About pages, a simple on-device diagnostics toggle, and a pure
+`MirrorPresentationState` mapper that prevents paused/stale pose from
+masquerading as live tracking or blocking camera-permission recovery.
+`MirrorPresentationStateTests.swift` contains deterministic UI-state tests.
+None of these additions requires cloud access, a second camera or a new
+navigation tab.
+
+The live image and Metal overlay now have separate SwiftUI observation
+boundaries: the sole AVFoundation preview stays in the stable root scene,
+while `MirrorLiveRenderSurface` observes frame-rate pose / Metal draw batch
+changes. `MirrorViewModel.currentCoverage` only updates when the
+recognition class changes (none/partial/torso-anchored), so the manuscript
+controls do not need to invalidate on every pose callback. This is a
+source-level performance improvement, **not** measured real-iPhone FPS. The guide describes current privacy behavior as source-level
+claims; App Store and third-party SDK disclosures still require review.
+
+The SwiftUI mirror and both notebook sheets now use native `Localizable.strings`
+resources for **English and Simplified Chinese**. They follow the device's
+iOS language; 113 paired source keys have been checked for parity and
+empty translations. The design intentionally retains small Latin folio
+marks as visual metadata while translating actual controls, status, locked
+anatomical systems, camera recovery and VoiceOver-facing descriptions.
+The adaptive header falls back to an MM mark on very narrow layouts and
+reflows the tracking pill under the brand for accessibility text sizes.
+During valid partial tracking it avoids leaving a large guidance card
+over the visible body.
+
+**Localization manual QA:** Set iPhone Settings → General → Language & Region
+to English and 简体中文 respectively, or use an app-specific language override
+where supported. Restart the app and inspect Mirror, Anatomy Folio and Field
+Notes at ordinary and very large text sizes. Verify real permission denial
+and interruption states, long descriptions and VoiceOver, not only a
+Simulator build.
+
+See the [complete iPhone UI journey handoff](../../Docs/IOS_UI_USER_JOURNEYS.md)
+and [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
 
 ## Coherent atlas triangle adapter (research source)
 

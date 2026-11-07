@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.1 — Leonardo anatomy notebook direction (2026-11-07)  
+**Version:** 1.3 — bilingual adaptive Leonardo interface (2026-11-07)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
@@ -453,3 +453,67 @@ The implementation still needs physical-device visual review (small
 screens, safe areas, VoiceOver, Dynamic Type, contrast over camera footage)
 and may be refined after that evidence. This update does **not** approve a
 bundled anatomical model or certify the UI as production-ready.
+
+## Whole-app native UX continuation (2026-11-07)
+
+The single-camera app now has a second optional native folio, **Field Notes**,
+with **Use**, **Privacy** and **About** pages for short camera instructions,
+privacy explanations, illustrative model limitations and optional local
+pose-delivery diagnostics. This information does not block automatic camera
+start. The original **Layers** folio still separates Systems from Sections,
+and remains honest about unavailable multi-system meshes and slicing.
+
+For consistent failure feedback, **MirrorPresentationState** maps camera
+permission/lifecycle, actual current pose coverage and overlay pause into
+one tested visible state, prioritizing blocked/interrupted camera over
+old Pause preferences. The UI source and unit tests still require physical
+iPhone visual/accessibility QA; simulator compilation is not real-device proof.
+
+The native architecture also isolates per-frame Metal rendering into a
+dedicated SwiftUI view while keeping the existing AVFoundation preview
+owner stable. The camera status chrome reads a low-frequency coverage
+classification; actual FPS and power improvements remain unmeasured.
+
+A full screen-by-screen inventory, UX journeys and QA matrix live in
+[Docs/IOS_UI_USER_JOURNEYS.md](Docs/IOS_UI_USER_JOURNEYS.md). This document
+remains the root visual direction authority.
+
+
+## Bilingual layout and runtime token contract (2026-11-07)
+
+**Language policy:** The native iPhone interface follows the system language:
+English is the development fallback and Simplified Chinese (`zh-Hans`) is
+translated. Shipping string ownership is
+`Mobile/iOS/Resources/{en,zh-Hans}.lproj/Localizable.strings`, using
+native SwiftUI `LocalizedStringKey` for titles from display enums,
+camera state copy, accessibility labels, and explanatory sheets.
+Do not use a manual in-app language switch or extra login/onboarding screen.
+
+**Layout contract:** The normal portrait header fits brand, help and tracking
+status in one thin row; compact-width fallback reduces only the *brand mark*
+to “MM”, not the status or touch target. In accessibility text sizes the status
+wraps into a second row instead of clipping the primary action. The partial
+pose status is visible in the header without a permanent large guidance card
+blocking the tracked person. These are source-level design changes requiring
+real iPhone screenshots at each supported Dynamic Type size.
+
+**Color ownership:** `LeonardoPalette.swift` is the canonical SwiftUI theme
+source, derived from this DESIGN.md. `copperInk` (approximately `#82583A`)
+is intentionally darker than decorative `copper` on parchment for small
+labels. Keep renderer geometry tints independent of UI colors. On the
+nominal opaque parchment background, design contrast estimates are about
+11.5:1 for primary ink and 4.6:1 for muted ink; these are not proof of
+contrast against moving camera footage.
+
+**Brand exception:** short manuscript labels such as *Anatomia* and *Folio*
+can be kept as a deliberate bilingual-independent editorial signature;
+action labels, recovery copy and educational content must localize.
+If a localized string changes the available width, do not truncate the
+user's action or the medical limitation; expand the sheet or choose the
+adaptive control arrangement instead.
+
+**Verification:** Check English and Chinese across Mirror, Anatomy Folio
+and Field Notes on a compact and large iPhone, with VoiceOver and
+accessibility Dynamic Type. Confirm that XcodeGen includes both `.lproj`
+resources. Static source parity and Simulator compilation are necessary
+but not substitutes for a real iPhone localization/contrast inspection.
