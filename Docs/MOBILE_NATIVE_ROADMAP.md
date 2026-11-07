@@ -355,3 +355,15 @@ frozen, stale, invisible or out-of-focus segment is not selectable.
 Names are educational region labels, not claims of detected bones.
 Future licensed per-mesh picking will require the audited geometry
 package; this path does not rename proxies as true anatomy.
+
+## Native skinned-mesh GPU reuse (2026-11-07)
+
+Removed routine per-frame rest-mesh rebuilding and rest-mesh Metal
+uploads from the audited atlas path. Immutable source geometry is
+prepared once for each body focus and cached by live resource identity;
+only compact bone palette, camera, clip plane and opacity uniforms
+change per frame. Metal's cached vertex buffer replaces the old new
+MTLBuffer allocation on every tracked video frame. Validated synthetic
+checks cover resource identity across frame/opacity changes. Physical
+device throughput, GPU memory pressure, thermal and latency acceptance
+remain open.
