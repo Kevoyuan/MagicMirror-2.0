@@ -101,6 +101,24 @@ The remote `latest` URL is mutable: **checksum mismatch fails closed**.
 No model binary is committed to Git. Review model and anatomical asset
 distribution rights before public release.
 
+## Optional reviewed whole-atlas package
+
+`Anatomy/VerifiedAnatomyAtlas.swift` supports a developer-generated,
+**human-reviewed** mobile skeleton package. It validates both dataset
+attribution licences, the model SHA-256, source hierarchy names,
+reviewed segment anchors and contiguous triangle records. If there is
+no approved `skeleton_atlas.mmgeom` and
+`skeleton_atlas.manifest.json` in the app bundle, the renderer stays
+on its procedural 3D reference proxy. No anatomy binary is shipped
+by the repository. The exporter runs under **Blender on a developer
+machine**, never on iPhone.
+
+See [whole-atlas offline authoring](../../Docs/MOBILE_ATLAS_PACKAGE.md).
+The original Z-Anatomy/BodyParts3D derivatives require CC BY-SA
+attribution and source/model-specific review. Native mesh projection
+is an approximate rigid segment fit, **not** calibrated personal
+bone geometry or verified live device performance.
+
 ## Gaps before actual anatomical AR
 
 The source now includes a live **3D volumetric proxy renderer**, but
