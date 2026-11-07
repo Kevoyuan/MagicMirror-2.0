@@ -345,6 +345,20 @@ final class LiveReviewedAtlasRuntimeTests: XCTestCase {
         )
         XCTAssertNotNil(cameraPoint)
         XCTAssertEqual(gpuPoint.z, 3, accuracy: 0.001)
+        // Changing opacity must not rebuild immutable rest vertices;
+        // only the per-frame Metal uniform changes.
+        let following = referenceFrame(1396)
+        _ = live.render(
+            frame: following, reviewedCamera: reviewedCamera(following),
+            viewport: viewport, focus: .arms, opacity: 0.2
+        )
+        let next = live.skinnedFrame
+        XCTAssertNotNil(next)
+        XCTAssertEqual(next?.geometryIdentity, gpu?.geometryIdentity)
+        XCTAssertEqual(next?.vertices.count, gpu?.vertices.count)
+        XCTAssertEqual(next?.opacity, 0.2)
+        XCTAssertEqual(next?.vertices.first?.color.w, 1)
+        XCTAssertEqual(gpu?.vertices.first?.color.w, 1)
         live.reset()
         XCTAssertNil(live.skinnedFrame)
     }
