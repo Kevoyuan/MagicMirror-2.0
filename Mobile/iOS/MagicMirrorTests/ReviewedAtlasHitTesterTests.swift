@@ -53,6 +53,7 @@ final class ReviewedAtlasHitTesterTests: XCTestCase {
             sourceImageSize: viewport,
             viewportSize: viewport,
             sourceRevision: "reviewed-fixture-only",
+            anatomicalSystem: .skeleton,
             geometryIdentity: UUID(),
             focus: .full,
             opacity: 0.7,
