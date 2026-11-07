@@ -15,8 +15,10 @@ struct ProjectedAtlasRestPoint {
 /// calibrated mobile camera. A separate same-frame pose P90 gate must pass
 /// before ANY anatomical rest vertex can be projected.
 ///
-/// NEVER supply guessed camera extrinsics. The normal product cannot
-/// enable this without independently reviewed camera/body calibration.
+/// An estimated-reference alignment is a distinct restricted mode:
+/// it needs the AutomaticReferenceAlignmentGate's multi-frame evidence
+/// AND a stricter current-source P90 gate. It never certifies the
+/// person's internal anatomy or independently measured extrinsics.
 /// This is a source-level integration seam, not actual phone AR validation.
 struct CoherentAtlasCameraProjection {
     let pose: CoherentAtlasRigPose
@@ -33,9 +35,13 @@ struct CoherentAtlasCameraProjection {
         intrinsics: BodyCameraIntrinsics,
         extrinsics: BodyToCameraTransform,
         independentCameraReviewConfirmed: Bool,
+        estimatedReferenceOnly: Bool = false,
         maximumP90FractionOfSourceWidth: Float = 0.03
     ) -> CoherentAtlasCameraProjection? {
-        guard independentCameraReviewConfirmed,
+        guard (independentCameraReviewConfirmed || estimatedReferenceOnly),
+              !(independentCameraReviewConfirmed && estimatedReferenceOnly),
+              (!estimatedReferenceOnly ||
+               maximumP90FractionOfSourceWidth <= 0.012),
               pose.sourceTimestampMilliseconds
                 == matchingFrame.timestampMilliseconds,
               pose.sourceImageSize == matchingFrame.imageSize,
