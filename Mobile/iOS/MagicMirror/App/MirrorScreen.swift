@@ -44,7 +44,7 @@ struct MirrorScreen: View {
                         .padding(.top, 10)
                 }
                 Spacer()
-                if presentation.guidance != nil {
+                if presentation.guidanceForUser != nil {
                     guidance
                         .padding(.bottom, 8)
                 }
@@ -106,7 +106,7 @@ struct MirrorScreen: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Open field notes and privacy guide")
 
-            Label(presentation.statusTitle, systemImage: presentation.statusSymbol)
+            Label(LocalizedStringKey(presentation.statusTitle), systemImage: presentation.statusSymbol)
                 .labelStyle(.titleAndIcon)
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(0.4)
@@ -117,7 +117,7 @@ struct MirrorScreen: View {
                 .frame(minHeight: 34)
                 .background(LeonardoPalette.cameraScrim.opacity(0.86),
                             in: Capsule())
-                .accessibilityLabel("Pose status: \(presentation.statusTitle)")
+                .accessibilityLabel(LocalizedStringKey(presentation.statusTitle))
         }
         // The 34-pt manuscript strip is visual only; controls retain
         // at least 44-pt hit targets and respect the real iPhone safe area.
@@ -175,7 +175,7 @@ struct MirrorScreen: View {
                 .foregroundStyle(LeonardoPalette.ivory)
                 .accessibilityHidden(true)
 
-            Text(presentation.guidance ?? "")
+            Text(LocalizedStringKey(presentation.guidanceForUser ?? ""))
                 .font(.subheadline.weight(.medium))
                 .multilineTextAlignment(.leading)
                 .foregroundStyle(LeonardoPalette.ivory)
@@ -218,7 +218,7 @@ struct MirrorScreen: View {
 
             Picker("Body region", selection: $model.focus) {
                 ForEach(AnatomyFocus.allCases) { region in
-                    Text(region.rawValue).tag(region)
+                    Text(LocalizedStringKey(region.rawValue)).tag(region)
                 }
             }
             .pickerStyle(.segmented)
@@ -233,7 +233,7 @@ struct MirrorScreen: View {
                     Slider(value: $model.opacity, in: 0.15...0.90)
                         .tint(LeonardoPalette.verdigris)
                         .accessibilityLabel("Skeleton opacity")
-                    Text("\(Int(model.opacity * 100))%")
+                    Text(model.opacity, format: .percent)
                         .font(.caption.monospacedDigit())
                         .frame(minWidth: 38, alignment: .trailing)
                 }
@@ -309,7 +309,7 @@ struct MirrorScreen: View {
                 }
             }
         }
-        .accessibilityValue("\(Int(model.opacity * 100)) percent")
+        .accessibilityValue(Text(model.opacity, format: .percent))
         .accessibilityHint("Expand or collapse the reference opacity slider")
     }
 
@@ -345,7 +345,7 @@ private struct LeonardoActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: symbol)
+            Label(LocalizedStringKey(title), systemImage: symbol)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
