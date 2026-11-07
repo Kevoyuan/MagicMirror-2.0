@@ -9,6 +9,7 @@ import UIKit
 struct MetalSkeletonOverlay: UIViewRepresentable {
     let snapshot: PoseSnapshot?
     let opacity: Double
+    let focus: AnatomyFocus
 
     func makeCoordinator() -> Renderer {
         Renderer()
@@ -36,7 +37,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     func updateUIView(_ view: MTKView, context: Context) {
         context.coordinator.update(
             snapshot: snapshot,
-            opacity: Float(opacity)
+            opacity: Float(opacity), focus: focus
         )
         view.draw()
     }
@@ -49,6 +50,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var pipeline: MTLRenderPipelineState?
         private var snapshot: PoseSnapshot?
         private var opacity: Float = 0.65
+        private var focus: AnatomyFocus = .full
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -76,9 +78,12 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             )
         }
 
-        func update(snapshot: PoseSnapshot?, opacity: Float) {
+        func update(
+            snapshot: PoseSnapshot?, opacity: Float, focus: AnatomyFocus
+        ) {
             self.snapshot = snapshot
             self.opacity = max(0, min(1, opacity))
+            self.focus = focus
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -97,7 +102,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             if let pipeline {
                 let geometry = VolumetricBoneMesh.make(
                     snapshot: snapshot, viewport: view.bounds.size,
-                    opacity: opacity
+                    opacity: opacity, focus: focus
                 )
                 if !geometry.isEmpty {
                     let bytes = geometry.withUnsafeBytes { raw -> MTLBuffer? in
