@@ -8,6 +8,19 @@ import Foundation
 struct AlignedPoseVideoFrame {
     let pose: PoseSnapshot
     let pixelBuffer: CVPixelBuffer
+    /// Deep-copied from the SAME MediaPipe callback and video timestamp.
+    /// Nil means no trustworthy silhouette; fall back to the normal
+    /// reference renderer instead of silently using a stale person mask.
+    let silhouette: PersonSilhouetteMask?
+
+    init(
+        pose: PoseSnapshot, pixelBuffer: CVPixelBuffer,
+        silhouette: PersonSilhouetteMask? = nil
+    ) {
+        self.pose = pose
+        self.pixelBuffer = pixelBuffer
+        self.silhouette = silhouette
+    }
 }
 
 /// Bounded, session-scoped pixel buffer ownership while MediaPipe performs
