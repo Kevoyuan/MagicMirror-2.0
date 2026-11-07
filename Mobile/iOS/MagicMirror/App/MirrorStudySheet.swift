@@ -42,7 +42,8 @@ struct MirrorStudySheet: View {
 
                     ManuscriptRule()
 
-                    Label(note.isProxy ? "Observed pose reference" : "Reviewed anatomy reference",
+                    Label(LocalizedStringKey(note.isProxy
+                        ? "Observed pose reference" : "Reviewed anatomy reference"),
                           systemImage: "book.closed")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(LeonardoPalette.verdigris)
