@@ -51,6 +51,20 @@ enum AnatomyDisplayLayer: String, CaseIterable, Identifiable {
     /// Runtime switches use a separate independently verified resource gate.
     var isAvailable: Bool { self == .referenceProxy }
 
+    /// Distinct, deliberately illustrative reference pigments. These
+    /// do not represent medical tissue colors or a person's physiology.
+    var referencePigment: SIMD4<Float> {
+        switch self {
+        case .referenceProxy: return SIMD4(0.82, 0.94, 1.00, 1)
+        case .skeleton: return SIMD4(0.94, 0.90, 0.79, 1)
+        case .muscles: return SIMD4(0.78, 0.34, 0.30, 1)
+        case .organs: return SIMD4(0.77, 0.49, 0.36, 1)
+        case .vessels: return SIMD4(0.76, 0.28, 0.41, 1)
+        case .nerves: return SIMD4(0.94, 0.74, 0.35, 1)
+        case .joints: return SIMD4(0.49, 0.77, 0.72, 1)
+        }
+    }
+
     var detail: String {
         switch self {
         case .referenceProxy:
