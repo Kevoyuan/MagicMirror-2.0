@@ -635,3 +635,30 @@ use the clearly labeled observed pose guide; tracking dropout or
 switching system clears the selection. Actual Z-Anatomy structure
 names are not invented by the app: they come only from separately
 reviewed part manifests that have passed all local checksum checks.
+
+## Same-frame foreground silhouette constrained AR compositing
+
+The single on-device MediaPipe liveStream now requests a foreground
+confidence mask for the same pose result as the already matched
+AVFoundation portrait BGRA buffer. Its task-owned UInt8/Float32 bytes
+are copied **inside the callback** into a bounded, session-local
+`PoseSilhouetteMask` and passed with its exact source frame through
+`AlignedPoseVideoFrame`. No second camera, server or image recording
+is involved.
+
+The Metal camera compositor uploads the optional, same-result
+single-channel mask (R8Unorm or R32Float) and samples it with the
+**same source-video aspect-fill crop** at the fragment's screen
+position. Both live procedural proxy fragments and reviewed skinned
+anatomy fragments fade/discard outside the detected person's 2D
+silhouette. Missing masks fall back to the previous reference overlay
+via a neutral constant foreground texture; no mask is carried from
+another result or timestamp.
+
+**This is NOT a depth occlusion or X-ray algorithm.** Foreground
+segmentation does not reveal whether a hand is in front of a rib,
+where bones are inside the subject, or which layer of tissue is
+closest to the camera. No true front/back occlusion, LiDAR support
+or validated medical tissue depth is claimed. Device-specific mask
+alignment, CPU/GPU cost, portrait orientation and environmental
+robustness still need testing.
