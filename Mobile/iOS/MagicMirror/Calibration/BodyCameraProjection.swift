@@ -96,7 +96,8 @@ enum BodyReprojectionGate {
         camera: BodyCameraIntrinsics,
         transform: BodyToCameraTransform,
         requiredVisiblePoints: Int = 6,
-        p90LimitFractionOfImageWidth: Float = 0.03
+        p90LimitFractionOfImageWidth: Float = 0.03,
+        landmarkIndices: [Int]? = nil
     ) -> BodyReprojectionReport? {
         guard requiredVisiblePoints >= 4,
               p90LimitFractionOfImageWidth > 0,
@@ -105,9 +106,10 @@ enum BodyReprojectionGate {
               camera.matches(image: snapshot.imageSize),
               transform.isValid else { return nil }
 
+        let indices = landmarkIndices ?? Array(0..<33)
         var errors: [Float] = []
-        errors.reserveCapacity(33)
-        for index in 0..<33 {
+        errors.reserveCapacity(indices.count)
+        for index in indices where (0..<33).contains(index) {
             let observed = snapshot.points[index]
             let world = snapshot.worldPoints[index]
             guard observed.isUsable, world.isUsable,
