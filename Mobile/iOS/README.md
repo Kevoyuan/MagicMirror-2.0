@@ -542,3 +542,21 @@ face/cap mesh or interior anatomical tissue is synthesized. Body-world
 torso facing is only an estimate; reviewed model and independent
 camera/body registration remain mandatory. No source Z-Anatomy assets
 or approved skinning weights are shipped with the prototype.
+
+## Tap-to-inspect visible reference parts (interactive iPhone UI)
+
+Tap a visibly tracked arm, leg or shoulder/pelvis reference segment in
+the live camera picture. The native hit tester computes the shortest
+distance to the **actually rendered procedural segment** after the same
+source-image aspect-fill transform as Metal, restricts targets to the
+current Whole/Arms/Legs focus and rejects low-visibility or offscreen
+segments. A soft verdigris line highlights the selected live segment;
+an accessible Leonardo field-note card explains the body region and
+explicitly labels it as an illustrative pose guide rather than a
+measured anatomical bone. Tapping elsewhere clears the selection.
+
+Selections are invalidated when landmarks disappear, the camera stops,
+tracking pauses or a reviewed atlas replaces the proxy. There is no
+cross-person persisted identity, image upload, or fake anatomical
+structure name. Picking actual Z-Anatomy mesh parts remains conditional
+on a separately reviewed atlas and associated geometry metadata.

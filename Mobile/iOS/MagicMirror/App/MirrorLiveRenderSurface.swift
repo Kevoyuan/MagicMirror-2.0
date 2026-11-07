@@ -18,6 +18,9 @@ struct MirrorLiveRenderSurface: View {
                 skinnedAtlasBatch: model.isPaused
                     ? nil : model.skinnedAtlasBatch
             )
+            .overlay {
+                AnatomyReferenceHighlight(model: model)
+            }
             .onAppear {
                 model.setViewportSize(geometry.size)
             }

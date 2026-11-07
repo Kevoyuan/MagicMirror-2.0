@@ -345,3 +345,13 @@ atlas and camera evidence are present.
 medical/internal volume slices or watertight cut caps. Live phone
 facing/occlusion quality, source anatomy/weights and camera registration
 still need human and physical-device acceptance.
+
+## Mobile-5 on-camera reference segment inspector (2026-11-07)
+
+Added an interactive camera tap target, exact-aspect-fill segment
+hit-testing, live selection highlight and accessible Leonardo notebook
+description for observed proxy shoulder/arm/leg/pelvis segments. A
+frozen, stale, invisible or out-of-focus segment is not selectable.
+Names are educational region labels, not claims of detected bones.
+Future licensed per-mesh picking will require the audited geometry
+package; this path does not rename proxies as true anatomy.

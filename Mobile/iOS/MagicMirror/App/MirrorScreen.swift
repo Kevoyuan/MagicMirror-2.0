@@ -27,6 +27,17 @@ struct MirrorScreen: View {
             MirrorLiveRenderSurface(model: model)
                 .ignoresSafeArea()
 
+            GeometryReader { geometry in
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(SpatialTapGesture().onEnded { event in
+                        model.selectReference(
+                            at: event.location, viewport: geometry.size
+                        )
+                    })
+            }
+            .ignoresSafeArea()
+
             LinearGradient(
                 colors: [
                     .black.opacity(0.48), .clear,
@@ -44,6 +55,10 @@ struct MirrorScreen: View {
                         .padding(.top, 10)
                 }
                 Spacer()
+                if let selected = model.referenceSelection {
+                    referenceCard(selected)
+                        .padding(.bottom, 8)
+                }
                 if presentation.guidanceForUser != nil {
                     guidance
                         .padding(.bottom, 8)
@@ -256,6 +271,47 @@ struct MirrorScreen: View {
         .padding(.vertical, 10)
         .background(LeonardoPalette.cameraScrim.opacity(0.85),
                     in: RoundedRectangle(cornerRadius: 15))
+        .accessibilityElement(children: .contain)
+    }
+
+    private func referenceCard(
+        _ selected: AnatomyReferenceSelection
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "hand.point.up.left")
+                .font(.title3)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(selected.title)
+                    .font(.system(.headline, design: .serif))
+                    .foregroundStyle(LeonardoPalette.ivory)
+                Text(selected.explanation)
+                    .font(.caption)
+                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Observed pose guide · not your internal bones")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.68))
+            }
+            Spacer(minLength: 0)
+            Button {
+                model.dismissReferenceSelection()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(LeonardoPalette.ivory)
+            .accessibilityLabel("Close reference detail")
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LeonardoPalette.cameraScrim.opacity(0.90),
+            in: RoundedRectangle(cornerRadius: 15)
+        )
         .accessibilityElement(children: .contain)
     }
 
