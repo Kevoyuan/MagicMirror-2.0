@@ -120,9 +120,14 @@ struct AnatomyLayersSheet: View {
 
     private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
         let available = model.canSelectAnatomyLayer(layer)
+        // A requested system is not visually active until a real,
+        // independently registered local model is actually available.
+        let activeSystems = model.enabledAnatomyLayers.filter {
+            model.canSelectAnatomyLayer($0)
+        }
         let selected = layer == .referenceProxy
-            ? model.enabledAnatomyLayers.isEmpty
-            : model.enabledAnatomyLayers.contains(layer)
+            ? activeSystems.isEmpty
+            : activeSystems.contains(layer)
         return VStack(alignment: .leading, spacing: 5) {
         Button {
             model.selectAnatomyLayer(layer)
@@ -157,8 +162,9 @@ struct AnatomyLayersSheet: View {
                         ? (selected ? "checkmark.circle.fill" : "circle")
                         : "lock.fill")
                         .font(.subheadline)
-                    Text(available
-                        ? (selected ? "SELECTED" : "READY") : "LOCKED")
+                    Text(LocalizedStringKey(
+                        available ? (selected ? "SELECTED" : "READY") : "LOCKED"
+                    ))
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
                 }
@@ -185,12 +191,16 @@ struct AnatomyLayersSheet: View {
         }
         .buttonStyle(.plain)
         .disabled(!available)
-        .accessibilityLabel(layer.title)
-        .accessibilityHint(available
-            ? (layer == .referenceProxy
+        .accessibilityLabel(LocalizedStringKey(layer.title))
+        .accessibilityValue(LocalizedStringKey(
+            available ? (selected ? "SELECTED" : "READY") : "LOCKED"
+        ))
+        .accessibilityHint(LocalizedStringKey(
+            available ? (layer == .referenceProxy
                 ? "Hide the anatomical systems and use the reference proxy"
                 : "Toggle this reviewed anatomical system")
-            : "Requires independently reviewed and registered anatomy")
+            : "Requires independently reviewed and registered anatomy"
+        ))
 
         if selected, layer != .referenceProxy, available {
             HStack(spacing: 10) {
@@ -204,7 +214,8 @@ struct AnatomyLayersSheet: View {
                     ),
                     in: 0.05...1
                 )
-                .accessibilityLabel("\(layer.title) opacity")
+                .accessibilityLabel("Layer opacity")
+                .accessibilityHint(LocalizedStringKey(layer.title))
             }
             .padding(.horizontal, 15)
             .padding(.bottom, 8)
@@ -223,9 +234,9 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text(model.canSectionReviewedAtlas
+            Text(LocalizedStringKey(model.canSectionReviewedAtlas
                 ? "3D surface section clipping is available for the reviewed and registered skinned atlas. This shows cut surfaces without generating anatomical cross-section caps."
-                : "3D surface section controls unlock only when a reviewed, registered, GPU-skinned atlas is actually available. A drawn guide line is not a real cut.")
+                : "3D surface section controls unlock only when a reviewed, registered, GPU-skinned atlas is actually available. A drawn guide line is not a real cut."))
                 .font(.subheadline)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -260,9 +271,9 @@ struct AnatomyLayersSheet: View {
                             : "lock.fill")
                             .font(.caption)
                             .accessibilityHidden(true)
-                        Text(model.canSectionReviewedAtlas
+                        Text(LocalizedStringKey(model.canSectionReviewedAtlas
                             ? (model.activeSection == plane ? "ACTIVE" : "SELECT")
-                            : "LOCKED")
+                            : "LOCKED"))
                             .font(.system(.caption2, weight: .semibold))
                     }
                     .foregroundStyle(LeonardoPalette.mutedInk)
@@ -276,9 +287,12 @@ struct AnatomyLayersSheet: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(!model.canSectionReviewedAtlas)
-                .accessibilityHint(model.canSectionReviewedAtlas
+                .accessibilityValue(LocalizedStringKey(model.canSectionReviewedAtlas
+                    ? (model.activeSection == plane ? "ACTIVE" : "SELECT")
+                    : "LOCKED"))
+                .accessibilityHint(LocalizedStringKey(model.canSectionReviewedAtlas
                     ? "Apply the selected half-space clip to the registered atlas"
-                    : "Requires independently reviewed anatomy and camera registration")
+                    : "Requires independently reviewed anatomy and camera registration"))
             }
 
             if model.canSectionReviewedAtlas, model.activeSection != nil {
@@ -293,9 +307,9 @@ struct AnatomyLayersSheet: View {
                 }
             }
 
-            Text(model.canSectionReviewedAtlas
+            Text(LocalizedStringKey(model.canSectionReviewedAtlas
                 ? "GPU 3D SURFACE CLIPPING · REFERENCE GEOMETRY ONLY"
-                : "NO REGISTERED ATLAS AVAILABLE FOR CUTTING")
+                : "NO REGISTERED ATLAS AVAILABLE FOR CUTTING"))
                 .font(.system(size: 10, weight: .semibold))
                 .tracking(0.6)
                 .foregroundStyle(LeonardoPalette.mutedInk)
