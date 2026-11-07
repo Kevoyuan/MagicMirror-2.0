@@ -70,10 +70,10 @@ hips (and both ears for the cranium) are confidently observed.
 
 The shapes are *new, original procedural educational illustrations*, not
 individual recovered bones, real anatomical rib numbers, patient anatomy
-or a licensed Z-Anatomy model. The approved-bundle atlas renderer still
-takes precedence whenever a valid, individually reviewed anatomy package
-is present. The region-focus control keeps the original arms-only and
-legs-only views without ribs or head arcs.
+or a licensed Z-Anatomy model. The renderer continues to show the procedural proxy unless a separately
+calibrated, same-frame atlas draw batch is supplied; a binary review flag
+alone never enables live anatomy. The region-focus control preserves the
+arms-only and legs-only views without ribs or head arcs.
 
 The extra geometry uses six-sided tube segments to limit per-frame CPU
 mesh generation and Metal vertex traffic. Geometry and gating are covered
@@ -332,3 +332,38 @@ are fetched, committed, or redistributed by this test. Human asset rights,
 anatomical accuracy, coherent 3D skin/rig and calibrated real iPhone
 overlay remain separate blockers; successful preflight never unlocks
 an unreviewed model.
+
+## Live articulated procedural rig (Mobile-2/4 runtime slice)
+
+`Motion/LiveProxyRigRetargeter.swift` now runs in the **actual on-device
+camera-to-Metal path**. After twelve stable torso observations,
+`AnatomyReferenceCapture` freezes estimated body-world reference limb
+lengths. Every eligible, fresh MediaPipe pose passes through
+`TwoBoneIK.solve` for the four visible arm/leg chains, preserving the
+captured upper/lower segment lengths. A same-frame weak-perspective fit
+projects each adjusted elbow, wrist, knee or ankle back into the **actual
+source image dimensions** before the procedural Metal geometry is built.
+
+This is a **live educational proxy improvement**, not a verified
+Z-Anatomy skeleton, calibrated camera extrinsics, personalized bone
+measurements or true occlusion. Individual chains fail closed on missing
+joints, large length differences, over-clamped targets, nonfinite geometry
+or excessive source-image displacement. If the reference is not ready,
+the frame is partially observed, or the 3D fit fails, the app retains
+its existing confidence-gated partial-body procedural proxy.
+
+Only the geometry uses the retargeted pose: the original filtered
+`PoseSnapshot` and its matched source camera buffer remain separate.
+Metal accepts the geometry pose only with the **identical source timestamp
+and image size**. Dropout, camera stop, pause, stale tracking and
+capture-resolution changes reset the reference to avoid carrying a
+previous person's body proportions across sessions. The three layer
+categories and legal source review remain unchanged.
+
+Synthetic XCTest source in
+`MagicMirrorTests/LiveProxyRigRetargeterTests.swift` covers
+reference acquisition, fixed limb lengths, stale/replayed frames,
+source-resolution changes and loss/reacquisition; normal CI
+`build-for-testing` compiles these tests, it does not execute them.
+Real iPhone tracking quality, motion latency and battery/thermal load
+remain outstanding.
