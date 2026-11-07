@@ -63,9 +63,9 @@ camera or Z-Anatomy assets:
 ~~~bash
 dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
 ~~~
-This tests original C# IK/pose-contract/registration/reprojection sources
-with constructed inputs, **not** Unity rendering, anatomy accuracy, true
-camera calibration or measured live-device performance.
+This tests compiled C# IK, pose-contract, registration, reprojection, and
+reviewed full-atlas limb motion planner sources with constructed inputs.
+**It does not validate Unity rendering, real anatomy, camera calibration or device latency.**
 
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
@@ -92,6 +92,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
+- Docs/M4_M5_WHOLE_ATLAS_3D_PREVIEW.md — historical Unity source preview (not mobile product)
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
 - Docs/M3_WHOLE_ATLAS_AUDIT.md — full atlas hierarchy inventory audit (desktop research, not a license review)
 - Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics

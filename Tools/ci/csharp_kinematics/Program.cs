@@ -123,5 +123,6 @@ internal static class Program
         BodyBridgeChecks.Run();
         ReprojectionChecks.Run();
         CaptureWindowChecks.Run();
+        AtlasPlannerChecks.Run();
     }
 }

@@ -63,6 +63,86 @@ namespace MagicMirror.Motion
         private bool hasPose;
         private float lastPoseTime = -100f;
 
+        // M4/M5 diagnostic preview, NEVER automatically enabled by the
+        // default 2D mirror or by a synthetic pose/camera. Three-dimensional
+        // atlas motion stays in original FBX ROOT-LOCAL coordinates; its
+        // visual placement over a live RGB camera still requires M5 hardware
+        // registration and is NOT validated by this preview.
+        private bool reviewed3DPreviewRequested;
+        private bool reviewed3DPreviewAuthorized;
+        private BodySimilarityCalibration frozen3DCalibration;
+        private long last3DFrameId = -1;
+        private long last3DTimestampMs = -1;
+        [Header("Reviewed 3D diagnostic only (no camera alignment)")]
+        [SerializeField, Range(0f, 20f)] private float minLimbFlexionDegrees = 0f;
+        [SerializeField, Range(40f, 175f)] private float maxLimbFlexionDegrees = 150f;
+
+        public bool IsReviewed3DPreviewActive
+        {
+            get { return reviewed3DPreviewRequested && reviewed3DPreviewAuthorized; }
+        }
+
+        /// <summary>
+        /// Ensures the opt-in capture coordinator observes exactly the
+        /// SAME single-camera TCP receiver and intact reviewed atlas profile.
+        /// </summary>
+        public bool UsesPoseStreamAndProfile(
+            PoseStreamReceiver source, FullBodyAtlasProfile atlasProfile)
+        {
+            return poseSource != null && ReferenceEquals(poseSource, source) &&
+                   profile != null && ReferenceEquals(profile, atlasProfile);
+        }
+
+        /// <summary>
+        /// Explicit review gate: the normal 2D renderer is not switched to
+        /// model-world motion until ONE real intact FBX has been reviewed,
+        /// the session has collected stable real PoseFrames, and an operator
+        /// has approved diagnostic (NOT AR) playback. The returned 3D pose
+        /// remains in FBX local coordinates; NO camera extrinsics implied.
+        /// </summary>
+        public bool TryEnableReviewed3DPreview(
+            BodySimilarityCalibration frozenCalibration,
+            PoseCaptureQuality capture,
+            bool operatorApprovedDiagnosticPreview)
+        {
+            string error;
+            if (!Application.isPlaying || atlasRoot == null ||
+                profile == null || profile.schematicDemo ||
+                !operatorApprovedDiagnosticPreview ||
+                !frozenCalibration.IsValid || !frozenCalibration.PreservesHandedness ||
+                capture.AcceptedFrames < 12 ||
+                capture.FirstFrameId < 0 ||
+                capture.LastFrameId <= capture.FirstFrameId ||
+                capture.LastTimestampMs <= capture.FirstTimestampMs ||
+                float.IsNaN(capture.MaximumJointDriftInShoulderWidths) ||
+                capture.MaximumJointDriftInShoulderWidths < 0f ||
+                capture.MaximumJointDriftInShoulderWidths > 0.06f ||
+                !profile.Validate(out error) ||
+                !profile.ValidateHierarchy(out error))
+                return false;
+
+            frozen3DCalibration = frozenCalibration;
+            last3DFrameId = capture.LastFrameId;
+            last3DTimestampMs = capture.LastTimestampMs;
+            lastPoseTime = Time.realtimeSinceStartup;
+            reviewed3DPreviewRequested = true;
+            reviewed3DPreviewAuthorized = true;
+            hasPose = false;
+            if (atlasContainer != null) atlasContainer.SetActive(false);
+            return true;
+        }
+
+        /// <summary>Explicitly leave the 3D diagnostic and return to 2D mode.</summary>
+        public void DisableReviewed3DPreview()
+        {
+            reviewed3DPreviewRequested = false;
+            reviewed3DPreviewAuthorized = false;
+            frozen3DCalibration = default(BodySimilarityCalibration);
+            last3DFrameId = last3DTimestampMs = -1;
+            hasPose = false;
+            if (atlasContainer != null) atlasContainer.SetActive(false);
+        }
+
         public void Configure(PoseStreamReceiver source, Camera camera,
                               FullBodyAtlasProfile atlasProfile)
         {
@@ -128,6 +208,7 @@ namespace MagicMirror.Motion
             if (poseSource != null) poseSource.FrameReceived -= OnPoseFrame;
             if (atlasContainer != null) atlasContainer.SetActive(false);
             if (poseSmoother != null) poseSmoother.Reset();
+            DisableReviewed3DPreview();
             hasPose = false;
         }
 
@@ -142,7 +223,15 @@ namespace MagicMirror.Motion
             if (Input.GetKeyDown(KeyCode.Alpha4)) SetViewMode(FullBodyViewMode.LegsOnly);
 #endif
 
-            if (hasPose && Time.realtimeSinceStartup - lastPoseTime > staleAfterSeconds)
+            bool stale = Time.realtimeSinceStartup - lastPoseTime > staleAfterSeconds;
+            if (stale && reviewed3DPreviewRequested)
+            {
+                // Revoke even if a preceding low-confidence frame had hidden
+                // the preview. Reacquisition needs a fresh reviewed capture.
+                reviewed3DPreviewAuthorized = false;
+                Hide3DPreview();
+            }
+            else if (hasPose && stale)
             {
                 hasPose = false;
                 if (atlasContainer != null) atlasContainer.SetActive(false);
@@ -291,7 +380,14 @@ namespace MagicMirror.Motion
 
         private void OnPoseFrame(PoseFrame frame)
         {
-            if (atlasRoot == null || frame == null || !frame.IsValid)
+            if (atlasRoot == null)
+                return;
+            if (reviewed3DPreviewRequested)
+            {
+                OnReviewed3DPreviewFrame(frame);
+                return;
+            }
+            if (frame == null || !frame.IsValid)
                 return;
 
             float receiveTime = Time.realtimeSinceStartup;
@@ -407,6 +503,249 @@ namespace MagicMirror.Motion
             lastPoseTime = receiveTime;
             hasPose = true;
             atlasContainer.SetActive(true);
+        }
+
+        /// <summary>
+        /// Diagnostic ONLY: one reviewed intact FBX in its own atlas root.
+        /// This deliberately does not project bones into the current camera;
+        /// per-person camera extrinsics and alpha overlay are separate gates.
+        /// Never silently drop back to planar mode when a 3D packet fails.
+        /// </summary>
+        private void OnReviewed3DPreviewFrame(PoseFrame frame)
+        {
+            if (!reviewed3DPreviewAuthorized || atlasContainer == null ||
+                frame == null || !frame.IsValid || frame.demo || frame.mirrored)
+            {
+                Hide3DPreview();
+                return;
+            }
+
+            // A TCP reconnect can restart from frame ID 0. PoseStreamReceiver
+            // will accept that new session, but this 3D calibration CANNOT
+            // continue automatically with a potentially different person.
+            if (frame.frameId <= last3DFrameId ||
+                frame.timestampMs <= last3DTimestampMs ||
+                frame.timestampMs - last3DTimestampMs > 250)
+            {
+                reviewed3DPreviewAuthorized = false;
+                Hide3DPreview();
+                return;
+            }
+            last3DFrameId = frame.frameId;
+            last3DTimestampMs = frame.timestampMs;
+            lastPoseTime = Time.realtimeSinceStartup;
+
+            // Always start from the source's immutable original renderer
+            // transforms, never integrate motion into a previous frame.
+            foreach (MovingMesh entry in movingMeshes)
+            {
+                if (entry.transform == null) continue;
+                entry.transform.localPosition = entry.originalLocalPosition;
+                entry.transform.localRotation = entry.originalLocalRotation;
+                entry.transform.localScale = entry.originalLocalScale;
+                entry.hasComputedPose = false;
+            }
+            atlasContainer.transform.localPosition = Vector3.zero;
+            atlasContainer.transform.localRotation = Quaternion.identity;
+            atlasContainer.transform.localScale = Vector3.one;
+
+            // Generate exact SAME-SOURCE-FRAME 3D commands, all in the atlas
+            // ROOT-LOCAL frame. Abort the entire pose if one configured chain
+            // has an invalid joint or an unreviewed/missing paired region.
+            solved.Clear();
+            int configuredChains = 0;
+            if (!TryBuildReviewed3DLimb(
+                    frame, TrackedTwoLinkLimb.LeftArm,
+                    BodySegment.LeftUpperArm, BodySegment.LeftForearm,
+                    ref configuredChains) ||
+                !TryBuildReviewed3DLimb(
+                    frame, TrackedTwoLinkLimb.RightArm,
+                    BodySegment.RightUpperArm, BodySegment.RightForearm,
+                    ref configuredChains) ||
+                !TryBuildReviewed3DLimb(
+                    frame, TrackedTwoLinkLimb.LeftLeg,
+                    BodySegment.LeftThigh, BodySegment.LeftShin,
+                    ref configuredChains) ||
+                !TryBuildReviewed3DLimb(
+                    frame, TrackedTwoLinkLimb.RightLeg,
+                    BodySegment.RightThigh, BodySegment.RightShin,
+                    ref configuredChains) ||
+                configuredChains == 0)
+            {
+                Hide3DPreview();
+                return;
+            }
+
+            // Calculate WORLD target transforms from original FBX geometry
+            // before applying any parent's motion. Even if a renderer has
+            // parent/child relationships, compute all from its neutral pose.
+            foreach (MovingMesh entry in movingMeshes)
+            {
+                if (entry.transform == null) continue;
+                SegmentMotion motion;
+                if (!solved.TryGetValue(entry.group.segment, out motion))
+                    continue;
+                Vector3 neutralWorld =
+                    atlasRoot.TransformPoint(entry.neutralAtlasPosition);
+                entry.computedPosition = motion.start +
+                    motion.rotation * (neutralWorld - motion.restStart);
+                entry.computedRotation = motion.rotation * atlasRoot.rotation *
+                                         entry.neutralAtlasRotation;
+                if (!Finite3D(entry.computedPosition) ||
+                    !FiniteQuaternion(entry.computedRotation))
+                {
+                    Hide3DPreview();
+                    return;
+                }
+                entry.hasComputedPose = true;
+            }
+
+            // Parent-before-child world transforms prevent inherited motion
+            // from changing the intended absolute target of bound meshes.
+            foreach (MovingMesh entry in movingMeshes)
+            {
+                if (entry.transform != null && entry.hasComputedPose)
+                    entry.transform.SetPositionAndRotation(
+                        entry.computedPosition, entry.computedRotation);
+            }
+            hasPose = true;
+            lastPoseTime = Time.realtimeSinceStartup;
+            atlasContainer.SetActive(true);
+        }
+
+        private void Hide3DPreview()
+        {
+            hasPose = false;
+            if (atlasContainer != null)
+                atlasContainer.SetActive(false);
+        }
+
+        private bool TryBuildReviewed3DLimb(
+            PoseFrame frame, TrackedTwoLinkLimb limb,
+            BodySegment upperSegment, BodySegment lowerSegment,
+            ref int configuredChains)
+        {
+            FullBodyAtlasProfile.MotionGroup upper = FindMotionGroup(upperSegment);
+            FullBodyAtlasProfile.MotionGroup lower = FindMotionGroup(lowerSegment);
+            if (upper == null && lower == null)
+                return true; // An unmapped region stays at anatomical rest.
+            if (upper == null || lower == null || !upper.reviewed || !lower.reviewed)
+                return false; // A dangling upper/forearm is unsafe to animate.
+
+            // A reviewed elbow or knee must have ONE shared anatomical
+            // center. Never invent a bridge between misaligned source bones.
+            float upperLength = (upper.atlasEndLocal -
+                                 upper.atlasStartLocal).magnitude;
+            float lowerLength = (lower.atlasEndLocal -
+                                 lower.atlasStartLocal).magnitude;
+            float hingeGap = Vector3.Distance(
+                upper.atlasEndLocal, lower.atlasStartLocal);
+            float allowedGap = Mathf.Min(upperLength, lowerLength) * 0.005f;
+            if (!Finite3D(upper.atlasStartLocal) ||
+                !Finite3D(upper.atlasEndLocal) ||
+                !Finite3D(lower.atlasStartLocal) ||
+                !Finite3D(lower.atlasEndLocal) ||
+                upperLength < 1e-5f || lowerLength < 1e-5f ||
+                hingeGap > allowedGap)
+                return false;
+
+            Vector3 restHinge =
+                (upper.atlasEndLocal + lower.atlasStartLocal) * 0.5f;
+            var reviewedChain = new ReviewedAtlasTwoLinkChain
+            {
+                proximalAtlasLocal = ToKinematic(upper.atlasStartLocal),
+                hingeAtlasLocal = ToKinematic(restHinge),
+                distalAtlasLocal = ToKinematic(lower.atlasEndLocal),
+                upperRegionReviewed = upper.reviewed,
+                lowerRegionReviewed = lower.reviewed
+            };
+            AtlasTwoLinkMotionCommand planned;
+            if (!AtlasTwoLinkMotionPlanner.TryPlan(
+                    frame, limb, frozen3DCalibration, reviewedChain,
+                    confidenceThreshold, minLimbFlexionDegrees,
+                    maxLimbFlexionDegrees, out planned) ||
+                !planned.isValid ||
+                planned.sourceFrameId != frame.frameId ||
+                planned.sourceTimestampMs != frame.timestampMs)
+                return false;
+
+            SegmentMotion upperMotion, lowerMotion;
+            if (!TryRegionWorldMotion(planned.upper, out upperMotion) ||
+                !TryRegionWorldMotion(planned.lower, out lowerMotion))
+                return false;
+            solved[upperSegment] = upperMotion;
+            solved[lowerSegment] = lowerMotion;
+            configuredChains++;
+            return true;
+        }
+
+        private FullBodyAtlasProfile.MotionGroup FindMotionGroup(
+            BodySegment segment)
+        {
+            if (profile == null || profile.groups == null)
+                return null;
+            foreach (FullBodyAtlasProfile.MotionGroup group in profile.groups)
+                if (group != null && group.segment == segment)
+                    return group;
+            return null;
+        }
+
+        private bool TryRegionWorldMotion(
+            AtlasRigidRegionCommand command, out SegmentMotion result)
+        {
+            result = default(SegmentMotion);
+            Vector3 restStart = atlasRoot.TransformPoint(
+                ToUnity(command.restStartAtlasLocal));
+            Vector3 restEnd = atlasRoot.TransformPoint(
+                ToUnity(command.restEndAtlasLocal));
+            Vector3 targetStart = atlasRoot.TransformPoint(
+                ToUnity(command.targetStartAtlasLocal));
+            Vector3 targetEnd = atlasRoot.TransformPoint(
+                ToUnity(command.targetEndAtlasLocal));
+            Vector3 restDirection = restEnd - restStart;
+            Vector3 targetDirection = targetEnd - targetStart;
+            if (!Finite3D(restStart) || !Finite3D(restEnd) ||
+                !Finite3D(targetStart) || !Finite3D(targetEnd) ||
+                restDirection.sqrMagnitude < 1e-10f ||
+                targetDirection.sqrMagnitude < 1e-10f)
+                return false;
+
+            Quaternion rotation =
+                Quaternion.FromToRotation(restDirection, targetDirection);
+            if (!FiniteQuaternion(rotation))
+                return false;
+            result = new SegmentMotion
+            {
+                start = targetStart,
+                restStart = restStart,
+                rotation = rotation
+            };
+            return true;
+        }
+
+        private static KinematicVector3 ToKinematic(Vector3 p)
+        {
+            return new KinematicVector3(p.x, p.y, p.z);
+        }
+
+        private static Vector3 ToUnity(KinematicVector3 p)
+        {
+            return new Vector3(p.x, p.y, p.z);
+        }
+
+        private static bool Finite3D(Vector3 p)
+        {
+            return !float.IsNaN(p.x) && !float.IsInfinity(p.x) &&
+                   !float.IsNaN(p.y) && !float.IsInfinity(p.y) &&
+                   !float.IsNaN(p.z) && !float.IsInfinity(p.z);
+        }
+
+        private static bool FiniteQuaternion(Quaternion q)
+        {
+            return !float.IsNaN(q.x) && !float.IsInfinity(q.x) &&
+                   !float.IsNaN(q.y) && !float.IsInfinity(q.y) &&
+                   !float.IsNaN(q.z) && !float.IsInfinity(q.z) &&
+                   !float.IsNaN(q.w) && !float.IsInfinity(q.w);
         }
 
         private struct SegmentMotion
