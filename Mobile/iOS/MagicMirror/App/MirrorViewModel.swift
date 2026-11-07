@@ -10,6 +10,7 @@ final class MirrorViewModel {
     var phase: MirrorPhase = .idle
     var snapshot: PoseSnapshot?
     var opacity = 0.64
+    var focus: AnatomyFocus = .full
     var isPaused = false
 
     private var isActive = false
