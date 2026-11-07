@@ -55,6 +55,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var commands: MTLCommandQueue?
         private var bonePipeline: MTLRenderPipelineState?
         private var skinnedPipeline: MTLRenderPipelineState?
+        private var cachedSkinKey: SkinnedAtlasCacheKey?
+        private var cachedSkinVertexBuffer: MTLBuffer?
         private var videoPipeline: MTLRenderPipelineState?
         private var textureCache: CVMetalTextureCache?
 
@@ -67,6 +69,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
+            cachedSkinKey = nil
+            cachedSkinVertexBuffer = nil
             self.device = device
             self.commands = device.makeCommandQueue()
             guard let shaders = device.makeDefaultLibrary(),
@@ -176,6 +180,47 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             return texture
         }
 
+        /// A stable, immutable source rest mesh is uploaded once per
+        /// approved package and Whole/Arms/Legs selection. Frame updates
+        /// upload only compact bone matrices, camera and cut uniforms.
+        private struct SkinnedAtlasCacheKey: Equatable {
+            let identity: UUID
+            let focus: AnatomyFocus
+            let vertexCount: Int
+        }
+
+        private func cachedSkinnedMesh(
+            _ skin: SkinnedAtlasDrawBatch,
+            device: MTLDevice
+        ) -> MTLBuffer? {
+            let key = SkinnedAtlasCacheKey(
+                identity: skin.geometryIdentity,
+                focus: skin.focus,
+                vertexCount: skin.vertices.count
+            )
+            if cachedSkinKey == key,
+               let cachedSkinVertexBuffer {
+                return cachedSkinVertexBuffer
+            }
+            guard let result = skin.vertices.withUnsafeBytes({
+                raw -> MTLBuffer? in
+                guard let address = raw.baseAddress,
+                      raw.count > 0 else { return nil }
+                return device.makeBuffer(
+                    bytes: address,
+                    length: raw.count,
+                    options: .storageModeShared
+                )
+            }) else {
+                cachedSkinKey = nil
+                cachedSkinVertexBuffer = nil
+                return nil
+            }
+            cachedSkinKey = key
+            cachedSkinVertexBuffer = result
+            return result
+        }
+
         func draw(in view: MTKView) {
             guard let pass = view.currentRenderPassDescriptor,
                   let drawable = view.currentDrawable,
@@ -230,14 +275,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     focus: focus, opacity: opacity
                    ),
                    let skinnedPipeline,
-                   let source = skin.vertices.withUnsafeBytes({
-                    bytes -> MTLBuffer? in
-                    guard let address = bytes.baseAddress else { return nil }
-                    return device.makeBuffer(
-                        bytes: address, length: bytes.count,
-                        options: .storageModeShared
-                    )
-                   }),
+                   let source = cachedSkinnedMesh(skin, device: device),
                    let posePalette = skin.cameraMatrices.withUnsafeBytes({
                     bytes -> MTLBuffer? in
                     guard let address = bytes.baseAddress else { return nil }
@@ -254,7 +292,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     var crop = skin.viewportParameters
                     var screen = SIMD4<Float>(
                         Float(view.bounds.width), Float(view.bounds.height),
-                        0, 0
+                        skin.opacity * 0.58, 0
                     )
                     encoder.setVertexBytes(
                         &camera, length: MemoryLayout<SIMD4<Float>>.stride,
