@@ -13,25 +13,33 @@ enum MirrorPresentationState: Equatable {
     case unavailable(String)
 
     init(phase: MirrorPhase, coverage: PoseCoverage, isPaused: Bool) {
+        // Camera permission and lifecycle outrank the user's overlay-pause
+        // preference. Otherwise a revoked permission could look "PAUSED" and
+        // hide the only Settings recovery path.
+        switch phase {
+        case .idle:
+            self = .preparing
+            return
+        case .permissionRequested:
+            self = .cameraAccess
+            return
+        case .permissionDenied:
+            self = .permissionDenied
+            return
+        case .unavailable(let message):
+            self = .unavailable(message)
+            return
+        case .searching, .partialTracking, .tracking:
+            break
+        }
         if isPaused {
             self = .paused
             return
         }
-        switch phase {
-        case .idle:
-            self = .preparing
-        case .permissionRequested:
-            self = .cameraAccess
-        case .permissionDenied:
-            self = .permissionDenied
-        case .unavailable(let message):
-            self = .unavailable(message)
-        case .searching, .partialTracking, .tracking:
-            switch coverage {
-            case .none: self = .searching
-            case .partial: self = .partial
-            case .torsoAnchored: self = .tracking
-            }
+        switch coverage {
+        case .none: self = .searching
+        case .partial: self = .partial
+        case .torsoAnchored: self = .tracking
         }
     }
 
