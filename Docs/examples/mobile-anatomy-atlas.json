@@ -1,0 +1,13 @@
+{
+  "_comment": "DELIBERATELY INVALID example. NEVER ship this as an approved atlas. Replace all source IDs, licenses, reviewed anchors, rest transforms and asset digests after human audit.",
+  "atlasId": "UNREVIEWED-PLACEHOLDER",
+  "sourceURL": "https://github.com/LluisV/Z-Anatomy",
+  "sourceRevision": "UNREVIEWED",
+  "attribution": "UNREVIEWED",
+  "licenseIdentifier": "UNREVIEWED",
+  "assetFilename": "example.usdz",
+  "assetSHA256": "",
+  "licenseReviewed": false,
+  "anatomyReviewed": false,
+  "bones": []
+}
