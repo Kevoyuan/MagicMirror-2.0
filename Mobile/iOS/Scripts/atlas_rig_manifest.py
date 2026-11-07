@@ -6,6 +6,7 @@ not by this module. Structural success does NOT certify human anatomy,
 copyright/licensing or the user's camera registration.
 """
 import hashlib
+import json
 import math
 from pathlib import Path
 from usdz_package import USDZPackageError, verify_usdz
@@ -133,3 +134,124 @@ def build_rig_manifest(review, mesh_manifest, usdz_file, system):
         "anatomyReviewed": True,
         "bones": bones,
     }
+
+
+def verify_rig_companion(directory, mesh_manifest, system):
+    """Check a shipped MMATLAS1/USDZ/hierarchy as one coherent package.
+
+    Does not repeat the author's human joint or rights review. Only
+    ensures the SAME source revisions, anchors, hierarchies and SHA are
+    on disk. A structurally compliant USDZ may still be invalid USD
+    geometry: independently check the USD stage on the developer Mac.
+    """
+    if system not in SYSTEM_SOURCES:
+        raise RigPackageError("unknown anatomical system")
+    directory = Path(directory)
+    base = resource_base(system)
+    usd_name = "anatomy_atlas.usdz" if system == "skeleton" else base + ".usdz"
+    rig_name = (
+        "anatomy_atlas_manifest.json" if system == "skeleton"
+        else base + "_manifest.json"
+    )
+    usd_file = directory / usd_name
+    rig_file = directory / rig_name
+    if not usd_file.exists() and not rig_file.exists():
+        return None
+    if not usd_file.is_file() or not rig_file.is_file():
+        raise RigPackageError("incomplete USDZ + reviewed rig companion")
+    try:
+        rig = json.loads(rig_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError) as exc:
+        raise RigPackageError("invalid reviewed rig manifest") from exc
+    if not isinstance(rig, dict):
+        raise RigPackageError("reviewed rig manifest must be an object")
+    expected_source = (
+        f"{SOURCE_REPOSITORY}/blob/{SOURCE_COMMIT}/"
+        f"{SYSTEM_SOURCES[system][0]}"
+    )
+    if (rig.get("sourceURL") != expected_source
+            or rig.get("sourceRevision") != SOURCE_COMMIT):
+        raise RigPackageError("reviewed rig source does not match atlas")
+    if rig.get("assetFilename") != usd_name:
+        raise RigPackageError("wrong reviewed USDZ file identity")
+    if rig.get("licenseReviewed") is not True or (
+            rig.get("anatomyReviewed") is not True):
+        raise RigPackageError("rig licensing/anatomy review not recorded")
+    if not isinstance(rig.get("attribution"), str) or (
+            "Z-Anatomy" not in rig["attribution"]
+            or "BodyParts3D" not in rig["attribution"]):
+        raise RigPackageError("rig licence credits missing")
+    if not isinstance(rig.get("licenseIdentifier"), str) or (
+            "CC BY-SA" not in rig["licenseIdentifier"]):
+        raise RigPackageError("rig licensing identification missing")
+    if not isinstance(rig.get("assetSHA256"), str) or (
+            hashlib.sha256(usd_file.read_bytes()).hexdigest()
+            != rig["assetSHA256"].lower()):
+        raise RigPackageError("USDZ SHA-256 differs from reviewed manifest")
+    try:
+        verify_usdz(usd_file)
+    except USDZPackageError as exc:
+        raise RigPackageError(f"invalid USDZ companion: {exc}") from exc
+
+    bones, parts = rig.get("bones"), mesh_manifest.get("parts")
+    if not isinstance(bones, list) or not isinstance(parts, list) or (
+            not parts or len(bones) != len(parts)):
+        raise RigPackageError("rig and MMATLAS1 mesh part count mismatch")
+    paths = {part["sourceHierarchyPath"]: part for part in parts}
+    ids, by_id, names = set(), {}, set()
+    for bone in bones:
+        if not isinstance(bone, dict):
+            raise RigPackageError("malformed approved bone")
+        path, bone_id = bone.get("nodePath"), bone.get("id")
+        if (not isinstance(path, str) or path not in paths or path in names
+                or not isinstance(bone_id, str) or not bone_id.strip()
+                or bone_id in ids):
+            raise RigPackageError("unmatched or duplicated approved bone path")
+        names.add(path)
+        ids.add(bone_id)
+        by_id[bone_id] = bone
+        part = paths[path]
+        if (bone.get("proximalLandmark") != part["fromLandmark"]
+                or bone.get("distalLandmark") != part["toLandmark"]
+                or bone.get("anchorsReviewed") is not True):
+            raise RigPackageError("bone landmark identity differs")
+        for rig_key, mesh_key in (
+            ("restStart", "restFrom"), ("restEnd", "restTo")
+        ):
+            v = bone.get(rig_key)
+            expected = part[mesh_key]
+            if not isinstance(v, list) or len(v) != 3 or not all(
+                type(x) in (int, float) and math.isfinite(x) for x in v
+            ) or math.dist(v, expected) > 1e-4:
+                raise RigPackageError("rig and MMATLAS1 rest anchors differ")
+    if names != set(paths):
+        raise RigPackageError("rig doesn't cover every source mesh")
+    roots = 0
+    for bone in bones:
+        root_id = bone["id"]
+        seen = {root_id}
+        parent = bone.get("parentId")
+        if parent is None:
+            roots += 1
+        while parent is not None:
+            if parent not in by_id or parent in seen:
+                raise RigPackageError("unknown or cyclic source bone parent")
+            seen.add(parent)
+            parent = by_id[parent].get("parentId")
+    if not roots:
+        raise RigPackageError("reviewed rig has no root segment")
+
+    skin = directory / f"{base}.skinning.json"
+    if skin.is_file():
+        try:
+            payload = json.loads(skin.read_text(encoding="utf-8"))
+            for vertex in payload["vertices"]:
+                if any(bone_id not in ids for bone_id in vertex["boneIds"]):
+                    raise RigPackageError(
+                        "skinning weight bone IDs not in approved rig"
+                    )
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            if isinstance(exc, RigPackageError):
+                raise
+            raise RigPackageError("invalid cross-linked rig skinning") from exc
+    return {"approved_bones": len(bones), "usdz": usd_name}
