@@ -1,0 +1,67 @@
+import CoreGraphics
+import Foundation
+
+/// Device-local observations only. The first MVP draws a *proxy* anatomical
+/// skeleton over 2D video, NOT actual internal bones or a 3D Z-Anatomy rig.
+struct PosePoint: Sendable, Equatable {
+    let x: CGFloat
+    let y: CGFloat
+    let visibility: Float
+
+    var isUsable: Bool {
+        x.isFinite && y.isFinite && visibility >= 0.55 &&
+        (-0.15 ... 1.15).contains(x) && (-0.15 ... 1.15).contains(y)
+    }
+}
+
+struct PoseSnapshot: Sendable {
+    let timestampMilliseconds: Int
+    let imageSize: CGSize
+    let points: [PosePoint]
+
+    var isUsable: Bool {
+        points.count == 33 &&
+        [11, 12, 23, 24].allSatisfy { points[$0].isUsable } &&
+        imageSize.width > 0 && imageSize.height > 0
+    }
+}
+
+struct PoseSegment: Sendable {
+    let from: Int
+    let to: Int
+}
+
+enum PoseSkeleton {
+    /// MediaPipe 33-landmark indices, preserving anatomical left/right.
+    /// These are approximate *surface joints*, not internal bone centers.
+    static let segments: [PoseSegment] = [
+        .init(from: 11, to: 12), .init(from: 11, to: 23),
+        .init(from: 12, to: 24), .init(from: 23, to: 24),
+        .init(from: 11, to: 13), .init(from: 13, to: 15),
+        .init(from: 12, to: 14), .init(from: 14, to: 16),
+        .init(from: 23, to: 25), .init(from: 25, to: 27),
+        .init(from: 24, to: 26), .init(from: 26, to: 28),
+        .init(from: 27, to: 29), .init(from: 29, to: 31),
+        .init(from: 28, to: 30), .init(from: 30, to: 32)
+    ]
+
+    /// Mirrors AVCaptureVideoPreviewLayer.videoGravity = .resizeAspectFill.
+    /// Inference input is a portrait-rotated unmirrored BGRA frame.
+    /// Preview and overlay MUST use the exact same aspectFill crop.
+    static func pointInPreview(
+        _ point: PosePoint, imageSize: CGSize, viewSize: CGSize
+    ) -> CGPoint? {
+        guard point.isUsable, imageSize.width > 0, imageSize.height > 0,
+              viewSize.width > 0, viewSize.height > 0 else {
+            return nil
+        }
+        let scale = max(viewSize.width / imageSize.width,
+                        viewSize.height / imageSize.height)
+        let renderedWidth = imageSize.width * scale
+        let renderedHeight = imageSize.height * scale
+        return CGPoint(
+            x: (viewSize.width - renderedWidth) / 2 + point.x * renderedWidth,
+            y: (viewSize.height - renderedHeight) / 2 + point.y * renderedHeight
+        )
+    }
+}

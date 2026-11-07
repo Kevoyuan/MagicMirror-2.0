@@ -1,0 +1,62 @@
+name: MagicMirror
+options:
+  bundleIdPrefix: dev.kevoyuan
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+packages:
+  MediaPipeTasks:
+    url: https://github.com/google-ai-edge/mediapipe
+    revision: 2df17d66d380f74884c1505a7e7ac677020c3980
+targets:
+  MagicMirror:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MagicMirror
+      - path: Resources
+        excludes:
+          - .gitkeep
+    dependencies:
+      - package: MediaPipeTasks
+        product: MediaPipeTasksVision
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.kevoyuan.magicmirror.ios
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_NSCameraUsageDescription: "MagicMirror needs your camera to draw an educational reference skeleton over people in real time. Processing stays on your iPhone."
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UIRequiresFullScreen: "YES"
+        SUPPORTS_MACCATALYST: "NO"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "NO"
+  MagicMirrorTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MagicMirrorTests
+    dependencies:
+      - target: MagicMirror
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_VERSION: "5.0"
+schemes:
+  MagicMirror:
+    build:
+      targets:
+        MagicMirror: all
+    test:
+      targets:
+        - MagicMirrorTests
+    run:
+      config: Debug
+    archive:
+      config: Release

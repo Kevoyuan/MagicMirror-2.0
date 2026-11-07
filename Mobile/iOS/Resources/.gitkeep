@@ -1,0 +1,2 @@
+This directory is populated at build preparation time by Scripts/fetch_model.sh.
+The pinned MediaPipe .task model is intentionally not committed.
