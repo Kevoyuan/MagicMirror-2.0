@@ -4,8 +4,14 @@ import UIKit
 /// One-screen phone experience. Only PoseSkeletonOverlay reads 30 Hz pose
 /// updates; labels/controls read stable phase and opacity independently.
 struct MirrorScreen: View {
+    private enum MirrorSheet: String, Identifiable {
+        case anatomy
+        case guide
+        var id: String { rawValue }
+    }
+
     @State private var model = MirrorViewModel()
-    @State private var showLayers = false
+    @State private var presentedSheet: MirrorSheet?
     @State private var showOpacity = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -53,7 +59,7 @@ struct MirrorScreen: View {
                         .padding(.top, 10)
                 }
                 Spacer()
-                if model.snapshot == nil || model.isPaused {
+                if presentation.guidance != nil {
                     guidance
                         .padding(.bottom, 8)
                 }
@@ -72,12 +78,17 @@ struct MirrorScreen: View {
             }
         }
         .onDisappear { model.stop() }
-        .sheet(isPresented: $showLayers) {
-            AnatomyLayersSheet()
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .anatomy:
+                AnatomyLayersSheet()
+            case .guide:
+                MirrorGuideSheet(showDiagnostics: $model.showDiagnostics)
+            }
         }
     }
 
-private var header: some View {
+    private var header: some View {
         HStack(spacing: 8) {
             HStack(spacing: 7) {
                 Image(systemName: "book.closed")
@@ -98,32 +109,30 @@ private var header: some View {
             Spacer(minLength: 1)
 
             Button {
-                model.toggleDiagnostics()
+                presentedSheet = .guide
             } label: {
-                Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(model.showDiagnostics
-                        ? LeonardoPalette.ivory : LeonardoPalette.ivory.opacity(0.88))
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(LeonardoPalette.ivory)
                     .frame(width: 44, height: 44)
                     .background(LeonardoPalette.cameraScrim.opacity(0.7),
                                 in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(model.showDiagnostics
-                ? "Hide on-device pose diagnostics"
-                : "Show on-device pose diagnostics")
+            .accessibilityLabel("Open field notes and privacy guide")
 
-            Label(trackingLabel, systemImage: statusIcon)
+            Label(presentation.statusTitle, systemImage: presentation.statusSymbol)
                 .labelStyle(.titleAndIcon)
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(0.4)
                 .foregroundStyle(LeonardoPalette.ivory)
                 .lineLimit(1)
-                .padding(.horizontal, 10)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 9)
                 .frame(minHeight: 34)
                 .background(LeonardoPalette.cameraScrim.opacity(0.86),
                             in: Capsule())
-                .accessibilityLabel("Pose status: \(trackingLabel)")
+                .accessibilityLabel("Pose status: \(presentation.statusTitle)")
         }
         // The 34-pt manuscript strip is visual only; controls retain
         // at least 44-pt hit targets and respect the real iPhone safe area.
@@ -165,33 +174,15 @@ private var header: some View {
         .accessibilityElement(children: .combine)
     }
 
-    private var trackingLabel: String {
-        if model.isPaused { return "PAUSED" }
-        switch model.phase {
-        case .idle: return "PREPARING"
-        case .permissionRequested: return "CAMERA ACCESS"
-        case .permissionDenied: return "CAMERA OFF"
-        case .unavailable: return "INTERRUPTED"
-        case .searching, .partialTracking, .tracking:
-            switch model.snapshot?.coverage ?? .none {
-            case .none: return "SEARCHING"
-            case .partial: return "PARTIAL"
-            case .torsoAnchored: return "TRACKING"
-            }
-        }
+    private var presentation: MirrorPresentationState {
+        MirrorPresentationState(
+            phase: model.phase,
+            coverage: model.snapshot?.coverage ?? .none,
+            isPaused: model.isPaused
+        )
     }
 
-    private var statusIcon: String {
-        if model.isPaused { return "pause.circle" }
-        switch model.phase {
-        case .permissionDenied, .unavailable: return "exclamationmark.circle"
-        case .idle, .permissionRequested: return "camera"
-        case .searching, .partialTracking, .tracking:
-            return model.snapshot == nil ? "viewfinder" : "figure.stand"
-        }
-    }
-
-@ViewBuilder
+    @ViewBuilder
     private var guidance: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: model.isPaused ? "pause.circle" : "viewfinder")
@@ -199,14 +190,14 @@ private var header: some View {
                 .foregroundStyle(LeonardoPalette.ivory)
                 .accessibilityHidden(true)
 
-            Text(guidanceText)
+            Text(presentation.guidance ?? "")
                 .font(.subheadline.weight(.medium))
                 .multilineTextAlignment(.leading)
                 .foregroundStyle(LeonardoPalette.ivory)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if case .permissionDenied = model.phase {
+            if presentation.canOpenCameraSettings {
                 Button("Settings") {
                     guard let url = URL(string: UIApplication.openSettingsURLString)
                     else { return }
@@ -226,25 +217,7 @@ private var header: some View {
         .accessibilityElement(children: .contain)
     }
 
-    private var guidanceText: String {
-        if model.isPaused { return "Overlay paused · camera still live" }
-        switch model.phase {
-        case .idle, .permissionRequested:
-            return "Allow camera access to begin"
-        case .searching:
-            return "Point at one person\nShow shoulders or a visible limb"
-        case .partialTracking:
-            return "Partial skeleton tracking"
-        case .tracking:
-            return "Reference skeleton tracking"
-        case .permissionDenied:
-            return "Camera permission is required"
-        case .unavailable(let message):
-            return message
-        }
-    }
-
-private var controls: some View {
+    private var controls: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 Text("FOLIO · I")
@@ -333,7 +306,7 @@ private var controls: some View {
 
     private var layersButton: some View {
         LeonardoActionButton("Layers", symbol: "square.3.layers.3d") {
-            showLayers = true
+            presentedSheet = .anatomy
         }
         .accessibilityHint("Open anatomy catalogue; unverified layers are unavailable")
     }
