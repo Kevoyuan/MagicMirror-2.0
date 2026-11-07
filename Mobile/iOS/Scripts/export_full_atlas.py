@@ -19,6 +19,7 @@ import math
 import struct
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 # Blender's -b --python execution does not guarantee the script's own
 # directory is on sys.path; resolve the pinned source catalog explicitly.
@@ -36,6 +37,7 @@ from atlas_sources import (
     resource_base,
 )
 from atlas_rig_manifest import build_rig_manifest
+from usdz_package import pack_usdc_as_usdz
 
 MAX_TRIANGLE_VERTICES = 180000
 
@@ -280,15 +282,23 @@ def main():
             obj.hide_set(False)
             obj.hide_render = False
             obj.hide_viewport = False
-        result = bpy.ops.wm.usd_export(
-            filepath=str(usdz_path),
-            selected_objects_only=False,
-            export_animation=False,
-            export_normals=True,
-            export_materials=False,
-        )
-        if "FINISHED" not in result:
-            raise ValueError("Blender did not finish reviewed USDZ export")
+        # Export a self-contained USD crate first, then build a standards-
+        # compliant 64-byte aligned, uncompressed USDZ. Naming a generic
+        # ZIP ".usdz" does not produce a valid iOS USD asset.
+        with TemporaryDirectory(prefix="magicmirror-reviewed-usd-") as tmp:
+            stage_path = Path(tmp) / "defaultLayer.usdc"
+            result = bpy.ops.wm.usd_export(
+                filepath=str(stage_path),
+                selected_objects_only=False,
+                visible_objects_only=False,
+                export_animation=False,
+                export_normals=True,
+                export_materials=False,
+                export_textures=False,
+            )
+            if "FINISHED" not in result or not stage_path.is_file():
+                raise ValueError("Blender did not finish USD crate export")
+            pack_usdc_as_usdz(stage_path, usdz_path)
         rig = build_rig_manifest(
             review, manifest, usdz_path, args.system
         )
