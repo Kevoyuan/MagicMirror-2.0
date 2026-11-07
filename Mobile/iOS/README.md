@@ -25,7 +25,10 @@ open MagicMirror.xcodeproj
 In Xcode choose the **MagicMirror** scheme and your connected iPhone.
 Select your development team under Signing & Capabilities, then Run.
 Allow camera access on the first launch. Point the rear camera at **one
-person with both shoulders and hips visible**.
+person**. A visible arm or shoulder span is enough to try partial tracking;
+shoulders **and** hips together unlock torso-anchored anatomy alignment.
+The app draws only segments with two confident joints, so a partial view
+may show fewer bones or no overlay if the model cannot see a valid segment.
 
 After installation, test in Airplane Mode: no model downloads or API calls
 are present in the app. The build-time MediaPipe Swift package and bundled
@@ -38,6 +41,24 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   -configuration Debug -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build-for-testing
 ```
+
+## Adaptive partial-body tracking
+
+MediaPipe can provide 33 landmark estimates even when parts of the body
+are out of frame; estimated landmarks are not automatically trustworthy.
+The iOS pipeline now distinguishes **searching**, **partial tracking**
+(at least one observed, confidence-gated segment), and **torso-anchored
+tracking** (both shoulders and hips). Each segment and each body region
+has independent confidence evaluation. The procedural Metal limb proxy
+can follow a single reliable visible arm without inventing missing limbs.
+
+Full torso, rib, pelvis, and cranium reference geometry still require
+its original observed anchors; approved Z-Anatomy atlas placement,
+reference-pose capture, and 3D motion planning retain the strict
+four-point torso gate. The original 80ms temporal filter handles valid
+joints individually and now preserves per-capture camera intrinsics.
+No standalone hand detector is introduced; partial-body detection
+quality and jitter need physical iPhone testing.
 
 ## Improved original procedural skeletal silhouette
 

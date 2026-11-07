@@ -89,7 +89,7 @@ struct MirrorScreen: View {
             )
             .padding(.trailing, 7)
             Label(
-                model.snapshot == nil ? "SEARCHING" : "TRACKING",
+                trackingLabel,
                 systemImage: model.snapshot == nil
                     ? "viewfinder" : "checkmark.circle.fill"
             )
@@ -138,6 +138,15 @@ struct MirrorScreen: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var trackingLabel: String {
+        if model.isPaused { return "PAUSED" }
+        switch model.snapshot?.coverage ?? .none {
+        case .none: return "SEARCHING"
+        case .partial: return "PARTIAL"
+        case .torsoAnchored: return "TRACKING"
+        }
+    }
+
     @ViewBuilder
     private var guidance: some View {
         VStack(spacing: 10) {
@@ -174,7 +183,9 @@ struct MirrorScreen: View {
         case .idle, .permissionRequested:
             return "Allow camera access to begin"
         case .searching:
-            return "Point at one person\nKeep shoulders and hips in view"
+            return "Point at one person\nShow shoulders or a visible limb"
+        case .partialTracking:
+            return "Partial skeleton tracking"
         case .tracking:
             return "Reference skeleton tracking"
         case .permissionDenied:

@@ -28,6 +28,19 @@ struct PoseWorldPoint: Sendable, Equatable {
     }
 }
 
+/// A valid pose can be partially observed without a reliable torso anchor.
+enum PoseCoverage: Sendable, Equatable {
+    case none
+    case partial
+    case torsoAnchored
+}
+
+enum PoseBodyRegion: Sendable, CaseIterable {
+    case torso
+    case arms
+    case legs
+}
+
 struct PoseSnapshot: Sendable {
     let timestampMilliseconds: Int
     let imageSize: CGSize
@@ -49,10 +62,52 @@ struct PoseSnapshot: Sendable {
         self.cameraIntrinsics = cameraIntrinsics
     }
 
-    var isUsable: Bool {
+    /// Basic shape and capture-size validation; does not require a full body.
+    var hasValidLandmarks: Bool {
         points.count == 33 &&
-        [11, 12, 23, 24].allSatisfy { points[$0].isUsable } &&
+        imageSize.width.isFinite && imageSize.height.isFinite &&
         imageSize.width > 0 && imageSize.height > 0
+    }
+
+    /// Stronger gate for anatomy alignment and reference-pose acquisition.
+    /// Never infer an unseen torso from a single visible arm or leg.
+    var hasTorsoAnchor: Bool {
+        hasValidLandmarks &&
+        [11, 12, 23, 24].allSatisfy { points[$0].isUsable }
+    }
+
+    /// Confidence is calculated only from drawable segments in this region.
+    /// Zero means there is no observed, reliable segment there.
+    func confidence(for region: PoseBodyRegion) -> Float {
+        guard hasValidLandmarks else { return 0 }
+        let scores = PoseSkeleton.segments(for: region).compactMap { segment -> Float? in
+            let a = points[segment.from]
+            let b = points[segment.to]
+            return a.isUsable && b.isUsable
+                ? min(a.visibility, b.visibility) : nil
+        }
+        guard !scores.isEmpty else { return 0 }
+        return scores.reduce(0, +) / Float(scores.count)
+    }
+
+    var drawableSegments: [PoseSegment] {
+        guard hasValidLandmarks else { return [] }
+        return PoseSkeleton.segments.filter {
+            points[$0.from].isUsable && points[$0.to].isUsable
+        }
+    }
+
+    /// A partial skeleton is usable when at least one complete segment
+    /// is reliable; confidence is still checked independently per joint.
+    var isUsable: Bool {
+        hasValidLandmarks && PoseSkeleton.segments.contains {
+            points[$0.from].isUsable && points[$0.to].isUsable
+        }
+    }
+
+    var coverage: PoseCoverage {
+        guard isUsable else { return .none }
+        return hasTorsoAnchor ? .torsoAnchored : .partial
     }
 }
 
@@ -64,16 +119,29 @@ struct PoseSegment: Sendable {
 enum PoseSkeleton {
     /// MediaPipe 33-landmark indices, preserving anatomical left/right.
     /// These are approximate *surface joints*, not internal bone centers.
-    static let segments: [PoseSegment] = [
+    private static let torsoSegments: [PoseSegment] = [
         .init(from: 11, to: 12), .init(from: 11, to: 23),
-        .init(from: 12, to: 24), .init(from: 23, to: 24),
+        .init(from: 12, to: 24), .init(from: 23, to: 24)
+    ]
+    private static let armSegments: [PoseSegment] = [
         .init(from: 11, to: 13), .init(from: 13, to: 15),
-        .init(from: 12, to: 14), .init(from: 14, to: 16),
+        .init(from: 12, to: 14), .init(from: 14, to: 16)
+    ]
+    private static let legSegments: [PoseSegment] = [
         .init(from: 23, to: 25), .init(from: 25, to: 27),
         .init(from: 24, to: 26), .init(from: 26, to: 28),
         .init(from: 27, to: 29), .init(from: 29, to: 31),
         .init(from: 28, to: 30), .init(from: 30, to: 32)
     ]
+    static let segments = torsoSegments + armSegments + legSegments
+
+    static func segments(for region: PoseBodyRegion) -> [PoseSegment] {
+        switch region {
+        case .torso: return torsoSegments
+        case .arms: return armSegments
+        case .legs: return legSegments
+        }
+    }
 
     /// Mirrors AVCaptureVideoPreviewLayer.videoGravity = .resizeAspectFill.
     /// Inference input is a portrait-rotated unmirrored BGRA frame.

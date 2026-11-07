@@ -21,7 +21,7 @@ enum AnatomyMotionPlanner {
         current: PoseSnapshot
     ) -> [AnatomyJointRotation] {
         guard (try? manifest.validateForUse()) != nil,
-              reference.isUsable, current.isUsable,
+              reference.hasTorsoAnchor, current.hasTorsoAnchor,
               reference.worldPoints.count == 33,
               current.worldPoints.count == 33 else { return [] }
 

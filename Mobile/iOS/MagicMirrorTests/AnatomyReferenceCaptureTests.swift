@@ -87,6 +87,30 @@ final class AnatomyReferenceCaptureTests: XCTestCase {
         XCTAssertNil(capture.reference)
     }
 
+    func testPartialTorsoNeverCapturesRigReference() {
+        var capture = AnatomyReferenceCapture(requiredFrames: 3)
+        let full = sample(timestamp: 1000)
+        var points = full.points
+        points[24] = PosePoint(
+            x: 0.55, y: 0.7, visibility: 0.1
+        )
+        let partial = PoseSnapshot(
+            timestampMilliseconds: 1000, imageSize: full.imageSize,
+            points: points, worldPoints: full.worldPoints
+        )
+        XCTAssertTrue(partial.isUsable)
+        XCTAssertFalse(partial.hasTorsoAnchor)
+        for timestamp in [1000, 1033, 1066, 1099] {
+            let frame = PoseSnapshot(
+                timestampMilliseconds: timestamp,
+                imageSize: partial.imageSize,
+                points: partial.points, worldPoints: partial.worldPoints
+            )
+            XCTAssertNil(capture.ingest(frame))
+        }
+        XCTAssertNil(capture.reference)
+    }
+
     func testRejectsMissingWorldAndRecovers() {
         var capture = AnatomyReferenceCapture(requiredFrames: 3)
         let empty = PoseSnapshot(

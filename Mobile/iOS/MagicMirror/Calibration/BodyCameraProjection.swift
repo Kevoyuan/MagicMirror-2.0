@@ -100,7 +100,7 @@ enum BodyReprojectionGate {
     ) -> BodyReprojectionReport? {
         guard requiredVisiblePoints >= 4,
               p90LimitFractionOfImageWidth > 0,
-              snapshot.isUsable,
+              snapshot.hasTorsoAnchor,
               snapshot.worldPoints.count == 33,
               camera.matches(image: snapshot.imageSize),
               transform.isValid else { return nil }

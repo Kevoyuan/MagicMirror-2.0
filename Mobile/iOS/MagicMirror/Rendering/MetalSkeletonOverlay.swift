@@ -189,7 +189,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                let frame = alignedFrame,
                let bonePipeline {
                 let geometry: [BoneMeshVertex]
-                if let approvedAtlas {
+                if let approvedAtlas, frame.pose.hasTorsoAnchor {
                     geometry = approvedAtlas.makeProjectedMesh(
                         snapshot: frame.pose,
                         viewport: view.bounds.size,

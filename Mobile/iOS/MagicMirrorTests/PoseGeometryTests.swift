@@ -43,27 +43,102 @@ final class PoseGeometryTests: XCTestCase {
             imageSize: image, viewSize: display
         ))
         XCTAssertNil(PoseSkeleton.pointInPreview(
-            posePoint(.nan, 0.5), imageSize: image, viewSize: display
+            posePoint(CGFloat.nan, 0.5), imageSize: image, viewSize: display
         ))
         XCTAssertNil(PoseSkeleton.pointInPreview(
             posePoint(0.5, 0.5), imageSize: .zero, viewSize: display
         ))
     }
 
-    func testValidPoseRequires33PointsAndShoulderHipConfidence() {
+    func testPartialUpperBodyWithoutHipsIsDrawable() {
+        var points = Array(
+            repeating: posePoint(0.5, 0.5, confidence: 0.1), count: 33
+        )
+        points[11] = posePoint(0.3, 0.3)
+        points[13] = posePoint(0.25, 0.4)
+        points[15] = posePoint(0.2, 0.55)
+        let pose = PoseSnapshot(
+            timestampMilliseconds: 100,
+            imageSize: CGSize(width: 720, height: 1280),
+            points: points
+        )
+        XCTAssertTrue(pose.isUsable)
+        XCTAssertEqual(pose.coverage, .partial)
+        XCTAssertFalse(pose.hasTorsoAnchor)
+        XCTAssertEqual(pose.drawableSegments.count, 2)
+        XCTAssertEqual(pose.confidence(for: .arms), 0.95, accuracy: 0.0001)
+        XCTAssertEqual(pose.confidence(for: .torso), 0)
+        XCTAssertEqual(pose.confidence(for: .legs), 0)
+    }
+
+    func testFourTorsoAnchorsStillGateFullTracking() {
         var points = Array(repeating: posePoint(0.5, 0.5), count: 33)
         let source = CGSize(width: 720, height: 1280)
-        XCTAssertTrue(PoseSnapshot(
+        let full = PoseSnapshot(
             timestampMilliseconds: 100, imageSize: source, points: points
-        ).isUsable)
+        )
+        XCTAssertTrue(full.isUsable)
+        XCTAssertTrue(full.hasTorsoAnchor)
+        XCTAssertEqual(full.coverage, .torsoAnchored)
         points[24] = posePoint(0.5, 0.5, confidence: 0.1)
-        XCTAssertFalse(PoseSnapshot(
+        let partial = PoseSnapshot(
             timestampMilliseconds: 101, imageSize: source, points: points
-        ).isUsable)
-        XCTAssertFalse(PoseSnapshot(
-            timestampMilliseconds: 102, imageSize: source,
+        )
+        XCTAssertTrue(partial.isUsable)
+        XCTAssertFalse(partial.hasTorsoAnchor)
+        XCTAssertEqual(partial.coverage, .partial)
+    }
+
+    func testOnlyUnconnectedJointsAndMalformedCaptureAreRejected() {
+        var points = Array(
+            repeating: posePoint(0.5, 0.5, confidence: 0.1), count: 33
+        )
+        points[0] = posePoint(0.4, 0.2)  // nose is not a limb segment
+        points[11] = posePoint(0.3, 0.4)
+        let source = CGSize(width: 720, height: 1280)
+        let alone = PoseSnapshot(
+            timestampMilliseconds: 100, imageSize: source, points: points
+        )
+        XCTAssertFalse(alone.isUsable)
+        XCTAssertEqual(alone.coverage, .none)
+        points[13] = posePoint(0.2, 0.5)
+        let malformedCount = PoseSnapshot(
+            timestampMilliseconds: 101, imageSize: source,
             points: Array(points.prefix(32))
-        ).isUsable)
+        )
+        XCTAssertFalse(malformedCount.isUsable)
+        XCTAssertFalse(malformedCount.hasValidLandmarks)
+        let malformedSize = PoseSnapshot(
+            timestampMilliseconds: 102,
+            imageSize: CGSize(width: CGFloat.nan, height: 1280),
+            points: points
+        )
+        XCTAssertFalse(malformedSize.isUsable)
+        XCTAssertEqual(malformedSize.confidence(for: .arms), 0)
+    }
+
+    func testMissingElbowNeverBridgesShoulderDirectlyToWrist() {
+        var points = Array(
+            repeating: posePoint(0.5, 0.5, confidence: 0.1), count: 33
+        )
+        points[11] = posePoint(0.3, 0.3)
+        points[13] = posePoint(0.25, 0.4, confidence: 0.2)
+        points[15] = posePoint(0.2, 0.55)
+        points[12] = posePoint(0.65, 0.3)
+        points[14] = posePoint(0.7, 0.4)
+        let pose = PoseSnapshot(
+            timestampMilliseconds: 103,
+            imageSize: CGSize(width: 720, height: 1280),
+            points: points
+        )
+        XCTAssertEqual(pose.coverage, .partial)
+        XCTAssertEqual(pose.drawableSegments.count, 2)
+        XCTAssertFalse(pose.drawableSegments.contains {
+            $0.from == 11 && $0.to == 13
+        })
+        XCTAssertTrue(pose.drawableSegments.contains {
+            $0.from == 12 && $0.to == 14
+        })
     }
 
     func testLeftAndRightLimbConnectionsRemainDistinct() {
