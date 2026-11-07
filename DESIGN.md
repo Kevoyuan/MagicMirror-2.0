@@ -469,6 +469,11 @@ one tested visible state, prioritizing blocked/interrupted camera over
 old Pause preferences. The UI source and unit tests still require physical
 iPhone visual/accessibility QA; simulator compilation is not real-device proof.
 
+The native architecture also isolates per-frame Metal rendering into a
+dedicated SwiftUI view while keeping the existing AVFoundation preview
+owner stable. The camera status chrome reads a low-frequency coverage
+classification; actual FPS and power improvements remain unmeasured.
+
 A full screen-by-screen inventory, UX journeys and QA matrix live in
 [Docs/IOS_UI_USER_JOURNEYS.md](Docs/IOS_UI_USER_JOURNEYS.md). This document
 remains the root visual direction authority.
