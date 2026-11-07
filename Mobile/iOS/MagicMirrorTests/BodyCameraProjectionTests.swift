@@ -21,12 +21,13 @@ final class BodyCameraProjectionTests: XCTestCase {
         sourceCamera: BodyToCameraTransform,
         shiftX: Float = 0
     ) -> PoseSnapshot {
-        let positions: [SIMD3<Float>] = (0..<33).map { index in
-            SIMD3<Float>(
-                Float(index % 6 - 3) * 0.055,
-                Float(index / 6 - 3) * 0.055,
-                1 + Float(index % 3) * 0.07
-            )
+        let positions: [SIMD3<Float>] = (0..<33).map { index -> SIMD3<Float> in
+            let column = index % 6
+            let row = index / 6
+            let x: Float = Float(column - 3) * Float(0.055)
+            let y: Float = Float(row - 3) * Float(0.055)
+            let z: Float = Float(1) + Float(index % 3) * Float(0.07)
+            return SIMD3<Float>(x, y, z)
         }
         let points: [PosePoint] = positions.map { p in
             let projected = BodyCameraProjection.project(
