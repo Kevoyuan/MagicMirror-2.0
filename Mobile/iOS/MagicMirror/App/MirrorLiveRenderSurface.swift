@@ -14,7 +14,9 @@ struct MirrorLiveRenderSurface: View {
                 opacity: model.opacity,
                 focus: model.focus,
                 calibratedAtlasBatch: model.isPaused
-                    ? nil : model.calibratedAtlasBatch
+                    ? nil : model.calibratedAtlasBatch,
+                skinnedAtlasBatch: model.isPaused
+                    ? nil : model.skinnedAtlasBatch
             )
             .onAppear {
                 model.setViewportSize(geometry.size)
