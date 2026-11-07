@@ -122,4 +122,48 @@ struct CoherentAtlasCameraProjection {
               simd_length_squared(camera) > 1e-8 else { return nil }
         return simd_normalize(camera)
     }
+
+    /// Expose actual per-frame camera pixels only after prepare() has
+    /// passed independently reviewed extrinsics and P90 reprojection.
+    var sourceIntrinsics: BodyCameraIntrinsics? {
+        intrinsics.matches(image: pose.sourceImageSize)
+            ? intrinsics : nil
+    }
+
+    /// Affine atlas-rest -> oriented camera-space transform for GPU
+    /// linear blend skinning. The rest atlas is in source coordinates,
+    /// while the approved camera projection uses meters and +Z forward.
+    /// Rigid bone motion, atlas-body similarity, and camera orientation
+    /// are combined here; the vertex shader never guesses calibration.
+    func cameraMatrix(boneId: String) -> simd_float4x4? {
+        guard extrinsics.isValid,
+              let bone = pose.bone(boneId) else { return nil }
+
+        func point(_ rest: SIMD3<Float>) -> SIMD3<Float>? {
+            guard let atlas = bone.transformRestPoint(rest),
+                  let body = registration.atlasToBody(atlas)
+            else { return nil }
+            let camera = simd_act(extrinsics.rotation, body) +
+                extrinsics.translation
+            guard camera.x.isFinite, camera.y.isFinite,
+                  camera.z.isFinite else { return nil }
+            return camera
+        }
+
+        guard let origin = point(SIMD3<Float>(0, 0, 0)),
+              let x = point(SIMD3<Float>(1, 0, 0)),
+              let y = point(SIMD3<Float>(0, 1, 0)),
+              let z = point(SIMD3<Float>(0, 0, 1))
+        else { return nil }
+        let matrix = simd_float4x4(columns: (
+            SIMD4<Float>(x - origin, 0),
+            SIMD4<Float>(y - origin, 0),
+            SIMD4<Float>(z - origin, 0),
+            SIMD4<Float>(origin, 1)
+        ))
+        return matrix.columns.0.x.isFinite &&
+            matrix.columns.1.y.isFinite &&
+            matrix.columns.2.z.isFinite &&
+            matrix.columns.3.z.isFinite ? matrix : nil
+    }
 }
