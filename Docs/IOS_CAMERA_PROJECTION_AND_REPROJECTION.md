@@ -52,6 +52,27 @@ world↔camera rig are still unimplemented. Therefore the current Metal
 proxy remains explicitly illustrative and uses 2D pixel anchors and
 bounded uncalibrated depth.
 
+## Automatic body-to-camera pose solver (experimental source)
+
+`BodyCameraPoseEstimator.swift` now implements on-device **experimental
+6-DOF optimization** over confident MediaPipe world/image landmarks
+(shoulders, elbows, wrists, hips, knees and feet). It requires the native
+same-frame intrinsic matrix, nondegenerate 3D joint spread, at least 12
+visible correspondences and a meaningful projected shoulder width.
+An approximately frontal pose seeds a damped robust least-squares fit;
+accepted camera rotations/translations must pass selected-joint P90
+reprojection checks. Implausible, missing or inconsistent inputs
+are rejected rather than displayed as confidently calibrated anatomy.
+
+An actual macOS `swiftc`-compiled synthetic smoke binary now executes
+frontal, small-yaw and intentionally corrupted camera-pose fixtures in
+GitHub Actions **before** the full Xcode build. This is a stronger math
+check than compiled-but-unexecuted XCTest alone, but remains a
+**synthetic test**. Reprojection goodness on MediaPipe's own estimates
+does not independently validate the real camera/body geometry. The
+estimator is not yet wired to approved USDZ rigging and the current
+Metal proxy remains based on 2D endpoints and bounded illustrative z.
+
 ## Acceptance pending (user deferred physical verification)
 
 - Check camera intrinsic attachment presence, orientation and crop on
