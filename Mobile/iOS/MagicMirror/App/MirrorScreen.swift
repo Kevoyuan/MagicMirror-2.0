@@ -188,6 +188,20 @@ struct MirrorScreen: View {
                 Text("Collecting pose callback intervals…")
                     .font(.caption)
             }
+            if let candidate = model.automaticCameraCandidate {
+                Text(String(
+                    format: "AUTO CAMERA candidate · %d joints · p90 %.1f%%",
+                    candidate.landmarkCount,
+                    candidate.p90ReprojectionErrorFractionOfWidth * 100
+                ))
+                .font(.system(.caption2, design: .monospaced))
+            } else {
+                Text("Auto camera fit: insufficient 3D / intrinsic evidence")
+                    .font(.caption2)
+            }
+            Text("Unreviewed pose hypothesis · never anatomical calibration")
+                .font(.system(.caption2))
+                .foregroundStyle(.white.opacity(0.7))
             Text("Local delivery estimate · not display FPS or camera latency")
                 .font(.system(.caption2))
                 .foregroundStyle(.white.opacity(0.7))
