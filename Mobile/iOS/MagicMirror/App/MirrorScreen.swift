@@ -21,6 +21,9 @@ struct MirrorScreen: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
+            CameraPreview(session: model.pipeline.session)
+                .ignoresSafeArea()
+
             MirrorLiveRenderSurface(model: model)
                 .ignoresSafeArea()
 
