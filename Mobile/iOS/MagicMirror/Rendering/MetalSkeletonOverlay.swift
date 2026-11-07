@@ -18,6 +18,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch? = nil
     /// Requires audited vertex influences and a verified camera frame.
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch? = nil
+    var reviewedSkinnedFrames: [ReviewedSkinnedLayerFrame] = []
+    var reviewedRigidFrames: [ReviewedRigidLayerFrame] = []
+    var selectedAtlasSystem: AnatomyDisplayLayer? = nil
     var selectedAtlasNodePath: String? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
@@ -47,6 +50,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             opacity: Float(opacity), focus: focus,
             calibratedAtlasBatch: calibratedAtlasBatch,
             skinnedAtlasBatch: skinnedAtlasBatch,
+            reviewedSkinnedFrames: reviewedSkinnedFrames,
+            reviewedRigidFrames: reviewedRigidFrames,
+            selectedAtlasSystem: selectedAtlasSystem,
             selectedAtlasNodePath: selectedAtlasNodePath
         )
         view.draw()
@@ -57,8 +63,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var commands: MTLCommandQueue?
         private var bonePipeline: MTLRenderPipelineState?
         private var skinnedPipeline: MTLRenderPipelineState?
-        private var cachedSkinKey: SkinnedAtlasCacheKey?
-        private var cachedSkinVertexBuffer: MTLBuffer?
+        private var cachedSkinBuffers: [String: MTLBuffer] = [:]
+        private var cachedSkinUsage: [String] = []
         private var videoPipeline: MTLRenderPipelineState?
         private var textureCache: CVMetalTextureCache?
 
@@ -68,12 +74,15 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var focus: AnatomyFocus = .full
         private var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
         private var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+        private var reviewedSkinnedFrames: [ReviewedSkinnedLayerFrame] = []
+        private var reviewedRigidFrames: [ReviewedRigidLayerFrame] = []
+        private var selectedAtlasSystem: AnatomyDisplayLayer?
         private var selectedAtlasNodePath: String?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
-            cachedSkinKey = nil
-            cachedSkinVertexBuffer = nil
+            cachedSkinBuffers.removeAll()
+            cachedSkinUsage.removeAll()
             self.device = device
             self.commands = device.makeCommandQueue()
             guard let shaders = device.makeDefaultLibrary(),
@@ -151,6 +160,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             opacity: Float, focus: AnatomyFocus,
             calibratedAtlasBatch: CalibratedAtlasDrawBatch?,
             skinnedAtlasBatch: SkinnedAtlasDrawBatch?,
+            reviewedSkinnedFrames: [ReviewedSkinnedLayerFrame],
+            reviewedRigidFrames: [ReviewedRigidLayerFrame],
+            selectedAtlasSystem: AnatomyDisplayLayer?,
             selectedAtlasNodePath: String?
         ) {
             self.alignedFrame = alignedFrame
@@ -159,6 +171,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             self.focus = focus
             self.calibratedAtlasBatch = calibratedAtlasBatch
             self.skinnedAtlasBatch = skinnedAtlasBatch
+            self.reviewedSkinnedFrames = reviewedSkinnedFrames
+            self.reviewedRigidFrames = reviewedRigidFrames
+            self.selectedAtlasSystem = selectedAtlasSystem
             self.selectedAtlasNodePath = selectedAtlasNodePath
         }
 
@@ -185,27 +200,21 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             return texture
         }
 
-        /// A stable, immutable source rest mesh is uploaded once per
-        /// approved package and Whole/Arms/Legs selection. Frame updates
-        /// upload only compact bone matrices, camera and cut uniforms.
-        private struct SkinnedAtlasCacheKey: Equatable {
-            let identity: UUID
-            let focus: AnatomyFocus
-            let vertexCount: Int
-        }
-
+        /// A small LRU of immutable per-layer GPU source meshes.
+        /// Six audited systems may be composited in a single camera frame;
+        /// evict older focus variants instead of reallocating all six
+        /// immutable meshes on every video callback.
         private func cachedSkinnedMesh(
             _ skin: SkinnedAtlasDrawBatch,
             device: MTLDevice
         ) -> MTLBuffer? {
-            let key = SkinnedAtlasCacheKey(
-                identity: skin.geometryIdentity,
-                focus: skin.focus,
-                vertexCount: skin.vertices.count
-            )
-            if cachedSkinKey == key,
-               let cachedSkinVertexBuffer {
-                return cachedSkinVertexBuffer
+            let key = skin.geometryIdentity.uuidString + ":" +
+                String(describing: skin.focus) + ":" +
+                String(skin.vertices.count)
+            if let buffer = cachedSkinBuffers[key] {
+                cachedSkinUsage.removeAll { $0 == key }
+                cachedSkinUsage.append(key)
+                return buffer
             }
             guard let result = skin.vertices.withUnsafeBytes({
                 raw -> MTLBuffer? in
@@ -216,13 +225,13 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     length: raw.count,
                     options: .storageModeShared
                 )
-            }) else {
-                cachedSkinKey = nil
-                cachedSkinVertexBuffer = nil
-                return nil
+            }) else { return nil }
+            while cachedSkinUsage.count >= 6 {
+                let oldest = cachedSkinUsage.removeFirst()
+                cachedSkinBuffers.removeValue(forKey: oldest)
             }
-            cachedSkinKey = key
-            cachedSkinVertexBuffer = result
+            cachedSkinUsage.append(key)
+            cachedSkinBuffers[key] = result
             return result
         }
 
