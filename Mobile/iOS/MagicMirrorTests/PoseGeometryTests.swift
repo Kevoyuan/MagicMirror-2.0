@@ -43,7 +43,7 @@ final class PoseGeometryTests: XCTestCase {
             imageSize: image, viewSize: display
         ))
         XCTAssertNil(PoseSkeleton.pointInPreview(
-            posePoint(.nan, 0.5), imageSize: image, viewSize: display
+            posePoint(CGFloat.nan, 0.5), imageSize: image, viewSize: display
         ))
         XCTAssertNil(PoseSkeleton.pointInPreview(
             posePoint(0.5, 0.5), imageSize: .zero, viewSize: display
@@ -110,7 +110,7 @@ final class PoseGeometryTests: XCTestCase {
         XCTAssertFalse(malformedCount.hasValidLandmarks)
         let malformedSize = PoseSnapshot(
             timestampMilliseconds: 102,
-            imageSize: CGSize(width: .nan, height: 1280),
+            imageSize: CGSize(width: CGFloat.nan, height: 1280),
             points: points
         )
         XCTAssertFalse(malformedSize.isUsable)
