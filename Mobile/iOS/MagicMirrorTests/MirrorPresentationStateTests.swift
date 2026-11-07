@@ -27,6 +27,10 @@ final class MirrorPresentationStateTests: XCTestCase {
             ),
             .partial
         )
+        XCTAssertNil(MirrorPresentationState(
+            phase: .tracking, coverage: .partial, isPaused: false
+        ).guidanceForUser, "Partial tracking must not cover the camera")
+
         let state = MirrorPresentationState(
             phase: .tracking, coverage: .torsoAnchored, isPaused: false
         )
@@ -67,6 +71,10 @@ final class MirrorPresentationStateTests: XCTestCase {
             phase: .unavailable(""), coverage: .none, isPaused: false
         )
         XCTAssertFalse((state.guidance ?? "").isEmpty)
+        XCTAssertEqual(
+            state.guidanceForUser,
+            "Camera temporarily unavailable. Try reopening the app."
+        )
     }
     func testCameraLifecycleOverridesPausedOverlay() {
         XCTAssertEqual(
