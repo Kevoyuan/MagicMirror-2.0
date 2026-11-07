@@ -33,15 +33,20 @@ struct PoseSnapshot: Sendable {
     let imageSize: CGSize
     let points: [PosePoint]
     let worldPoints: [PoseWorldPoint]
+    /// Optional per-capture intrinsic matrix. Never copied from a later
+    /// frame or inferred from screen dimensions.
+    let cameraIntrinsics: BodyCameraIntrinsics?
 
     init(
         timestampMilliseconds: Int, imageSize: CGSize,
-        points: [PosePoint], worldPoints: [PoseWorldPoint] = []
+        points: [PosePoint], worldPoints: [PoseWorldPoint] = [],
+        cameraIntrinsics: BodyCameraIntrinsics? = nil
     ) {
         self.timestampMilliseconds = timestampMilliseconds
         self.imageSize = imageSize
         self.points = points
         self.worldPoints = worldPoints
+        self.cameraIntrinsics = cameraIntrinsics
     }
 
     var isUsable: Bool {

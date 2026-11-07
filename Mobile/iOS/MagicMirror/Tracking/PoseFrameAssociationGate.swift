@@ -1,6 +1,11 @@
 import CoreGraphics
 import Foundation
 
+struct PoseFrameMetadata: Sendable {
+    let imageSize: CGSize
+    let intrinsics: BodyCameraIntrinsics?
+}
+
 /// Binds a MediaPipe asynchronous result to the exact *capture metadata*
 /// of the submitted AVFoundation frame. This is deliberately NOT a copy
 /// of any pixel buffer or an assertion that AVCaptureVideoPreviewLayer has
@@ -16,7 +21,7 @@ final class PoseFrameAssociationGate {
     private var active = false
     private var latestCapturedTimestamp = -1
     private var lastConsumedTimestamp = -1
-    private var frameSizes: [Int: CGSize] = [:]
+    private var frameMetadata: [Int: PoseFrameMetadata] = [:]
     private var pendingOrder: [Int] = []
 
     init(maximumResultAgeMilliseconds: Int = 160, maximumPendingCount: Int = 12) {
@@ -34,14 +39,17 @@ final class PoseFrameAssociationGate {
         self.active = active
         latestCapturedTimestamp = -1
         lastConsumedTimestamp = -1
-        frameSizes.removeAll(keepingCapacity: true)
+        frameMetadata.removeAll(keepingCapacity: true)
         pendingOrder.removeAll(keepingCapacity: true)
     }
 
     /// Registers only monotonically increasing, unmirrored capture-frame
     /// metadata. Never stores image pixels or camera images in memory.
     @discardableResult
-    func register(timestampMilliseconds: Int, imageSize: CGSize) -> Bool {
+    func register(
+        timestampMilliseconds: Int, imageSize: CGSize,
+        intrinsics: BodyCameraIntrinsics? = nil
+    ) -> Bool {
         lock.lock()
         defer { lock.unlock() }
 
@@ -52,19 +60,23 @@ final class PoseFrameAssociationGate {
             return false
         }
         latestCapturedTimestamp = timestampMilliseconds
-        frameSizes[timestampMilliseconds] = imageSize
+        frameMetadata[timestampMilliseconds] = PoseFrameMetadata(
+            imageSize: imageSize,
+            intrinsics: intrinsics?.matches(image: imageSize) == true
+                ? intrinsics : nil
+        )
         pendingOrder.append(timestampMilliseconds)
 
         // The MediaPipe LIVE_STREAM queue must never grow without bound.
         // If inference falls behind, old frames are no longer eligible.
         while pendingOrder.count > maximumPendingCount {
             let expired = pendingOrder.removeFirst()
-            frameSizes.removeValue(forKey: expired)
+            frameMetadata.removeValue(forKey: expired)
         }
         while let first = pendingOrder.first,
               timestampMilliseconds - first > maximumResultAgeMilliseconds {
             pendingOrder.removeFirst()
-            frameSizes.removeValue(forKey: first)
+            frameMetadata.removeValue(forKey: first)
         }
         return true
     }
@@ -73,6 +85,11 @@ final class PoseFrameAssociationGate {
     /// dimensions. Out-of-order, stale, replayed or previously dropped
     /// results are ignored even if their 33 landmark values look plausible.
     func consume(timestampMilliseconds: Int) -> CGSize? {
+        consumeMetadata(timestampMilliseconds: timestampMilliseconds)?.imageSize
+    }
+
+    /// Exact frame dimensions AND optional camera intrinsics.
+    func consumeMetadata(timestampMilliseconds: Int) -> PoseFrameMetadata? {
         lock.lock()
         defer { lock.unlock() }
 
@@ -81,15 +98,15 @@ final class PoseFrameAssociationGate {
               latestCapturedTimestamp >= timestampMilliseconds,
               latestCapturedTimestamp - timestampMilliseconds
                   <= maximumResultAgeMilliseconds,
-              let size = frameSizes[timestampMilliseconds] else {
+              let metadata = frameMetadata[timestampMilliseconds] else {
             return nil
         }
         lastConsumedTimestamp = timestampMilliseconds
         while let first = pendingOrder.first,
               first <= timestampMilliseconds {
             pendingOrder.removeFirst()
-            frameSizes.removeValue(forKey: first)
+            frameMetadata.removeValue(forKey: first)
         }
-        return size
+        return metadata
     }
 }

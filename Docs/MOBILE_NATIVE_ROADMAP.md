@@ -27,8 +27,14 @@ not be required in the installed iOS/Android runtime.
   in `Mobile/iOS/MagicMirror/Anatomy/`. **The actual atlas USDZ, rig
   binding, licensing and visual runtime are still absent.** See
   `Docs/IOS_ANATOMY_ATLAS_INTEGRATION.md`.
-- **Mobile-4/5:** camera-to-body extrinsics, actual USDZ articulation,
-  accurate occlusion, performance and release preparation remain pending.
+- **Mobile-4, preparatory source stage:** implemented optional real
+  AVFoundation per-frame camera intrinsics, timestamp-bound calibration,
+  explicit 3D pinhole projection, and source-landmark P90 reprojection
+  tests. A genuine estimated camera/body extrinsic transform, actual
+  approved USDZ bone projection and visual registration remain pending.
+  See `Docs/IOS_CAMERA_PROJECTION_AND_REPROJECTION.md`.
+- **Mobile-5:** real-device FPS/thermal, accurate occlusion, privacy
+  review, TestFlight and actual App Store release preparation remain pending.
 
 The owner elected to **defer physical-device validation while coding
 continues**. This does not waive the hardware/asset/legal acceptance gates

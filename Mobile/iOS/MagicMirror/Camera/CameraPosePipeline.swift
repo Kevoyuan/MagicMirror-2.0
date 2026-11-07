@@ -208,6 +208,9 @@ final class CameraPosePipeline: NSObject {
         }
         connection.videoRotationAngle = 90
         connection.isVideoMirrored = false
+        if connection.isCameraIntrinsicMatrixDeliverySupported {
+            connection.isCameraIntrinsicMatrixDeliveryEnabled = true
+        }
     }
 
     private func postPhase(_ phase: MirrorPhase) {
@@ -262,8 +265,12 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
             height: CVPixelBufferGetHeight(pixelBuffer)
         )
 
+        let intrinsic = CameraIntrinsicMatrixReader.read(
+            from: sampleBuffer, imageSize: size
+        )
         guard frameGate.register(
-            timestampMilliseconds: timeMs, imageSize: size
+            timestampMilliseconds: timeMs, imageSize: size,
+            intrinsics: intrinsic
         ), let landmarker else { return }
 
         do {
@@ -290,7 +297,7 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         // Only accept a callback that matches a submitted source frame in
         // THIS capture session. A late callback from before stop/restart,
         // an out-of-order result or a >160ms-old result cannot be shown.
-        guard let size = frameGate.consume(
+        guard let metadata = frameGate.consumeMetadata(
             timestampMilliseconds: timestamp
         ) else { return }
 
@@ -329,9 +336,10 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         }()
         let snapshot = PoseSnapshot(
             timestampMilliseconds: timestamp,
-            imageSize: size,
+            imageSize: metadata.imageSize,
             points: points,
-            worldPoints: worldPoints
+            worldPoints: worldPoints,
+            cameraIntrinsics: metadata.intrinsics
         )
         postPose(snapshot.isUsable ? snapshot : nil)
         postPhase(snapshot.isUsable ? .tracking : .searching)

@@ -45,6 +45,15 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   opacity control, pause, and an always-visible nonmedical label.
 - `App/MirrorViewModel.swift`: iOS Observation state with small view
   invalidation and 300ms stale-pose expiration.
+- `Calibration/CameraIntrinsicMatrixReader.swift`: on supported
+  AVFoundation formats, read source-frame 3x3 intrinsic matrix; never
+  synthesize focal length or copy a matrix from a different frame.
+- `Calibration/BodyCameraProjection.swift`: pure camera-space pinhole
+  projection and visible-landmark P90 registration check requiring an
+  independently supplied body-to-camera transform.
+- `MagicMirrorTests/CameraIntrinsicMatrixReaderTests.swift` and
+  `BodyCameraProjectionTests.swift`: synthetic matrix identity,
+  3D reprojection, confidence/frame mismatch tests.
 - `Tracking/PoseFrameAssociationGate.swift`: bounded timestamp-to-source-
   dimensions mapping for asynchronous LIVE_STREAM callbacks; rejects stale,
   replayed, out-of-order and old-session results, with no stored pixels.
@@ -80,8 +89,9 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
 - `MagicMirrorTests/VolumetricBoneMeshTests.swift`: mesh topology,
   dropout, proxy depth and smoothing regression cases.
 
-The MediaPipe result now uses capture geometry saved for its *own* source
-timestamp, rather than taking dimensions from the newest camera frame.
+The MediaPipe result now uses captured geometry and optional focal
+length/principal point saved for its *own* source timestamp, rather
+than taking the newest camera frame's dimensions or intrinsics.
 This reduces 2D overlay drift after source resolution/orientation changes.
 The native preview layer can still display a newer frame than inference:
 actual end-to-end frame alignment and perceived latency require iPhone tests.
@@ -146,10 +156,14 @@ hip-centered estimate, not an iPhone-camera-space reconstruction. Next:
 1. Pass real Xcode build and physical rear-camera capture.
 2. Validate portrait orientation and keypoint-to-preview alignment on
    several iPhone screen aspect ratios, including body motion/occlusion.
-3. Add a **reviewed** mobile 3D anatomy rig, verify source licenses,
+3. Supply a **real** and separately calibrated body-to-camera pose,
+   measured iPhone lens intrinsics, visible-joint reprojection gate,
+   and true face/mirror/occlusion handling. See
+   `Docs/IOS_CAMERA_PROJECTION_AND_REPROJECTION.md`.
+4. Add a **reviewed** mobile 3D anatomy rig, verify source licenses,
    convert the original connected atlas offline to optimized mobile assets.
    No unreviewed atlas mesh is bundled by this PR.
-4. Implement dynamic camera/body registration, depth/occlusion and
+5. Implement dynamic camera/body registration, depth/occlusion and
    independent measured overlay/latency benchmarks.
 
 Source parsing or successful simulator compilation **does not** prove
