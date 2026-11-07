@@ -32,6 +32,72 @@ final class CameraPosePipeline: NSObject {
     private var landmarker: PoseLandmarker?
     private var configured = false
     private var wantsRunning = false
+    private var notificationObservers: [NSObjectProtocol] = []
+
+    override init() {
+        super.init()
+        let center = NotificationCenter.default
+        let interrupted = Notification.Name(
+            "AVCaptureSessionWasInterruptedNotification"
+        )
+        let recovered = Notification.Name(
+            "AVCaptureSessionInterruptionEndedNotification"
+        )
+        let failure = Notification.Name(
+            "AVCaptureSessionRuntimeErrorNotification"
+        )
+        notificationObservers.append(center.addObserver(
+            forName: interrupted, object: session, queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.sessionQueue.async {
+                self.frameGate.reset(active: false)
+                self.postPose(nil)
+                if self.wantsRunning {
+                    self.postPhase(.unavailable(
+                        "Camera temporarily interrupted. Waiting to reconnect."
+                    ))
+                }
+            }
+        })
+        notificationObservers.append(center.addObserver(
+            forName: recovered, object: session, queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.sessionQueue.async {
+                guard self.wantsRunning else { return }
+                self.startAuthorized()
+            }
+        })
+        notificationObservers.append(center.addObserver(
+            forName: failure, object: session, queue: nil
+        ) { [weak self] notification in
+            guard let self else { return }
+            let error = notification.userInfo?[
+                AVCaptureSessionErrorKey
+            ] as? AVError
+            let canRecover = error?.code == .mediaServicesWereReset
+            self.sessionQueue.async {
+                self.frameGate.reset(active: false)
+                self.postPose(nil)
+                guard self.wantsRunning else { return }
+                if canRecover {
+                    self.startAuthorized()
+                } else {
+                    self.postPhase(.unavailable(
+                        "Camera unavailable. Reopen MagicMirror to retry."
+                    ))
+                }
+            }
+        })
+    }
+
+    deinit {
+        let center = NotificationCenter.default
+        for token in notificationObservers {
+            center.removeObserver(token)
+        }
+    }
 
     func start() {
         sessionQueue.async { [weak self] in
