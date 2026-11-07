@@ -3,6 +3,7 @@
 **Version:** 1.1 — Leonardo anatomy notebook direction (2026-11-07)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
+**Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
 **Repository:** https://github.com/Kevoyuan/MagicMirror-2.0  
 **Applies to:** Mobile/iOS/MagicMirror/ — iOS UI and user-facing real-time rendering only  
 **Authority:** This file owns interaction and visual design. AGENTS.md, ADR-002, the active mobile roadmap, privacy/asset reviews, and code own product/engineering truth.
@@ -368,10 +369,6 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 - Only introduce real anatomical planes when the native renderer can actually clip/cap coherent 3D meshes. The HTML mock has no such capability.
 - Layer drawer remains opt-in and must not interfere with the core camera experience.
 
-### D5 — Android adaptation (later)
-
-- Preserve the same product language and UX principles, but use native Android conventions; do not pixel-copy iOS controls into Jetpack Compose.
-- Match landmark, 3D pose and fail-closed behavior with platform parity tests.
 
 ## 12. Design acceptance checklist
 
