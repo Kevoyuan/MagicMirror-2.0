@@ -13,6 +13,14 @@ struct BoneMeshVertex {
 /// A deliberately generic **3D volumetric proxy** generated from observed
 /// surface joints. This is not an atlas, a medical bone surface, or proof
 /// of calibrated camera extrinsics. All geometry is local to the phone.
+enum AnatomyFocus: String, CaseIterable, Identifiable {
+    case full = "Whole"
+    case arms = "Arms"
+    case legs = "Legs"
+
+    var id: String { rawValue }
+}
+
 enum VolumetricBoneMesh {
     private static let sides = 10
     private static let profile: [Float] = [0.48, 0.98, 0.82, 0.82, 0.98, 0.48]
@@ -43,7 +51,8 @@ enum VolumetricBoneMesh {
     }
 
     static func make(
-        snapshot: PoseSnapshot?, viewport: CGSize, opacity: Float
+        snapshot: PoseSnapshot?, viewport: CGSize, opacity: Float,
+        focus: AnatomyFocus = .full
     ) -> [BoneMeshVertex] {
         guard let snapshot, snapshot.isUsable,
               viewport.width > 0, viewport.height > 0,
@@ -67,29 +76,34 @@ enum VolumetricBoneMesh {
         // Complete limb chains plus shoulder/hip anchors.
         // Thickness is in display points; designed for reference reading
         // rather than personal bone dimensions.
-        bone(11, 13, radius: 7.2); bone(13, 15, radius: 5.4)
-        bone(12, 14, radius: 7.2); bone(14, 16, radius: 5.4)
-        bone(23, 25, radius: 10.2); bone(25, 27, radius: 7.4)
-        bone(24, 26, radius: 10.2); bone(26, 28, radius: 7.4)
-        bone(27, 31, radius: 4.5); bone(28, 32, radius: 4.5)
-        bone(11, 12, radius: 5.2); bone(23, 24, radius: 8)
+        if focus == .full || focus == .arms {
+            bone(11, 13, radius: 7.2); bone(13, 15, radius: 5.4)
+            bone(12, 14, radius: 7.2); bone(14, 16, radius: 5.4)
+        }
+        if focus == .full || focus == .legs {
+            bone(23, 25, radius: 10.2); bone(25, 27, radius: 7.4)
+            bone(24, 26, radius: 10.2); bone(26, 28, radius: 7.4)
+            bone(27, 31, radius: 4.5); bone(28, 32, radius: 4.5)
+        }
+        if focus == .full {
+            bone(11, 12, radius: 5.2); bone(23, 24, radius: 8)
 
-        // Torso midline is synthesized from observed shoulder/hip centers.
-        // It is a visual registration aid, NOT detected vertebral joints.
-        if let ls = sourcePoint(index: 11, snapshot: snapshot, viewport: viewport),
-           let rs = sourcePoint(index: 12, snapshot: snapshot, viewport: viewport),
-           let lh = sourcePoint(index: 23, snapshot: snapshot, viewport: viewport),
-           let rh = sourcePoint(index: 24, snapshot: snapshot, viewport: viewport) {
-            let shoulder = (ls + rs) * 0.5
-            let pelvis = (lh + rh) * 0.5
-            addSpindle(
-                start: shoulder, end: pelvis, radius: 7.8,
-                viewport: viewport, opacity: alpha, into: &vertices
-            )
-            addSpindle(
-                start: lh, end: rh, radius: 8.3,
-                viewport: viewport, opacity: alpha, into: &vertices
-            )
+            // Visual torso center is synthesized, not observed vertebrae.
+            if let ls = sourcePoint(
+                index: 11, snapshot: snapshot, viewport: viewport
+            ), let rs = sourcePoint(
+                index: 12, snapshot: snapshot, viewport: viewport
+            ), let lh = sourcePoint(
+                index: 23, snapshot: snapshot, viewport: viewport
+            ), let rh = sourcePoint(
+                index: 24, snapshot: snapshot, viewport: viewport
+            ) {
+                addSpindle(
+                    start: (ls + rs) * 0.5, end: (lh + rh) * 0.5,
+                    radius: 7.8, viewport: viewport,
+                    opacity: alpha, into: &vertices
+                )
+            }
         }
 
         return vertices
