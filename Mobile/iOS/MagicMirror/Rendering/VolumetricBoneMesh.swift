@@ -31,7 +31,7 @@ enum VolumetricBoneMesh {
     static func sourcePoint(
         index: Int, snapshot: PoseSnapshot, viewport: CGSize
     ) -> SIMD3<Float>? {
-        guard snapshot.isUsable,
+        guard snapshot.hasValidLandmarks,
               (0..<snapshot.points.count).contains(index),
               let screen = PoseSkeleton.pointInPreview(
                   snapshot.points[index],
@@ -74,6 +74,8 @@ enum VolumetricBoneMesh {
             )
         }
 
+        // Each segment is drawn only when BOTH of its observed joints are
+        // reliable. Unseen limbs never inherit guessed positions.
         // Complete limb chains plus shoulder/hip anchors.
         // Thickness is in display points; designed for reference reading
         // rather than personal bone dimensions.
@@ -89,7 +91,8 @@ enum VolumetricBoneMesh {
         if focus == .full {
             bone(11, 12, radius: 5.2); bone(23, 24, radius: 8)
 
-            // Visual torso center is synthesized, not observed vertebrae.
+            // Visual torso center is synthesized only with four anchors,
+            // never for an upper-body-only or single-limb observation.
             if let ls = sourcePoint(
                 index: 11, snapshot: snapshot, viewport: viewport
             ), let rs = sourcePoint(
