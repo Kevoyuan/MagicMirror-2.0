@@ -367,3 +367,17 @@ MTLBuffer allocation on every tracked video frame. Validated synthetic
 checks cover resource identity across frame/opacity changes. Physical
 device throughput, GPU memory pressure, thermal and latency acceptance
 remain open.
+
+## Native multi-anatomical system switching (2026-11-07)
+
+Extended MMATLAS1 / optional skin weight loaders to six separate
+audited source packages and recorded system identity in the model
+manifest. One on-device SwiftUI/MirrorViewModel layer selector
+conditionally switches independently verified, registered skeletal,
+muscular, organ, vascular, neural or joint mesh sets. Each candidate
+layer is evaluated until coherent current-session registered geometry
+can actually be drawn; source/license/camera gaps remain locked and
+the existing proxy is always available. This is **code-level layer
+switching**, not a claim that all third-party anatomical systems have
+passed human source licensing, joint review, device calibration or
+iPhone performance checks.
