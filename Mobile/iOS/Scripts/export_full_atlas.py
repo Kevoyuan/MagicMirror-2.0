@@ -20,6 +20,10 @@ import struct
 import sys
 from pathlib import Path
 
+# Blender's -b --python execution does not guarantee the script's own
+# directory is on sys.path; resolve the pinned source catalog explicitly.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 try:
     import bpy
 except ImportError as exc:
@@ -121,7 +125,7 @@ def main():
     args = parse_args()
     verify_source(args.fbx, args.system)
     review, bindings = checked_review(args.review, args.system)
-    source_path, _, _ = SYSTEM_SOURCES[args.system]
+    source_fbx_path, _, _ = SYSTEM_SOURCES[args.system]
     base = resource_base(args.system)
     model_file = f"{base}.mmgeom"
     manifest_file = f"{base}.manifest.json"
@@ -246,7 +250,7 @@ def main():
         "schemaVersion": 1,
         "sourceRepository": SOURCE_REPOSITORY,
         "sourceRevision": SOURCE_COMMIT,
-        "sourcePath": source_path,
+        "sourcePath": source_fbx_path,
         "anatomicalSystem": args.system,
         "modelFile": model_file,
         "modelSHA256": model_sha,
@@ -281,7 +285,7 @@ def main():
     (args.out / f"{base}.ATTRIBUTION.txt").write_text(
         "BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan\n"
         "Z-Anatomy — The open source atlas of anatomy — CC BY-SA 4.0\n"
-        f"Source: {SOURCE_REPOSITORY}, commit {SOURCE_COMMIT}, {source_path}\n"
+        f"Source: {SOURCE_REPOSITORY}, commit {SOURCE_COMMIT}, {source_fbx_path}\n"
         "Modifications:\n" + "\n".join(f"- {m}" for m in modification_notes) +
         "\nSee respective source licenses before distribution.\n",
         encoding="utf-8"
