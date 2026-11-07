@@ -52,6 +52,10 @@ final class VolumetricBoneMeshTests: XCTestCase {
         XCTAssertTrue(mesh.allSatisfy {
             $0.color.w > 0 && $0.color.w <= 1
         })
+        // Metal's clip-space Z is [0, 1], including rear proxy arcs.
+        XCTAssertTrue(mesh.allSatisfy {
+            $0.position.z >= 0 && $0.position.z <= 1
+        })
     }
 
     func testLossAndOpacityZeroProduceNoGeometry() {
