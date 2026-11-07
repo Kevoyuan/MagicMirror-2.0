@@ -45,6 +45,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var device: MTLDevice?
         private var commands: MTLCommandQueue?
         private var bonePipeline: MTLRenderPipelineState?
+        private var maskedBonePipeline: MTLRenderPipelineState?
         private var videoPipeline: MTLRenderPipelineState?
         private var textureCache: CVMetalTextureCache?
 
@@ -90,6 +91,14 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             bonePipeline = try? device.makeRenderPipelineState(
                 descriptor: boneDescriptor
             )
+            if let maskedFragment = shaders.makeFunction(
+                name: "boneMaskedFragment"
+            ) {
+                boneDescriptor.fragmentFunction = maskedFragment
+                maskedBonePipeline = try? device.makeRenderPipelineState(
+                    descriptor: boneDescriptor
+                )
+            }
 
             var cache: CVMetalTextureCache?
             if CVMetalTextureCacheCreate(
@@ -138,6 +147,39 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             )
             guard status == kCVReturnSuccess else { return nil }
             return texture
+        }
+
+        /// Create a one-channel GPU texture from data copied in the same
+        /// MediaPipe callback as the source video. No image upload or
+        /// persistent pixel buffer outside the current frame.
+        private func makeSilhouetteTexture(
+            _ silhouette: PersonSilhouetteMask,
+            device: MTLDevice
+        ) -> MTLTexture? {
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+                pixelFormat: .r32Float,
+                width: silhouette.width, height: silhouette.height,
+                mipmapped: false
+            )
+            descriptor.usage = .shaderRead
+            descriptor.storageMode = .shared
+            guard let texture = device.makeTexture(
+                descriptor: descriptor
+            ) else { return nil }
+            let copied = silhouette.confidence.withUnsafeBytes {
+                raw -> Bool in
+                guard let address = raw.baseAddress else { return false }
+                texture.replace(
+                    region: MTLRegionMake2D(
+                        0, 0, silhouette.width, silhouette.height
+                    ),
+                    mipmapLevel: 0, withBytes: address,
+                    bytesPerRow: silhouette.width *
+                        MemoryLayout<Float>.stride
+                )
+                return true
+            }
+            return copied ? texture : nil
         }
 
         func draw(in view: MTKView) {
@@ -213,7 +255,49 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                         )
                     }
                     if let gpuVertices {
-                        encoder.setRenderPipelineState(bonePipeline)
+                        if let silhouette = frame.silhouette,
+                           let masked = maskedBonePipeline,
+                           let crop = VideoAspectFillCrop.bounds(
+                                source: frame.pose.imageSize,
+                                viewport: view.bounds.size
+                           ),
+                           view.drawableSize.width > 0,
+                           view.drawableSize.height > 0,
+                           let maskTexture = makeSilhouetteTexture(
+                                silhouette, device: device
+                           ) {
+                            // UV crop is exactly the same as the RGB
+                            // frame's source-to-viewport mapping.
+                            encoder.setRenderPipelineState(masked)
+                            encoder.setFragmentTexture(
+                                maskTexture, index: 1
+                            )
+                            var bounds = crop
+                            encoder.setFragmentBytes(
+                                &bounds,
+                                length: MemoryLayout<SIMD4<Float>>.stride,
+                                index: 1
+                            )
+                            var inverseSize = SIMD2<Float>(
+                                1 / Float(view.drawableSize.width),
+                                1 / Float(view.drawableSize.height)
+                            )
+                            encoder.setFragmentBytes(
+                                &inverseSize,
+                                length: MemoryLayout<SIMD2<Float>>.stride,
+                                index: 2
+                            )
+                            // Keep the just-uploaded mask texture alive
+                            // until this GPU command buffer finishes.
+                            buffer.addCompletedHandler { _ in
+                                _ = maskTexture
+                            }
+                        } else {
+                            // Explicit no-mask fallback: never borrow the
+                            // previous person segmentation from another
+                            // pose timestamp or capture session.
+                            encoder.setRenderPipelineState(bonePipeline)
+                        }
                         encoder.setCullMode(.none)
                         encoder.setVertexBuffer(
                             gpuVertices, offset: 0, index: 0
