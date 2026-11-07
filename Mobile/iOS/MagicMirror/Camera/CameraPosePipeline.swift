@@ -177,7 +177,9 @@ final class CameraPosePipeline: NSObject {
         options.minPoseDetectionConfidence = 0.5
         options.minPosePresenceConfidence = 0.5
         options.minTrackingConfidence = 0.5
-        options.shouldOutputSegmentationMasks = false
+        // One same-frame foreground confidence mask for 2D silhouette
+        // constrained rendering; it is NOT a depth or anatomical mask.
+        options.shouldOutputSegmentationMasks = true
         options.poseLandmarkerLiveStreamDelegate = self
         return try PoseLandmarker(options: options)
     }
@@ -360,8 +362,14 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
             worldPoints: worldPoints,
             cameraIntrinsics: metadata.intrinsics
         )
+        let silhouette = result?.segmentationMasks.first.flatMap {
+            PoseSilhouetteMask.copy(from: $0)
+        }
         postAlignedFrame(snapshot.isUsable
-            ? AlignedPoseVideoFrame(pose: snapshot, pixelBuffer: sourceImage)
+            ? AlignedPoseVideoFrame(
+                pose: snapshot, pixelBuffer: sourceImage,
+                silhouette: silhouette
+            )
             : nil)
         switch snapshot.coverage {
         case .torsoAnchored: postPhase(.tracking)
