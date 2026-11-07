@@ -8,6 +8,7 @@ import simd
 struct ReviewedAtlasRuntimeResources {
     let mesh: VerifiedAnatomyAtlas
     let hierarchy: AnatomyAtlasManifest
+    let skinning: [AtlasSkinInfluence]?
 
     let leftShoulder: SIMD3<Float>
     let rightShoulder: SIMD3<Float>
@@ -22,15 +23,23 @@ struct ReviewedAtlasRuntimeResources {
         throws -> ReviewedAtlasRuntimeResources {
         let mesh = try VerifiedAnatomyAtlas.load(bundle: bundle)
         let approved = try AnatomyAtlasStore.loadApproved(bundle: bundle)
+        let influences = try AtlasSkinningPackage.load(
+            bundle: bundle, atlas: mesh, hierarchy: approved.manifest
+        )
         guard let resources = ReviewedAtlasRuntimeResources(
-            mesh: mesh, hierarchy: approved.manifest
+            mesh: mesh, hierarchy: approved.manifest,
+            skinning: influences
         ) else { throw ResourceError.mismatchedOrIncompleteBinding }
         return resources
     }
 
     /// Synthetic XCTest fixtures can construct these objects directly;
     /// production must not bypass load(bundle:) when reading real assets.
-    init?(mesh: VerifiedAnatomyAtlas, hierarchy: AnatomyAtlasManifest) {
+    init?(
+        mesh: VerifiedAnatomyAtlas,
+        hierarchy: AnatomyAtlasManifest,
+        skinning: [AtlasSkinInfluence]? = nil
+    ) {
         guard (try? hierarchy.validateForUse()) != nil,
               mesh.manifest.reviewedForDistribution,
               mesh.manifest.reviewedJointBindings,
@@ -64,8 +73,12 @@ struct ReviewedAtlasRuntimeResources {
               let leftHip = anchors[23], let rightHip = anchors[24],
               simd_length(rs - ls) > 1e-4 else { return nil }
 
+        guard skinning == nil || (skinning!.count == mesh.vertices.count &&
+            skinning!.allSatisfy({ $0.isValid(boneCount: bones.count) }))
+        else { return nil }
         self.mesh = mesh
         self.hierarchy = hierarchy
+        self.skinning = skinning
         leftShoulder = ls
         rightShoulder = rs
         midHip = (leftHip + rightHip) * 0.5
@@ -109,6 +122,7 @@ final class LiveReviewedAtlasRuntime {
 
     private var capture = AnatomyReferenceCapture()
     private var registration: BodySimilarityRegistration?
+    private(set) var skinnedFrame: SkinnedAtlasDrawBatch?
     private var lastTimestampMilliseconds = -1
     private var lastImageSize: CGSize?
 
@@ -119,6 +133,7 @@ final class LiveReviewedAtlasRuntime {
     func reset() {
         capture.reset()
         registration = nil
+        skinnedFrame = nil
         lastTimestampMilliseconds = -1
         lastImageSize = nil
     }
@@ -130,6 +145,7 @@ final class LiveReviewedAtlasRuntime {
         focus: AnatomyFocus,
         opacity: Float
     ) -> CalibratedAtlasDrawBatch? {
+        skinnedFrame = nil
         guard let frame, frame.hasTorsoAnchor,
               frame.worldPoints.count == 33,
               viewport.width.isFinite, viewport.height.isFinite,
@@ -190,6 +206,20 @@ final class LiveReviewedAtlasRuntime {
               )
         else { return nil }
 
+        if let weights = resources.skinning {
+            skinnedFrame = SkinnedAtlasDrawBatch.build(
+                atlas: resources.mesh,
+                hierarchy: resources.hierarchy,
+                projector: projector,
+                influences: weights,
+                viewport: viewport,
+                focus: focus,
+                opacity: opacity
+            )
+        }
+        // Avoid CPU triangle regeneration when a complete reviewed
+        // GPU-skinned draw has already been accepted for this frame.
+        if skinnedFrame != nil { return nil }
         return CalibratedAtlasDrawBatch.build(
             atlas: resources.mesh,
             hierarchy: resources.hierarchy,
