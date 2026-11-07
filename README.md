@@ -1,5 +1,7 @@
 # MagicMirror 2.0 — Interactive Anatomical AR Mirror
 
+> **Product decision — smartphone-only (2026-11-06):** MagicMirror will ship **only as a standalone iOS/Android phone app**. Open → point the phone camera at one person → see a semi-transparent **standard reference skeleton** appear automatically → watch it follow movement. All inference, skeleton motion and GPU AR compositing must run on the handset; **no computer, Unity, Python sidecar/server, cloud or wearable is needed by the user**. There is **no Windows/macOS product planned**. This is the accepted scope, **not a claim that a native app has been built**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [active mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The code and commands below currently document the **archived desktop research prototype**.
+
 **Make human anatomy visible, interactive, and understandable through natural body movement.**
 
 A **MediaPipe-only**, local-first, single-person educational anatomy mirror.
@@ -28,7 +30,7 @@ bytes from the `--demo-video` source. GitHub Actions performs both variants.
 It does **not** prove that Unity compiled, that a real camera inferred a pose,
 or that the Z-Anatomy model is aligned.
 
-## First steps (without Unity or a webcam)
+## Existing desktop research tests (NOT the phone app)
 
 ~~~bash
 python3 -m unittest discover -s Tools/pose_sidecar/tests -v
@@ -72,7 +74,7 @@ specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
 checklist. The Unity Editor and real anatomical asset are not included.
 
-## Architecture
+## Archived desktop research architecture
 
 - Camera + MediaPipe Tasks Pose Landmarker: Tools/pose_sidecar/
 - Timestamped same-frame PoseFrame v1 + JPEG over local TCP
@@ -80,12 +82,15 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Complete pinned Z-Anatomy FBX, **not independent re-exported bones**
 - Default local-only image processing and no recording/upload
 
-## Documentation
+## Documentation — active mobile and legacy research
 
-- Docs/PRODUCT_VISION.md — final educational experience
+- Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md — accepted smartphone-only architecture
+- Docs/MOBILE_NATIVE_ROADMAP.md — only active mobile delivery roadmap
+- AGENTS.md — coding agent's mobile-only development contract
+- Docs/PRODUCT_VISION.md — archived desktop vision (superseded by ADR-002)
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
-- Docs/ROADMAP.md — M0 through M9, implementation gates
+- Docs/ROADMAP.md — archived desktop milestones, NOT active mobile delivery
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
 - Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
 - Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md — synthetic quality traces; not real camera FPS
