@@ -21,6 +21,8 @@ final class MirrorViewModel {
     var isPaused = false
     var showDiagnostics = false
     var deliveryReport: PoseDeliveryReport?
+    /// Diagnostic pose fit only; never an approved atlas calibration.
+    var automaticCameraCandidate: AutomaticCameraPoseCandidate?
 
     private var isActive = false
     private var mostRecentTimestamp = -1
@@ -33,6 +35,9 @@ final class MirrorViewModel {
     private var viewportSize: CGSize = .zero
     private var deliveryMonitor = PoseDeliveryQualityMonitor()
     private var expiryTask: Task<Void, Never>?
+    private var cameraEstimateTask: Task<Void, Never>?
+    private var cameraEstimateLastStart = 0.0
+    private var cameraEstimateEpoch: UInt64 = 0
 
     init() {
         pipeline.onAlignedFrame = { [weak self] incoming in
@@ -65,6 +70,9 @@ final class MirrorViewModel {
                 }
                 let now = ProcessInfo.processInfo.systemUptime
                 self.lastPoseReceiptUptime = now
+                if let smooth {
+                    self.maybeEstimateCamera(from: smooth, now: now)
+                }
                 if let report = self.deliveryMonitor.observe(
                     timestampMilliseconds: incoming.pose.timestampMilliseconds,
                     callbackUptime: now
@@ -83,6 +91,7 @@ final class MirrorViewModel {
                 self.reviewedAtlas?.reset()
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.resetAutomaticCamera()
             }
         }
         pipeline.onPhase = { [weak self] phase in
@@ -97,6 +106,7 @@ final class MirrorViewModel {
         guard !isActive else { return }
         isActive = true
         isPaused = false
+        resetAutomaticCamera()
         mostRecentTimestamp = -1
         currentCoverage = .none
         temporalFilter.reset()
@@ -123,6 +133,7 @@ final class MirrorViewModel {
                     self.reviewedAtlas?.reset()
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
+                    self.resetAutomaticCamera()
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
                     self.phase = .searching
@@ -149,6 +160,7 @@ final class MirrorViewModel {
     func stop() {
         guard isActive else { return }
         isActive = false
+        resetAutomaticCamera()
         expiryTask?.cancel()
         expiryTask = nil
         reviewedAtlasLoad?.cancel()
@@ -186,6 +198,43 @@ final class MirrorViewModel {
         skinnedAtlasBatch = nil
     }
 
+    private func resetAutomaticCamera() {
+        cameraEstimateEpoch &+= 1
+        cameraEstimateTask?.cancel()
+        cameraEstimateTask = nil
+        automaticCameraCandidate = nil
+        cameraEstimateLastStart = 0
+    }
+
+    /// Scheduled at most once every 750 ms and never on the actor that
+    /// displays camera frames. Candidate results cannot enable an
+    /// independently-reviewed atlas camera gate.
+    private func maybeEstimateCamera(
+        from frame: PoseSnapshot, now: Double
+    ) {
+        guard frame.hasTorsoAnchor,
+              frame.cameraIntrinsics != nil,
+              cameraEstimateTask == nil,
+              now - cameraEstimateLastStart >= 0.75
+        else { return }
+        cameraEstimateLastStart = now
+        let epoch = cameraEstimateEpoch
+        cameraEstimateTask = Task.detached(priority: .utility) { [weak self] in
+            if Task.isCancelled { return }
+            let result = AutomaticCameraPoseEstimator.estimate(
+                snapshot: frame
+            )
+            if Task.isCancelled { return }
+            await MainActor.run {
+                guard let self,
+                      self.isActive, !self.isPaused,
+                      self.cameraEstimateEpoch == epoch else { return }
+                self.cameraEstimateTask = nil
+                self.automaticCameraCandidate = result
+            }
+        }
+    }
+
     func toggleDiagnostics() {
         showDiagnostics.toggle()
     }
@@ -193,6 +242,7 @@ final class MirrorViewModel {
     func togglePause() {
         isPaused.toggle()
         if isPaused {
+            resetAutomaticCamera()
             temporalFilter.reset()
             proxyRig.reset()
             proxyRigPose = nil
