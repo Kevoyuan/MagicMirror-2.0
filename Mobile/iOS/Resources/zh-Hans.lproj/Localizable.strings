@@ -169,3 +169,5 @@
 "Visible hip landmarks define a proxy pelvis guide, not the actual pelvic bones." = "可见髋部关键点用于构建示意骨盆，并不代表真实骨盆骨骼。";
 "Observed pose guide · not your internal bones" = "观察到的姿态参考 · 并非真实内部骨骼";
 "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING" = "来源已审核的参考模型 · 并非个人影像";
+"Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live." = "点击“调整”修改参考模型透明度；“暂停”仅隐藏叠加模型，相机预览仍继续。";
+"The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available." = "图层手帐展示解剖系统与剖面。其他系统只有在已审核本地模型和相机配准可用后才能解锁。";
