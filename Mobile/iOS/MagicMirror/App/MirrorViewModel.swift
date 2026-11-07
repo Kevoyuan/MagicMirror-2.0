@@ -16,12 +16,16 @@ final class MirrorViewModel {
     var proxyRigPose: PoseSnapshot?
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+    var reviewedSkinnedFrames: [ReviewedSkinnedLayerFrame] = []
     var referenceSelection: AnatomyReferenceSelection?
     var reviewedPartSelection: ReviewedAnatomySelection?
     /// A system is selectable only after its own approved registered
     /// source atlas has produced coherent geometry on this capture.
     var readyAnatomyLayers: Set<AnatomyDisplayLayer> = []
     var selectedAnatomyLayer: AnatomyDisplayLayer = .skeleton
+    /// Persistent layer visibility intent; actual GPU frames stay gated
+    /// to approved source models on the same camera timestamp.
+    var visibleAnatomyLayers: Set<AnatomyDisplayLayer> = [.skeleton]
     var activeSection: AnatomySectionPlane?
     var sectionOffset: Double = 0
     var canSectionReviewedAtlas = false
@@ -67,42 +71,57 @@ final class MirrorViewModel {
                 self.proxyRigPose = self.proxyRig.update(smooth)
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.reviewedSkinnedFrames = []
                 let reviewedCamera = smooth.flatMap {
                     self.reviewedCameraForFrame?($0)
                 }
-                for (layer, runtime) in self.reviewedAtlasLayers {
-                    let isSelected = self.selectedAnatomyLayer == layer
-                    // Other reviewed packages are inspected only until
-                    // first confirmed success, not rendered every frame.
-                    guard isSelected ||
-                        !self.readyAnatomyLayers.contains(layer) else {
-                        continue
-                    }
+                // Stable draw order matches the anatomy notebook and
+                // supports correct topmost visible-source tap selection.
+                for layer in AnatomyDisplayLayer.allCases
+                    where layer != .referenceProxy {
+                    guard let runtime = self.reviewedAtlasLayers[layer]
+                    else { continue }
+                    let visible = self.visibleAnatomyLayers.contains(layer)
+                    // Unselected packages are probed only until they
+                    // first produce verified, registered geometry.
+                    guard visible ||
+                        !self.readyAnatomyLayers.contains(layer)
+                    else { continue }
                     let rigid = runtime.render(
                         frame: smooth, reviewedCamera: reviewedCamera,
                         viewport: self.viewportSize, focus: self.focus,
                         opacity: Float(self.opacity),
-                        section: isSelected ? self.activeSection : nil,
+                        section: visible ? self.activeSection : nil,
                         sectionOffset: Float(self.sectionOffset)
                     )
                     let skinned = runtime.skinnedFrame
                     if rigid != nil || skinned != nil {
                         self.readyAnatomyLayers.insert(layer)
                     }
-                    if isSelected {
+                    guard visible else { continue }
+                    if let skinned {
+                        self.reviewedSkinnedFrames.append(
+                            ReviewedSkinnedLayerFrame(
+                                layer: layer, batch: skinned
+                            )
+                        )
+                    }
+                    if self.selectedAnatomyLayer == layer {
                         self.calibratedAtlasBatch = rigid
                         self.skinnedAtlasBatch = skinned
                     }
                 }
                 if let selectedPart = self.reviewedPartSelection {
-                    let matches = self.skinnedAtlasBatch.map { batch in
-                        selectedPart.system == self.selectedAnatomyLayer &&
-                        selectedPart.sourceRevision == batch.sourceRevision &&
-                        batch.renderedParts.contains {
+                    let matches = self.reviewedSkinnedFrames.contains {
+                        frame in
+                        selectedPart.system == frame.layer &&
+                        selectedPart.sourceRevision ==
+                            frame.batch.sourceRevision &&
+                        frame.batch.renderedParts.contains {
                             $0.sourceHierarchyPath ==
                                 selectedPart.sourceHierarchyPath
                         }
-                    } ?? false
+                    }
                     if !matches { self.reviewedPartSelection = nil }
                 }
                 if self.skinnedAtlasBatch != nil ||
@@ -113,7 +132,7 @@ final class MirrorViewModel {
                     self.referenceSelection = nil
                     self.reviewedPartSelection = nil
                 }
-                self.canSectionReviewedAtlas = self.skinnedAtlasBatch != nil
+                self.canSectionReviewedAtlas = !self.reviewedSkinnedFrames.isEmpty
                 if !self.canSectionReviewedAtlas {
                     self.activeSection = nil
                 }
@@ -146,6 +165,7 @@ final class MirrorViewModel {
                 self.readyAnatomyLayers = []
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.reviewedSkinnedFrames = []
                 self.referenceSelection = nil
                 self.reviewedPartSelection = nil
                 self.canSectionReviewedAtlas = false
@@ -173,6 +193,7 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        reviewedSkinnedFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -198,6 +219,7 @@ final class MirrorViewModel {
                 self.readyAnatomyLayers = []
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
+                    self.reviewedSkinnedFrames = []
                     self.referenceSelection = nil
                     self.reviewedPartSelection = nil
                     self.canSectionReviewedAtlas = false
@@ -251,6 +273,7 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        reviewedSkinnedFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -276,6 +299,7 @@ final class MirrorViewModel {
         readyAnatomyLayers = []
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        reviewedSkinnedFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -287,6 +311,7 @@ final class MirrorViewModel {
         viewportSize = size
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        reviewedSkinnedFrames = []
         referenceSelection = nil
         reviewedPartSelection = nil
         canSectionReviewedAtlas = false
@@ -345,15 +370,24 @@ final class MirrorViewModel {
             reviewedPartSelection = nil
             return
         }
-        if let batch = skinnedAtlasBatch, let snapshot,
-           batch.matches(
-               frame: snapshot, viewport: viewport,
-               focus: focus, opacity: Float(opacity)
-           ) {
-            reviewedPartSelection = ReviewedAtlasHitTester.select(
-                at: location, batch: batch,
-                system: selectedAnatomyLayer
-            )
+        if let snapshot, !reviewedSkinnedFrames.isEmpty {
+            reviewedPartSelection = nil
+            // The compositor draws later layers last without a depth
+            // buffer, so tap inspection chooses their visible surface
+            // first, then falls through to earlier layers.
+            for frame in reviewedSkinnedFrames.reversed() {
+                let batch = frame.batch
+                guard batch.matches(
+                    frame: snapshot, viewport: viewport,
+                    focus: focus, opacity: Float(opacity)
+                ) else { continue }
+                if let hit = ReviewedAtlasHitTester.select(
+                    at: location, batch: batch, system: frame.layer
+                ) {
+                    reviewedPartSelection = hit
+                    break
+                }
+            }
             referenceSelection = nil
             return
         }
@@ -377,11 +411,26 @@ final class MirrorViewModel {
         layer == .referenceProxy || readyAnatomyLayers.contains(layer)
     }
 
+    func isAnatomyLayerVisible(_ layer: AnatomyDisplayLayer) -> Bool {
+        layer == .referenceProxy
+            ? visibleAnatomyLayers.isEmpty
+            : visibleAnatomyLayers.contains(layer)
+    }
+
+    /// Tapping a verified system toggles its *actual* 3D layer while
+    /// keeping other independently approved systems visible.
     func selectAnatomyLayer(_ layer: AnatomyDisplayLayer) {
         guard canSelectAnatomyLayer(layer) else { return }
-        selectedAnatomyLayer = layer
+        visibleAnatomyLayers = AnatomyLayerVisibilityPolicy.toggled(
+            layer: layer, ready: readyAnatomyLayers,
+            visible: visibleAnatomyLayers
+        )
+        selectedAnatomyLayer = AnatomyLayerVisibilityPolicy.primary(
+            preferred: layer, visible: visibleAnatomyLayers
+        )
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        reviewedSkinnedFrames = []
         canSectionReviewedAtlas = false
         activeSection = nil
         referenceSelection = nil
@@ -401,6 +450,7 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
+            reviewedSkinnedFrames = []
             referenceSelection = nil
             reviewedPartSelection = nil
             canSectionReviewedAtlas = false
