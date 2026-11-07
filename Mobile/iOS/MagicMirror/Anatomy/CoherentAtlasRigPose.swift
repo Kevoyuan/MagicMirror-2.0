@@ -149,10 +149,13 @@ enum CoherentAtlasRigPlanner {
                 / originalLength
             let currentError = abs(measuredLength - originalLength)
                 / originalLength
+            let referencePivotError = simd_length(oldFrom - restFrom)
+                / originalLength
             guard referenceError <= limits.maximumLengthErrorFraction,
-                  currentError <= limits.maximumLengthErrorFraction else {
-                return nil
-            }
+                  currentError <= limits.maximumLengthErrorFraction,
+                  referencePivotError.isFinite,
+                  referencePivotError <= limits.maximumAttachmentErrorFraction
+            else { return nil }
 
             let restDirection = restAxis / originalLength
             let referenceDirection = referenceAxis / referenceLength
