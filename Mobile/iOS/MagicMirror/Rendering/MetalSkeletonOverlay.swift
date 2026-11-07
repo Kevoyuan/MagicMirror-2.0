@@ -20,6 +20,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch? = nil
     var skinnedAtlasBatches: [SkinnedAtlasDrawBatch] = []
     var calibratedAtlasBatches: [CalibratedAtlasDrawBatch] = []
+    var selectedAtlasNodePath: String? = nil
+    var selectedAtlasSystem: AnatomyDisplayLayer? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
 
@@ -49,7 +51,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             calibratedAtlasBatch: calibratedAtlasBatch,
             skinnedAtlasBatch: skinnedAtlasBatch,
             skinnedAtlasBatches: skinnedAtlasBatches,
-            calibratedAtlasBatches: calibratedAtlasBatches
+            calibratedAtlasBatches: calibratedAtlasBatches,
+            selectedAtlasNodePath: selectedAtlasNodePath,
+            selectedAtlasSystem: selectedAtlasSystem
         )
         view.draw()
     }
@@ -75,6 +79,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
         private var skinnedAtlasBatches: [SkinnedAtlasDrawBatch] = []
         private var calibratedAtlasBatches: [CalibratedAtlasDrawBatch] = []
+        private var selectedAtlasNodePath: String?
+        private var selectedAtlasSystem: AnatomyDisplayLayer?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -158,7 +164,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             calibratedAtlasBatch: CalibratedAtlasDrawBatch?,
             skinnedAtlasBatch: SkinnedAtlasDrawBatch?,
             skinnedAtlasBatches: [SkinnedAtlasDrawBatch],
-            calibratedAtlasBatches: [CalibratedAtlasDrawBatch]
+            calibratedAtlasBatches: [CalibratedAtlasDrawBatch],
+            selectedAtlasNodePath: String?,
+            selectedAtlasSystem: AnatomyDisplayLayer?
         ) {
             self.alignedFrame = alignedFrame
             self.proxyPose = proxyPose
@@ -168,6 +176,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             self.skinnedAtlasBatch = skinnedAtlasBatch
             self.skinnedAtlasBatches = skinnedAtlasBatches
             self.calibratedAtlasBatches = calibratedAtlasBatches
+            self.selectedAtlasNodePath = selectedAtlasNodePath
+            self.selectedAtlasSystem = selectedAtlasSystem
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -386,6 +396,28 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                             &screen,
                             length: MemoryLayout<SIMD4<Float>>.stride,
                             index: 4
+                        )
+                        // A source mesh path is only meaningful within
+                        // its independently reviewed anatomical system.
+                        let selected = skin.anatomicalSystem ==
+                            selectedAtlasSystem
+                            ? skin.renderedParts.first {
+                                $0.sourceHierarchyPath ==
+                                    selectedAtlasNodePath
+                              }
+                            : nil
+                        var range = selected.map {
+                            SIMD2<UInt32>(
+                                UInt32($0.vertexStart),
+                                UInt32($0.vertexStart + $0.vertexCount)
+                            )
+                        } ?? SIMD2<UInt32>(
+                            repeating: UInt32.max
+                        )
+                        encoder.setVertexBytes(
+                            &range,
+                            length: MemoryLayout<SIMD2<UInt32>>.stride,
+                            index: 5
                         )
                         var section = skin.sectionPlane
                         encoder.setFragmentBytes(
