@@ -5,13 +5,13 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from atlas_sources import SYSTEM_SOURCES, SOURCE_COMMIT  # noqa: E402
 from atlas_rig_manifest import (  # noqa: E402
     build_rig_manifest, RigPackageError,
 )
+from usdz_package import pack_usdc_as_usdz  # noqa: E402
 
 
 class ReviewedUSDZRigManifestTests(unittest.TestCase):
@@ -19,10 +19,11 @@ class ReviewedUSDZRigManifestTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name) / "muscles_atlas.usdz"
-        with zipfile.ZipFile(
-            self.path, "w", compression=zipfile.ZIP_STORED
-        ) as archive:
-            archive.writestr("scene.usda", "#usda 1.0\n" + " " * 512)
+        # Synthetic USD-crate magic tests archive structure and rig
+        # metadata only; it is NOT a parsed or anatomy-reviewed scene.
+        synthetic_stage = self.path.with_suffix(".usdc")
+        synthetic_stage.write_bytes(b"PXR-USDC" + b"\0" * 512)
+        pack_usdc_as_usdz(synthetic_stage, self.path)
         self.parts = [
             {
                 "sourceHierarchyPath": "synthetic/upper",
