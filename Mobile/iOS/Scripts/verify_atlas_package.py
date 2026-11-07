@@ -14,14 +14,19 @@ import math
 from pathlib import Path
 import struct
 
+from atlas_sources import (
+    SOURCE_REPOSITORY as SOURCE_REPO,
+    SOURCE_COMMIT as SOURCE_REVISION,
+    SYSTEM_SOURCES,
+    resource_base,
+)
+
 MAGIC = b"MMATLAS1"
 BINARY_NAME = "skeleton_atlas.mmgeom"
 MANIFEST_NAME = "skeleton_atlas.manifest.json"
+SOURCE_PATH = SYSTEM_SOURCES["skeleton"][0]
 MAX_VERTICES = 180_000
 RECORD_BYTES = 24
-SOURCE_REPO = "https://github.com/LluisV/Z-Anatomy"
-SOURCE_REVISION = "6c7f9016bd5899ac8edafd31b9900c151df42ed6"
-SOURCE_PATH = "Resources/Models/FBX/SkeletalSystem100.fbx"
 REQUIRED_LICENSES = {"CC BY-SA 2.1 Japan", "CC BY-SA 4.0"}
 
 
@@ -42,10 +47,15 @@ def finite_vector(value):
     )
 
 
-def verify_package(directory: Path):
+def verify_package(directory: Path, system: str = "skeleton"):
     directory = Path(directory)
-    manifest_path = directory / MANIFEST_NAME
-    binary_path = directory / BINARY_NAME
+    if system not in SYSTEM_SOURCES:
+        raise PackageError("unknown anatomical system")
+    source_path, _, _ = SYSTEM_SOURCES[system]
+    base = resource_base(system)
+    binary_name = f"{base}.mmgeom"
+    manifest_path = directory / f"{base}.manifest.json"
+    binary_path = directory / binary_name
     require(manifest_path.is_file(), "missing atlas manifest")
     require(binary_path.is_file(), "missing atlas binary")
     try:
@@ -56,12 +66,19 @@ def verify_package(directory: Path):
     require(isinstance(manifest, dict), "manifest must be an object")
     require(type(manifest.get("schemaVersion")) is int
             and manifest["schemaVersion"] == 1, "unsupported manifest schema")
-    require(manifest.get("modelFile") == BINARY_NAME, "unexpected binary filename")
+    require(manifest.get("modelFile") == binary_name, "unexpected binary filename")
+    if system == "skeleton":
+        require(manifest.get("anatomicalSystem") in (None, "skeleton"),
+                "anatomical system mismatch")
+    else:
+        require(manifest.get("anatomicalSystem") == system,
+                "anatomical system mismatch")
     require(manifest.get("sourceRepository") == SOURCE_REPO,
             "unexpected source repository")
     require(manifest.get("sourceRevision") == SOURCE_REVISION,
             "unexpected source revision")
-    require(manifest.get("sourcePath") == SOURCE_PATH, "unexpected source path")
+    require(manifest.get("sourcePath") == source_path,
+            "unexpected source path")
     require(manifest.get("reviewedForDistribution") is True,
             "human distribution review not recorded")
     require(manifest.get("reviewedJointBindings") is True,
@@ -128,6 +145,38 @@ def verify_package(directory: Path):
         cursor += length
     require(cursor == count, "parts do not cover the complete binary")
 
+    # An optional GPU skinning sidecar is independently checked against
+    # the exact exported source geometry and reviewed bone ID structure.
+    skinning = directory / f"{base}.skinning.json"
+    if skinning.is_file():
+        try:
+            weight_data = json.loads(skinning.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeError) as exc:
+            raise PackageError("invalid skinning JSON") from exc
+        require(isinstance(weight_data, dict), "invalid skinning object")
+        require(weight_data.get("schemaVersion") == 1,
+                "unsupported skinning schema")
+        require(weight_data.get("reviewedJointWeights") is True,
+                "skinning weight review is not recorded")
+        require(weight_data.get("sourceRevision") == SOURCE_REVISION,
+                "skinning source revision mismatch")
+        require(weight_data.get("modelSHA256") == actual_hash,
+                "skinning model SHA-256 mismatch")
+        weights = weight_data.get("vertices")
+        require(isinstance(weights, list) and len(weights) == count,
+                "skinning vertex count mismatch")
+        for index, item in enumerate(weights):
+            require(isinstance(item, dict), f"invalid skinning vertex {index}")
+            ids, influences = item.get("boneIds"), item.get("weights")
+            require(isinstance(ids, list) and len(ids) == 4
+                    and all(isinstance(n, str) and n.strip() for n in ids),
+                    f"invalid skinning bone IDs at {index}")
+            require(isinstance(influences, list) and len(influences) == 4
+                    and all(type(w) in (int, float) and math.isfinite(w)
+                            and 0 <= w <= 1 for w in influences)
+                    and abs(sum(influences) - 1) <= 0.001,
+                    f"invalid skinning weights at {index}")
+
     # Float32 position and normal validity is checked for every actual
     # triangle vertex, not just for the reviewed rest anchors.
     for index, values in enumerate(struct.iter_unpack("<6f", payload[12:])):
@@ -142,9 +191,11 @@ def verify_package(directory: Path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
+    parser.add_argument("--system", choices=sorted(SYSTEM_SOURCES),
+                        default="skeleton")
     args = parser.parse_args()
     try:
-        stats = verify_package(args.package)
+        stats = verify_package(args.package, system=args.system)
     except (PackageError, OSError) as exc:
         parser.exit(1, f"FAIL: {exc}\n")
     print(f"PASS: {stats['vertex_count']} vertices, "

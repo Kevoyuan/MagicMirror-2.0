@@ -13,6 +13,7 @@ from verify_atlas_package import (  # noqa: E402
     BINARY_NAME, MANIFEST_NAME, PackageError, SOURCE_PATH,
     SOURCE_REPO, SOURCE_REVISION, verify_package,
 )
+from atlas_sources import SYSTEM_SOURCES, resource_base  # noqa: E402
 
 
 class AtlasPackagePreflightTests(unittest.TestCase):
@@ -142,6 +143,78 @@ class AtlasPackagePreflightTests(unittest.TestCase):
         (self.root / MANIFEST_NAME).unlink()
         with self.assertRaises(PackageError):
             verify_package(self.root)
+
+    def test_all_six_real_upstream_sources_are_pinned(self):
+        self.assertEqual(
+            set(SYSTEM_SOURCES),
+            {"skeleton", "muscles", "organs", "vessels", "nerves", "joints"}
+        )
+        for name, (path, byte_count, blob) in SYSTEM_SOURCES.items():
+            with self.subTest(system=name):
+                self.assertTrue(path.startswith("Resources/Models/FBX/"))
+                self.assertGreater(byte_count, 1_000_000)
+                self.assertEqual(len(blob), 40)
+                self.assertTrue(resource_base(name).endswith("_atlas"))
+
+    def test_other_anatomy_system_requires_correct_source_and_name(self):
+        system = "muscles"
+        base = resource_base(system)
+        self.manifest["sourcePath"] = SYSTEM_SOURCES[system][0]
+        self.manifest["anatomicalSystem"] = system
+        self.manifest["modelFile"] = f"{base}.mmgeom"
+        self.rewrite()
+        (self.root / BINARY_NAME).rename(
+            self.root / f"{base}.mmgeom"
+        )
+        (self.root / MANIFEST_NAME).rename(
+            self.root / f"{base}.manifest.json"
+        )
+        report = verify_package(self.root, system=system)
+        self.assertEqual(report["vertex_count"], 3)
+        manifest_path = self.root / f"{base}.manifest.json"
+        self.manifest["anatomicalSystem"] = "skeleton"
+        manifest_path.write_text(json.dumps(self.manifest), encoding="utf-8")
+        with self.assertRaisesRegex(PackageError, "system mismatch"):
+            verify_package(self.root, system=system)
+
+    def test_valid_audited_four_weights_and_corrupt_sidecar(self):
+        influence = {
+            "boneIds": ["reviewed/a", "reviewed/b",
+                        "reviewed/a", "reviewed/a"],
+            "weights": [0.6, 0.4, 0, 0],
+        }
+        skinning = {
+            "schemaVersion": 1,
+            "sourceRevision": SOURCE_REVISION,
+            "modelSHA256": self.manifest["modelSHA256"],
+            "reviewedJointWeights": True,
+            "vertices": [influence] * 3,
+        }
+        p = self.root / "skeleton_atlas.skinning.json"
+
+        def write():
+            p.write_text(json.dumps(skinning), encoding="utf-8")
+
+        write()
+        self.assertEqual(verify_package(self.root)["vertex_count"], 3)
+        for key, wrong in [
+            ("reviewedJointWeights", False),
+            ("sourceRevision", "wrong-revision"),
+            ("modelSHA256", "invalid"),
+            ("vertices", [{"boneIds": ["a"], "weights": [1]}]),
+            ("vertices", [{"boneIds": ["a"] * 4,
+                           "weights": [float("nan"), 0, 0, 0]}] * 3),
+            ("vertices", [{"boneIds": ["a"] * 4,
+                           "weights": [0.1, 0.1, 0, 0]}] * 3),
+        ]:
+            with self.subTest(key=key, wrong=wrong):
+                old = skinning[key]
+                skinning[key] = wrong
+                write()
+                with self.assertRaises(PackageError):
+                    verify_package(self.root)
+                skinning[key] = old
+                write()
 
 
 if __name__ == "__main__":
