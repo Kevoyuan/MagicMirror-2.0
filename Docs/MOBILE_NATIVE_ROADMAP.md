@@ -381,3 +381,15 @@ the existing proxy is always available. This is **code-level layer
 switching**, not a claim that all third-party anatomical systems have
 passed human source licensing, joint review, device calibration or
 iPhone performance checks.
+
+## Mobile-3 offline six-system source-to-MMATLAS1 exporter (2026-11-07)
+
+Expanded the Blender-only geometry exporter and Python structural
+preflight across six *actually existing* Z-Anatomy FBX sources at
+the pinned Git commit, preserving original byte/blob provenance per
+system. Optional LBS skinning data now comes only from explicitly
+reviewed authored Blender vertex groups and named hierarchy bone IDs.
+The native app can load those independent artifacts with no runtime
+Python/network. Approved USDZ hierarchy authoring/packaging, licensing,
+anatomical bindings, full size/performance and live iPhone acceptance
+are still separate gates.
