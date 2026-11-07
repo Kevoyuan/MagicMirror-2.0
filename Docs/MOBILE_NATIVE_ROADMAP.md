@@ -3,7 +3,9 @@
 **User promise:** launch a phone app, point one phone camera at a person,
 see a semi-transparent standard *reference* skeleton automatically follow
 their movement. Entirely on device: no computer, Unity, Python service,
-cloud AI, account or wearable. The runtime is **not implemented yet**.
+cloud AI, account or wearable. A native iOS SwiftUI/MediaPipe **prototype**
+now exists and has passed arm64 Simulator compilation; real iPhone operation,
+3D anatomical mesh and mobile release readiness are **not yet validated**.
 
 **Authority:** ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md records the accepted
 **smartphone-only** product scope. This is the sole active product delivery

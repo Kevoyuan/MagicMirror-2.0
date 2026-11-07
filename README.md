@@ -1,6 +1,32 @@
 # MagicMirror 2.0 — Interactive Anatomical AR Mirror
 
-> **Product decision — smartphone-only (2026-11-06):** MagicMirror will ship **only as a standalone iOS/Android phone app**. Open → point the phone camera at one person → see a semi-transparent **standard reference skeleton** appear automatically → watch it follow movement. All inference, skeleton motion and GPU AR compositing must run on the handset; **no computer, Unity, Python sidecar/server, cloud or wearable is needed by the user**. There is **no Windows/macOS product planned**. This is the accepted scope, **not a claim that a native app has been built**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [active mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The code and commands below currently document the **archived desktop research prototype**.
+> **Product decision — smartphone-only (2026-11-06):** MagicMirror will ship **only as a standalone iOS/Android phone app**. Open → point the phone camera at one person → see a semi-transparent **standard reference skeleton** appear automatically → watch it follow movement. All inference, skeleton motion and GPU AR compositing must run on the handset; **no computer, Unity, Python sidecar/server, cloud or wearable is needed by the user**. There is **no Windows/macOS product planned**. The iOS prototype source exists and compiles for arm64 Simulator, but **physical iPhone operation and complete 3D anatomy are not yet verified**. See [ADR-002](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and [active mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md). The native iOS code is in [Mobile/iOS/](Mobile/iOS/); the Python/Unity sections below are historical research only.
+
+## Active iOS prototype (Mobile-0/1)
+
+The native SwiftUI + AVFoundation + on-device MediaPipe app is in
+[Mobile/iOS/](Mobile/iOS/). The arm64 Simulator **build-for-testing** compiles
+the app and XCTest targets; no physical camera or actual 3D atlas has been
+validated yet. Source frames are time-gated to their own MediaPipe pose
+metadata. The first visible skeleton is a translucent **2D proxy**, not
+individual human bones.
+
+Developer setup (Mac with Xcode, XcodeGen and Apple signing for iPhone):
+
+```bash
+bash Mobile/iOS/Scripts/fetch_model.sh
+cd Mobile/iOS
+xcodegen generate --spec project.yml
+open MagicMirror.xcodeproj
+```
+
+See [the iOS README](Mobile/iOS/README.md) for detailed build/testing
+limitations and the [active mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md).
+End users do **not** need a Mac, Python service or Unity.
+
+---
+
+## Archived desktop research context
 
 **Make human anatomy visible, interactive, and understandable through natural body movement.**
 

@@ -52,12 +52,12 @@ Read these in order:
    `Docs/ROADMAP.md` are **archived desktop-prototype context**.
    Do not continue their desktop milestones.
 
-**Repository consolidation (2026-11-07):** PRs #1–#12 have all been merged
+**Repository consolidation (2026-11-07):** PRs #1–#13 have all been merged
 into `main`. All older feature branches have zero unmerged commits
 relative to `main`; the refs may still be visible in GitHub.
-The active follow-up is the native iOS frame-association implementation
-(PR #13 when open). Re-check current PRs and CI rather than treating
-these examples as immutable status.
+PR #13 integrated a bounded same-capture-frame timestamp/geometry gate
+into native iOS. There are currently no unmerged historical feature PRs.
+Re-check current PRs and CI rather than treating this as immutable status.
 
 Before editing or opening a PR, inspect the live repository branches,
 PR bases, changed files and current CI. Do **not** assume these statuses
@@ -157,10 +157,9 @@ was fixed by restricting Xcode's simulator compilation to arm64 while
 retaining the actual MediaPipe XCFramework. Xcode `build-for-testing`
 now passes on macOS, but that only **compiles** app and XCTest targets:
 the tests have not been executed on simulator and no camera/pose has
-been validated on a physical iPhone. Continue Mobile-1's bounded,
-same-source-frame asynchronous pose association (PR #13), then prioritize
-a signed, real iPhone camera/landmark smoke test, explicit alignment
-and end-to-end movement latency measurements.
+been validated on a physical iPhone. The Mobile-1 bounded pose-frame association source is now Xcode-compiled;
+next prioritize a signed real iPhone camera/landmark smoke test, explicit
+alignment and measured end-to-end movement latency.
 
 ## 5. Testing and evidence requirements
 
