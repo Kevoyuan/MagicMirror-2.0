@@ -18,6 +18,7 @@ struct MirrorScreen: View {
 
             MetalSkeletonOverlay(
                 alignedFrame: model.isPaused ? nil : model.alignedFrame,
+                proxyPose: model.isPaused ? nil : model.proxyRigPose,
                 opacity: model.opacity, focus: model.focus
             )
             .ignoresSafeArea()
