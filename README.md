@@ -1,10 +1,10 @@
 # MagicMirror 2.0
 
-**An offline-first, native anatomical AR mirror for smartphones.**
+**An offline-first, native anatomical AR mirror for iPhone (iOS).**
 
 Point your phone camera at one person and explore a translucent, educational **reference skeleton** that follows observed movement. MagicMirror aims to make human anatomy intuitive through motion—not simulate an X-ray, scan anyone's actual bones, or diagnose a medical condition.
 
-> **Development status · November 2026:** The active product is an **iPhone/iOS prototype**, not a released app. Source builds and XCTest targets compile in GitHub Actions for arm64 iOS Simulator. A physical iPhone camera experience, measured latency, a licensed and reviewed full anatomy atlas, and production distribution **have not yet been validated**. Android is in the product direction but has no equivalent native implementation here.
+> **Development status · November 2026:** The active product is an **iPhone/iOS prototype**, not a released app. Source builds and XCTest targets compile in GitHub Actions for arm64 iOS Simulator. A physical iPhone camera experience, measured latency, a licensed and reviewed full anatomy atlas, and production distribution **have not yet been validated**. **Android development has been canceled and is not part of the product roadmap.**
 
 [Native iOS guide](Mobile/iOS/README.md) · [Product design](DESIGN.md) · [Active roadmap](Docs/MOBILE_NATIVE_ROADMAP.md) · [Architecture decision](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md)
 
@@ -94,7 +94,7 @@ The initial focus modes are **Whole / Arms / Legs**. Do not confuse these workin
 1. **Physical iPhone validation:** actual rear-camera tracking, occlusion and turning, overlay placement, sustained FPS, power, thermal behavior and end-to-end latency.
 2. **Atlas review and integration:** source-model distribution rights, attribution, reviewed bone anchors, hierarchy/skinning, and real mesh-to-renderer integration. No model should appear as a verified human bone atlas before this review.
 3. **Camera/body registration:** independently measured or validated camera geometry and a reliable pose-to-image alignment quality gate; handle facing direction and incomplete pose safely.
-4. **Shipping readiness:** accessibility and on-device UX QA, signing, privacy review, TestFlight and release acceptance. Android development remains future scope.
+4. **Shipping readiness:** accessibility and on-device UX QA, signing, privacy review, TestFlight and release acceptance. There is no planned Android release.
 
 Follow [MOBILE_NATIVE_ROADMAP.md](Docs/MOBILE_NATIVE_ROADMAP.md) for the authoritative active plan. Historical desktop milestones are **not** the mobile release checklist.
 
