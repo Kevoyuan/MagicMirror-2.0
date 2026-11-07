@@ -9,6 +9,8 @@ final class MirrorViewModel {
 
     var phase: MirrorPhase = .idle
     var snapshot: PoseSnapshot?
+    /// Stable visual recognition class; unlike snapshot, rarely changes.
+    var currentCoverage: PoseCoverage = .none
     var alignedFrame: AlignedPoseVideoFrame?
     /// Geometry-only, fixed-length reference pose for this source frame.
     var proxyRigPose: PoseSnapshot?
@@ -40,6 +42,10 @@ final class MirrorViewModel {
                 self.mostRecentTimestamp = incoming.pose.timestampMilliseconds
                 let smooth = self.temporalFilter.apply(incoming.pose)
                 self.snapshot = smooth
+                let coverage = smooth?.coverage ?? .none
+                if self.currentCoverage != coverage {
+                    self.currentCoverage = coverage
+                }
                 self.proxyRigPose = self.proxyRig.update(smooth)
                 self.calibratedAtlasBatch = self.reviewedAtlas?.render(
                     frame: smooth,
@@ -68,6 +74,7 @@ final class MirrorViewModel {
                 self.deliveryMonitor.reset()
                 self.deliveryReport = nil
                 self.snapshot = nil
+                self.currentCoverage = .none
                 self.alignedFrame = nil
                 self.proxyRigPose = nil
                 self.proxyRig.reset()
@@ -88,6 +95,7 @@ final class MirrorViewModel {
         isActive = true
         isPaused = false
         mostRecentTimestamp = -1
+        currentCoverage = .none
         temporalFilter.reset()
         proxyRig.reset()
         proxyRigPose = nil
@@ -103,6 +111,7 @@ final class MirrorViewModel {
                 if self.snapshot != nil &&
                    ProcessInfo.processInfo.systemUptime - self.lastPoseReceiptUptime > 0.30 {
                     self.snapshot = nil
+                    self.currentCoverage = .none
                     self.alignedFrame = nil
                     self.temporalFilter.reset()
                     self.proxyRig.reset()
@@ -145,6 +154,7 @@ final class MirrorViewModel {
         deliveryMonitor.reset()
         deliveryReport = nil
         snapshot = nil
+        currentCoverage = .none
         alignedFrame = nil
         phase = .idle
         pipeline.stop()
@@ -181,6 +191,7 @@ final class MirrorViewModel {
             deliveryMonitor.reset()
             deliveryReport = nil
             snapshot = nil
+            currentCoverage = .none
             alignedFrame = nil  // No frozen video or stale tracked bones.
         } else {
             mostRecentTimestamp = -1
