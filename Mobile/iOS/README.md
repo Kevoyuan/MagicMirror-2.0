@@ -309,6 +309,24 @@ controls do not need to invalidate on every pose callback. This is a
 source-level performance improvement, **not** measured real-iPhone FPS. The guide describes current privacy behavior as source-level
 claims; App Store and third-party SDK disclosures still require review.
 
+The SwiftUI mirror and both notebook sheets now use native `Localizable.strings`
+resources for **English and Simplified Chinese**. They follow the device's
+iOS language; 113 paired source keys have been checked for parity and
+empty translations. The design intentionally retains small Latin folio
+marks as visual metadata while translating actual controls, status, locked
+anatomical systems, camera recovery and VoiceOver-facing descriptions.
+The adaptive header falls back to an MM mark on very narrow layouts and
+reflows the tracking pill under the brand for accessibility text sizes.
+During valid partial tracking it avoids leaving a large guidance card
+over the visible body.
+
+**Localization manual QA:** Set iPhone Settings → General → Language & Region
+to English and 简体中文 respectively, or use an app-specific language override
+where supported. Restart the app and inspect Mirror, Anatomy Folio and Field
+Notes at ordinary and very large text sizes. Verify real permission denial
+and interruption states, long descriptions and VoiceOver, not only a
+Simulator build.
+
 See the [complete iPhone UI journey handoff](../../Docs/IOS_UI_USER_JOURNEYS.md)
 and [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
 
