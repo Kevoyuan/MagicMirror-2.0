@@ -119,15 +119,13 @@ struct AnatomyLayersSheet: View {
     }
 
     private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
-        let available = model.canSelectAnatomyLayer(layer)
-        // A requested system is not visually active until a real,
-        // independently registered local model is actually available.
-        let activeSystems = model.enabledAnatomyLayers.filter {
-            model.canSelectAnatomyLayer($0)
-        }
-        let selected = layer == .referenceProxy
-            ? activeSystems.isEmpty
-            : activeSystems.contains(layer)
+        let presentation = AnatomyLayerPresentation(
+            layer: layer,
+            enabled: model.enabledAnatomyLayers,
+            ready: model.readyAnatomyLayers
+        )
+        let available = presentation.available
+        let selected = presentation.selected
         return VStack(alignment: .leading, spacing: 5) {
         Button {
             model.selectAnatomyLayer(layer)
@@ -163,7 +161,7 @@ struct AnatomyLayersSheet: View {
                         : "lock.fill")
                         .font(.subheadline)
                     Text(LocalizedStringKey(
-                        available ? (selected ? "SELECTED" : "READY") : "LOCKED"
+                        presentation.statusKey
                     ))
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
@@ -193,7 +191,7 @@ struct AnatomyLayersSheet: View {
         .disabled(!available)
         .accessibilityLabel(LocalizedStringKey(layer.title))
         .accessibilityValue(LocalizedStringKey(
-            available ? (selected ? "SELECTED" : "READY") : "LOCKED"
+            presentation.statusKey
         ))
         .accessibilityHint(LocalizedStringKey(
             available ? (layer == .referenceProxy
