@@ -9,6 +9,7 @@ final class MirrorViewModel {
 
     var phase: MirrorPhase = .idle
     var snapshot: PoseSnapshot?
+    var alignedFrame: AlignedPoseVideoFrame?
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
@@ -20,17 +21,24 @@ final class MirrorViewModel {
     private var expiryTask: Task<Void, Never>?
 
     init() {
-        pipeline.onPose = { [weak self] result in
+        pipeline.onAlignedFrame = { [weak self] incoming in
             guard let self, self.isActive, !self.isPaused else { return }
-            if let result {
-                guard result.timestampMilliseconds > self.mostRecentTimestamp else {
-                    return
+            if let incoming {
+                guard incoming.pose.timestampMilliseconds
+                        > self.mostRecentTimestamp else { return }
+                self.mostRecentTimestamp = incoming.pose.timestampMilliseconds
+                let smooth = self.temporalFilter.apply(incoming.pose)
+                self.snapshot = smooth
+                self.alignedFrame = smooth.map {
+                    AlignedPoseVideoFrame(
+                        pose: $0, pixelBuffer: incoming.pixelBuffer
+                    )
                 }
-                self.mostRecentTimestamp = result.timestampMilliseconds
-            }
-            self.snapshot = self.temporalFilter.apply(result)
-            if result != nil {
                 self.lastPoseReceiptUptime = ProcessInfo.processInfo.systemUptime
+            } else {
+                self.temporalFilter.reset()
+                self.snapshot = nil
+                self.alignedFrame = nil
             }
         }
         pipeline.onPhase = { [weak self] phase in
@@ -55,6 +63,7 @@ final class MirrorViewModel {
                 if self.snapshot != nil &&
                    ProcessInfo.processInfo.systemUptime - self.lastPoseReceiptUptime > 0.30 {
                     self.snapshot = nil
+                    self.alignedFrame = nil
                     self.temporalFilter.reset()
                     self.phase = .searching
                 }
@@ -70,6 +79,7 @@ final class MirrorViewModel {
         expiryTask = nil
         temporalFilter.reset()
         snapshot = nil
+        alignedFrame = nil
         phase = .idle
         pipeline.stop()
     }
@@ -78,7 +88,8 @@ final class MirrorViewModel {
         isPaused.toggle()
         if isPaused {
             temporalFilter.reset()
-            snapshot = nil  // Never present stale tracked bones as live data.
+            snapshot = nil
+            alignedFrame = nil  // No frozen video or stale tracked bones.
         } else {
             mostRecentTimestamp = -1
         }
