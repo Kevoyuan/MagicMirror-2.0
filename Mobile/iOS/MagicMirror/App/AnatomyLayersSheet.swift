@@ -22,7 +22,7 @@ struct AnatomyLayersSheet: View {
 
                     Picker("Anatomy study", selection: $page) {
                         ForEach(NotebookPage.allCases) { item in
-                            Text(item.rawValue).tag(item)
+                            Text(LocalizedStringKey(item.rawValue)).tag(item)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -128,10 +128,10 @@ struct AnatomyLayersSheet: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(layer.title)
+                Text(LocalizedStringKey(layer.title))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(LeonardoPalette.ink)
-                Text(layer.detail)
+                Text(LocalizedStringKey(layer.detail))
                     .font(.caption)
                     .foregroundStyle(LeonardoPalette.mutedInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -143,7 +143,8 @@ struct AnatomyLayersSheet: View {
                 Image(systemName: layer.isAvailable
                       ? "checkmark.circle.fill" : "lock.fill")
                     .font(.subheadline)
-                Text(layer.isAvailable ? "REFERENCE" : "PLANNED")
+                Text(layer.isAvailable
+                    ? LocalizedStringKey("REFERENCE") : LocalizedStringKey("PLANNED"))
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(0.5)
             }
@@ -168,11 +169,6 @@ struct AnatomyLayersSheet: View {
                               lineWidth: 0.7)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            layer.title + (layer.isAvailable
-                ? ", reference proxy currently available"
-                : ", planned, unavailable")
-        )
     }
 
     private var sectionStudies: some View {
@@ -195,18 +191,22 @@ struct AnatomyLayersSheet: View {
                 HStack(spacing: 14) {
                     sectionDiagram(plane)
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(plane.title)
+                        Text(LocalizedStringKey(plane.title))
                             .font(.system(.headline, design: .serif))
-                        Text(sectionExplanation(plane))
+                        Text(LocalizedStringKey(sectionExplanation(plane)))
                             .font(.caption)
                             .foregroundStyle(LeonardoPalette.mutedInk)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 8)
-                    Image(systemName: "lock.fill")
-                        .font(.caption)
-                        .foregroundStyle(LeonardoPalette.mutedInk)
-                        .accessibilityHidden(true)
+                    VStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.caption)
+                            .accessibilityHidden(true)
+                        Text("PLANNED")
+                            .font(.system(.caption2, weight: .semibold))
+                    }
+                    .foregroundStyle(LeonardoPalette.mutedInk)
                 }
                 .foregroundStyle(LeonardoPalette.ink)
                 .padding(12)
@@ -214,10 +214,6 @@ struct AnatomyLayersSheet: View {
                 .background(LeonardoPalette.ivory.opacity(0.48),
                             in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(
-                    plane.title + ", section view not available yet. " +
-                    sectionExplanation(plane)
-                )
             }
 
             Text("NO CUTTING OR VOLUMETRIC RECONSTRUCTION IS ACTIVE")
