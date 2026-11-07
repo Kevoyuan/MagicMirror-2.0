@@ -182,3 +182,19 @@ https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
 An Android build should follow a shared pose/rig contract, not fork
 different anatomical fitting algorithms. Do not return to any desktop
 shipping milestone after completing a mobile phase.
+
+## Mobile-5 UI source update — 2026-11-07
+
+A camera-first native SwiftUI Leonardo layout is implemented in source:
+compact header, collapsed opacity disclosure, accessible Layers sheet,
+retained working region focus and permanent reference/nonmedical disclosure.
+The anatomy sheet deliberately marks all detailed anatomy systems and
+section planes unavailable; only the procedural reference proxy is active.
+Its safe availability mapping is covered by new XCTest source.
+
+This advances the **UI/source** part of Mobile-5, not its device exit gate.
+Actual iPhone display sizing, VoiceOver/Dynamic Type QA, on-device camera
+registration, latency, heat, battery, privacy acceptance, TestFlight and
+shipping remain outstanding. Mobile-3 licensed rig integration and Mobile-4
+validated camera-space alignment remain independent blockers. Android
+Mobile-6 remains unimplemented.
