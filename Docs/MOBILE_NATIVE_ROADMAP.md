@@ -19,8 +19,10 @@ not be required in the installed iOS/Android runtime.
   MediaPipe Tasks LIVE_STREAM, timestamp-bound 33 image/world landmarks;
   arm64 Xcode simulator source compilation, no physical iPhone validation.
 - **Mobile-2, source stage:** connected translucent Metal 3D **proxy**
-  with bounded estimated depth, opacity/focus controls, and temporal
-  smoothing. This is not individual human anatomy or calibrated camera space.
+  with bounded estimated depth, opacity/focus controls, temporal
+  smoothing and original procedural rib/pelvis/cranial silhouettes. This
+  is **not actual human anatomy**, a licensed Z-Anatomy atlas or calibrated
+  camera-space reconstruction.
 - **Mobile-3, preparatory source stage:** native reviewed-atlas manifest
   schema, offline USDZ SHA-256 gate, explicit human-license/anchor review,
   stable reference capture and pure relative 3D joint rotation requests
