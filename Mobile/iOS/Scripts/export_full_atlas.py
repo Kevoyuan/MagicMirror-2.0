@@ -35,6 +35,7 @@ from atlas_sources import (
     SYSTEM_SOURCES,
     resource_base,
 )
+from atlas_rig_manifest import build_rig_manifest
 
 MAX_TRIANGLE_VERTICES = 180000
 
@@ -268,6 +269,37 @@ def main():
         json.dumps(manifest, indent=2, ensure_ascii=False),
         encoding="utf-8"
     )
+    # The actual, independently reviewed USDZ companion is optional
+    # until the human reviewer has approved the full parent-connected
+    # hierarchy. Never silently manufacture bone IDs or parent links.
+    if review.get("reviewedUSDZHierarchy") is True:
+        usdz_name = ("anatomy_atlas.usdz" if args.system == "skeleton"
+                     else f"{base}.usdz")
+        usdz_path = args.out / usdz_name
+        for obj in source_meshes.values():
+            obj.hide_set(False)
+            obj.hide_render = False
+            obj.hide_viewport = False
+        result = bpy.ops.wm.usd_export(
+            filepath=str(usdz_path),
+            selected_objects_only=False,
+            export_animation=False,
+            export_normals=True,
+            export_materials=False,
+        )
+        if "FINISHED" not in result:
+            raise ValueError("Blender did not finish reviewed USDZ export")
+        rig = build_rig_manifest(
+            review, manifest, usdz_path, args.system
+        )
+        rig_manifest_name = (
+            "anatomy_atlas_manifest.json" if args.system == "skeleton"
+            else f"{base}_manifest.json"
+        )
+        (args.out / rig_manifest_name).write_text(
+            json.dumps(rig, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
     if export_skin:
         skinning = {
             "schemaVersion": 1,
