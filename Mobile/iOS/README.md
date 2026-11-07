@@ -522,3 +522,23 @@ ambiguity, do not establish actual bone positions, and NEVER automatically
 set `independentCameraReviewConfirmed` or authorize atlas rendering.
 Real device acceptance, occlusion, source identity and licensed anatomical
 assets remain separate gates.
+
+## Native 3D anatomy surface sectioning
+
+A verified **GPU-skinned atlas**, independently reviewed source-frame
+camera transform and reliably observed shoulders/hips can now generate
+live camera-space **axial, sagittal or coronal half-space cut planes**.
+`AnatomySectionCut` constructs mutually orthogonal axes from the
+visible torso, transforms the plane into the source camera coordinates,
+and the Metal `skinnedSectionFragment` discards fragments on the cut
+side of genuinely skinned 3D triangles. The Leonardo Anatomy notebook
+shows plane buttons and a shoulder-width displacement slider **only
+while the reviewed GPU-skinned mode is actually active**. Ordinary proxy
+skeletons do not acquire fake anatomy section controls.
+
+This is real GPU **surface clipping**, not a closed volumetric
+cross-section: triangles are cut by a fragment half-space test, no cut
+face/cap mesh or interior anatomical tissue is synthesized. Body-world
+torso facing is only an estimate; reviewed model and independent
+camera/body registration remain mandatory. No source Z-Anatomy assets
+or approved skinning weights are shipped with the prototype.
