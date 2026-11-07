@@ -119,3 +119,68 @@ The anatomy inventory GitHub Action runs those tests without Blender or a
 real licensed mesh. A structurally valid model is **not** human-approved
 anatomy, a legal determination, a complete coherent skin/rig, a calibrated
 camera-space registration, or a validated iPhone rendering result.
+
+## Six-system offline FBX exporter and audited skin weights
+
+The exporter has been extended beyond the original skeletal prototype
+to support six **separate pinned upstream FBX source files** at the same
+`6c7f9016...` revision. Each original FBX must be downloaded and
+verified by its precise source byte length and Git blob SHA-1 recorded
+in `Mobile/iOS/Scripts/atlas_sources.py`. This is source identity,
+not permission to redistribute or proof of anatomical accuracy.
+
+| System | Verified upstream FBX |
+|---|---|
+| skeleton | `SkeletalSystem100.fbx` |
+| muscles | `MuscularSystem100.fbx` |
+| organs | `VisceralSystem100.fbx` |
+| vessels | `CardioVascular41.fbx` |
+| nerves | `NervousSystem100.fbx` |
+| joints | `Joints100.fbx` |
+
+`LymphoidOrgans100.fbx` is an additional upstream resource but is
+**not silently merged** into the visceral-organ package. Such an
+aggregation would require its own reviewed source/provenance record.
+
+Example authoring command for a human-reviewed muscular package:
+
+```bash
+blender -b --python Mobile/iOS/Scripts/export_full_atlas.py -- \
+  --system muscles \
+  --fbx /private/z-anatomy/MuscularSystem100.fbx \
+  --review /private/muscles.review.json \
+  --out /private/magicmirror-reviewed-resources
+
+python3 Mobile/iOS/Scripts/verify_atlas_package.py \
+  --system muscles --package /private/magicmirror-reviewed-resources
+```
+
+The review JSON requires `anatomicalSystem`, reviewed source
+hierarchy/segment anchors for **every source mesh**, nonempty
+modification notes and explicit human distribution signoff.
+The exporter refuses to rename a skeleton asset as a muscle/organ
+asset, rejects FBX byte or blob hash mismatches, and rejects data
+over the mobile geometry limit.
+
+**Optional true GPU skinning:** a reviewed derivative mesh may have
+authored Blender vertex groups. The author must mark
+`reviewedJointWeights: true` and provide a
+`vertexGroupToBoneId` map for **each reviewed mesh binding**,
+mapping authored Blender group names to independently reviewed
+hierarchy bone IDs. Every exported triangle vertex must carry 1–4
+nonnegative finite authored weights with sum approximately 1.
+No proximity heuristics, guessed anatomical attachments or silent
+weight pruning occur. The exporter creates
+`<system>_atlas.skinning.json` with four bone IDs/weights per
+unindexed vertex and the **exact binary model SHA-256**, in a compact
+format within the native 32 MB limit. When the review flag is false,
+no skinning sidecar is emitted and the native loader uses the rigid
+verified reference mesh if all other gates pass.
+
+The source-built Blender artifacts are only part of the model
+package. The author must separately provide a matching reviewed
+USDZ hierarchy and its SHA-256-verified
+`<system>_atlas_manifest.json` (the skeleton retains
+`anatomy_atlas_manifest.json`). A model/weights file alone does
+not activate the live 3D anatomical atlas. Any actual packaging and
+release still require legal/source review and phone registration.
