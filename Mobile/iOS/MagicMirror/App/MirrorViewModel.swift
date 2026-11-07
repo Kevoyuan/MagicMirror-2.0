@@ -16,6 +16,7 @@ final class MirrorViewModel {
     var proxyRigPose: PoseSnapshot?
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+    var referenceSelection: AnatomyReferenceSelection?
     var activeSection: AnatomySectionPlane?
     var sectionOffset: Double = 0
     var canSectionReviewedAtlas = false
@@ -71,6 +72,13 @@ final class MirrorViewModel {
                     sectionOffset: Float(self.sectionOffset)
                 )
                 self.skinnedAtlasBatch = self.reviewedAtlas?.skinnedFrame
+                if self.skinnedAtlasBatch != nil ||
+                   self.calibratedAtlasBatch != nil {
+                    self.referenceSelection = nil
+                } else if let selected = self.referenceSelection,
+                          !(smooth.map { selected.visible(in: $0) } ?? false) {
+                    self.referenceSelection = nil
+                }
                 self.canSectionReviewedAtlas = self.skinnedAtlasBatch != nil
                 if !self.canSectionReviewedAtlas {
                     self.activeSection = nil
@@ -103,6 +111,7 @@ final class MirrorViewModel {
                 self.reviewedAtlas?.reset()
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.referenceSelection = nil
                 self.canSectionReviewedAtlas = false
                 self.activeSection = nil
                 self.resetAutomaticCamera()
@@ -128,6 +137,7 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
         reviewedAtlas?.reset()
@@ -149,6 +159,7 @@ final class MirrorViewModel {
                     self.reviewedAtlas?.reset()
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
+                    self.referenceSelection = nil
                     self.canSectionReviewedAtlas = false
                     self.activeSection = nil
                     self.resetAutomaticCamera()
@@ -188,6 +199,7 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
         reviewedAtlas?.reset()
@@ -209,6 +221,7 @@ final class MirrorViewModel {
         reviewedAtlas?.reset()
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
     }
@@ -218,6 +231,7 @@ final class MirrorViewModel {
         viewportSize = size
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
     }
@@ -266,6 +280,24 @@ final class MirrorViewModel {
         }
     }
 
+    /// Select only a visible procedural reference segment. Do not hit-test
+    /// the same landmarks as if they were verified internal atlas bones.
+    func selectReference(at location: CGPoint, viewport: CGSize) {
+        guard !isPaused, skinnedAtlasBatch == nil,
+              calibratedAtlasBatch == nil else {
+            referenceSelection = nil
+            return
+        }
+        referenceSelection = AnatomyReferenceHitTester.select(
+            at: location, snapshot: snapshot,
+            viewport: viewport, focus: focus
+        )
+    }
+
+    func dismissReferenceSelection() {
+        referenceSelection = nil
+    }
+
     func toggleDiagnostics() {
         showDiagnostics.toggle()
     }
@@ -279,6 +311,7 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
+            referenceSelection = nil
             canSectionReviewedAtlas = false
             activeSection = nil
             reviewedAtlas?.reset()
