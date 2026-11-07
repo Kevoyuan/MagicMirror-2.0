@@ -70,7 +70,7 @@ struct MirrorGuideSheet: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text("LEONARDO · STUDIO")
-                    .foregroundStyle(LeonardoPalette.copper)
+                    .foregroundStyle(LeonardoPalette.copperInk)
                 Spacer()
                 Text("FOLIO · III")
                     .foregroundStyle(LeonardoPalette.mutedInk)
@@ -211,7 +211,7 @@ struct MirrorGuideSheet: View {
         HStack(alignment: .top, spacing: 13) {
             Text(number)
                 .font(.system(.headline, design: .serif))
-                .foregroundStyle(LeonardoPalette.copper)
+                .foregroundStyle(LeonardoPalette.copperInk)
                 .frame(width: 29, alignment: .leading)
                 .accessibilityHidden(true)
             noteBody(title: title, detail: detail)
