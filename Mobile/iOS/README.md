@@ -690,3 +690,26 @@ reviewed camera-body extrinsics; a layer cannot display just because
 its switch exists. All tints are educational illustrations, not
 actual measured tissue colors. Physical iPhone thermal/performance
 and visual behavior still require independent acceptance.
+
+## Same-frame silhouette-constrained anatomy compositing
+
+The one-person MediaPipe Tasks live stream now requests foreground
+segmentation as part of the *same* PoseLandmarker result used for
+camera image/pose alignment. A bounded, owned UInt8/Float32 mask copy
+is attached to the same source-frame pixel buffer before the callback
+returns. No additional camera session, network access or frame
+recording is introduced.
+
+The existing single Metal camera compositor uploads that foreground
+confidence mask and samples it with the **same aspect-fill crop as
+the source video**. The on-device procedural reference skeleton and
+every independently reviewed rigid or GPU-skinned anatomy layer
+fade/discard fragments outside the detected person's 2D silhouette.
+Missing masks retain the earlier overlay through a neutral 1×1 white
+texture, never a stale previous-person mask.
+
+This feature constrains the **foreground silhouette** only. It
+does not determine hand-over-rib depth, occluded interior anatomy,
+true tissue locations, LiDAR occlusion or medical X-ray structure.
+Precise segmentation orientation/quality and thermal performance
+still need physical iPhone review before release.

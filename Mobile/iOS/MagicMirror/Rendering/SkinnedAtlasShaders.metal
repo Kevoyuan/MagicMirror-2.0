@@ -89,8 +89,25 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
 /// reveal hidden medical voxels. Zero normal disables clipping.
 fragment half4 skinnedSectionFragment(
     SkinnedAtlasRaster input [[stage_in]],
-    constant float4& sectionPlane [[buffer(0)]]
+    constant float4& sectionPlane [[buffer(0)]],
+    texture2d<float> foreground [[texture(1)]],
+    constant float4& sourceCrop [[buffer(1)]],
+    constant float2& viewportSize [[buffer(2)]]
 ) {
+    constexpr sampler silhouetteSampler(
+        coord::normalized, address::clamp_to_edge, filter::linear
+    );
+    const float2 sourceUV = mix(
+        sourceCrop.xy, sourceCrop.zw,
+        input.position.xy / viewportSize
+    );
+    const float confidence = foreground.sample(
+        silhouetteSampler, sourceUV
+    ).r;
+    if (!isfinite(confidence) || confidence <= 0.10) {
+        discard_fragment();
+    }
+    const float silhouetteAlpha = smoothstep(0.10, 0.48, confidence);
     if (dot(sectionPlane.xyz, sectionPlane.xyz) > 0.5 &&
         dot(sectionPlane.xyz, input.cameraPosition) +
         sectionPlane.w < 0.0) {
@@ -105,6 +122,6 @@ fragment half4 skinnedSectionFragment(
         input.color.rgb * brightness, 0.0, 1.0
     );
     return half4(
-        half3(shaded), half(clamp(input.color.a, 0.0, 1.0))
+        half3(shaded), half(clamp(input.color.a * silhouetteAlpha, 0.0, 1.0))
     );
 }

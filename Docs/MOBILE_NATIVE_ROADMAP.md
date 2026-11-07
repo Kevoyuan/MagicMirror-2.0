@@ -421,3 +421,15 @@ This is shipped *source code* and native UI plumbing, not bundled
 approved Z-Anatomy multi-system assets, verified physical camera
 registration, or a proved medical internal-reconstruction effect.
 Real-device acceptance remains an independent step.
+
+## Mobile-4 exact-frame person silhouette clipping (2026-11-07)
+
+Integrated a one-person MediaPipe segmentation mask into the existing
+source-matched camera/pose result. Task-owned pixels are copied before
+returning from its callback, transmitted with the same frame and
+sampled by the unified Metal shader with the original aspect-fill
+crop. It affects proxy, independently reviewed rigid and all active
+GPU-skinned anatomical layers in one render pass. Missing masks
+preserve existing source-matched rendering without fabricating
+foreground silhouettes. This improves reference-geometry background
+clipping but is **not** true internal-tissue depth occlusion.
