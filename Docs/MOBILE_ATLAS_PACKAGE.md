@@ -177,10 +177,20 @@ format within the native 32 MB limit. When the review flag is false,
 no skinning sidecar is emitted and the native loader uses the rigid
 verified reference mesh if all other gates pass.
 
-The source-built Blender artifacts are only part of the model
-package. The author must separately provide a matching reviewed
-USDZ hierarchy and its SHA-256-verified
-`<system>_atlas_manifest.json` (the skeleton retains
-`anatomy_atlas_manifest.json`). A model/weights file alone does
-not activate the live 3D anatomical atlas. Any actual packaging and
-release still require legal/source review and phone registration.
+The author may also set **`reviewedUSDZHierarchy: true`** only after
+assigning and reviewing a distinct `boneId` and optional
+`parentBoneId` on EVERY source mesh binding. Blender will then
+export the original imported scene as `<system>_atlas.usdz`
+(`anatomy_atlas.usdz` for the skeleton), hash the produced archive and
+generate the companion `<system>_atlas_manifest.json`
+(`anatomy_atlas_manifest.json` for skeleton). The manifest reuses
+the same world-space rest anchors and source paths as the MMATLAS1
+geometry, verifies unique IDs and parents, rejects cycles and
+conflicted MediaPipe rest-landmark anchors, and fails if the expected
+USDZ is absent or malformed. If human rig review is missing, it
+**does not** invent a USDZ hierarchy or mark an atlas as approved.
+
+A binary MMATLAS1/skin file alone does not activate live anatomy.
+Separately independent human source licensing, anatomical review and
+physical iPhone calibration are still mandatory. Blender's USDZ
+export is an offline developer step, never an app dependency.
