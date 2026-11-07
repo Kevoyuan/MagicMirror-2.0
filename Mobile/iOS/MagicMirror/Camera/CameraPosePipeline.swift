@@ -8,6 +8,7 @@ enum MirrorPhase: Equatable {
     case permissionRequested
     case searching
     case tracking
+    case partialTracking
     case permissionDenied
     case unavailable(String)
 }
@@ -362,6 +363,10 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         postAlignedFrame(snapshot.isUsable
             ? AlignedPoseVideoFrame(pose: snapshot, pixelBuffer: sourceImage)
             : nil)
-        postPhase(snapshot.isUsable ? .tracking : .searching)
+        switch snapshot.coverage {
+        case .torsoAnchored: postPhase(.tracking)
+        case .partial: postPhase(.partialTracking)
+        case .none: postPhase(.searching)
+        }
     }
 }
