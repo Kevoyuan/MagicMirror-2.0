@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.1 — Leonardo anatomy notebook direction (2026-11-07)  
+**Version:** 1.2 — Leonardo native whole-app UX handoff (2026-11-07)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
@@ -453,3 +453,22 @@ The implementation still needs physical-device visual review (small
 screens, safe areas, VoiceOver, Dynamic Type, contrast over camera footage)
 and may be refined after that evidence. This update does **not** approve a
 bundled anatomical model or certify the UI as production-ready.
+
+## Whole-app native UX continuation (2026-11-07)
+
+The single-camera app now has a second optional native folio, **Field Notes**,
+with **Use**, **Privacy** and **About** pages for short camera instructions,
+privacy explanations, illustrative model limitations and optional local
+pose-delivery diagnostics. This information does not block automatic camera
+start. The original **Layers** folio still separates Systems from Sections,
+and remains honest about unavailable multi-system meshes and slicing.
+
+For consistent failure feedback, **MirrorPresentationState** maps camera
+permission/lifecycle, actual current pose coverage and overlay pause into
+one tested visible state, prioritizing blocked/interrupted camera over
+old Pause preferences. The UI source and unit tests still require physical
+iPhone visual/accessibility QA; simulator compilation is not real-device proof.
+
+A full screen-by-screen inventory, UX journeys and QA matrix live in
+[Docs/IOS_UI_USER_JOURNEYS.md](Docs/IOS_UI_USER_JOURNEYS.md). This document
+remains the root visual direction authority.
