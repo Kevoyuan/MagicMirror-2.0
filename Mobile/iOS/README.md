@@ -636,6 +636,31 @@ switching system clears the selection. Actual Z-Anatomy structure
 names are not invented by the app: they come only from separately
 reviewed part manifests that have passed all local checksum checks.
 
+## Six verified original-source offline Blender exporters
+
+`Mobile/iOS/Scripts/atlas_sources.py` now pins the exact original
+FBX paths, byte lengths and Git blob hashes for skeletal, muscular,
+visceral organ, cardiovascular, nervous and joint atlas systems. Run
+the Blender exporter with `--system skeleton|muscles|organs|vessels|nerves|joints`
+and one individually reviewed whole source FBX; it outputs the
+corresponding MMATLAS1 binary/manifest/attribution. If and only if
+the author sets `reviewedJointWeights: true` and supplies an exact
+`vertexGroupToBoneId` mapping for each source mesh, it exports
+the four-weight LBS sidecar from actual Blender group assignments.
+Any non-finite, unmapped or >4-group vertex fails closed; no bone
+identity guessing. Run `verify_atlas_package.py --system <name>`
+to verify structural consistency.
+
+The exporter also supports `reviewedUSDZHierarchy: true` after
+explicit human-assigned, coherent `boneId`/`parentBoneId` references
+on every source mesh. Blender then emits a matching USDZ archive and
+hash-verified `anatomy_atlas_manifest.json` (or
+`<system>_atlas_manifest.json`) from those exact reviewed anchors.
+Without that explicit flag it NEVER guesses a rig or fabricates a
+USDZ companion. None of these output files automatically prove legal
+permission, human anatomical correctness, registered camera geometry
+or on-device rendering performance.
+
 ## Simultaneous independently reviewed anatomy layers
 
 The native iPhone Anatomy notebook can now **toggle more than one**
