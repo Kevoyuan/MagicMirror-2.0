@@ -73,56 +73,99 @@ struct MirrorScreen: View {
         }
     }
 
+    @ViewBuilder
     private var header: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 7) {
-                Image(systemName: "book.closed")
-                    .font(.system(size: 13, weight: .medium))
-                    .accessibilityHidden(true)
-                Text("MAGICMIRROR")
-                    .font(.system(size: 15, weight: .semibold, design: .serif))
-                    .tracking(1.0)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    headerBrand
+                    Spacer(minLength: 0)
+                    fieldNotesButton
+                }
+                HStack {
+                    trackingBadge
+                    Spacer(minLength: 0)
+                }
             }
+            .accessibilityElement(children: .contain)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    headerBrand
+                    Spacer(minLength: 0)
+                    fieldNotesButton
+                    trackingBadge
+                }
+                HStack(spacing: 8) {
+                    compactBrand
+                    Spacer(minLength: 0)
+                    fieldNotesButton
+                    trackingBadge
+                }
+            }
+            .frame(minHeight: 44)
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    private var headerBrand: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "book.closed")
+                .font(.caption)
+                .accessibilityHidden(true)
+            Text("MAGICMIRROR")
+                .font(.system(.caption, design: .serif, weight: .bold))
+                .tracking(0.6)
+                .lineLimit(1)
+        }
+        .foregroundStyle(LeonardoPalette.ivory)
+        .padding(.horizontal, 10)
+        .frame(minHeight: 34)
+        .background(LeonardoPalette.cameraScrim.opacity(0.7),
+                    in: Capsule())
+    }
+
+    /// Compact brand fallback when larger localized status text would
+    /// otherwise squeeze the camera controls on a narrow iPhone.
+    private var compactBrand: some View {
+        Text("MM")
+            .font(.system(.caption, design: .serif, weight: .bold))
+            .tracking(1)
             .foregroundStyle(LeonardoPalette.ivory)
+            .frame(minWidth: 44, minHeight: 44)
+            .background(LeonardoPalette.cameraScrim.opacity(0.7),
+                        in: Circle())
+            .accessibilityLabel("MagicMirror")
+    }
+
+    private var fieldNotesButton: some View {
+        Button {
+            presentedSheet = .guide
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.headline)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .frame(width: 44, height: 44)
+                .background(LeonardoPalette.cameraScrim.opacity(0.72),
+                            in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open field notes and privacy guide")
+    }
+
+    private var trackingBadge: some View {
+        Label(LocalizedStringKey(presentation.statusTitle),
+              systemImage: presentation.statusSymbol)
+            .font(.caption2.weight(.semibold))
+            .tracking(0.3)
+            .foregroundStyle(LeonardoPalette.ivory)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
             .padding(.horizontal, 10)
             .frame(minHeight: 34)
-            .background(LeonardoPalette.cameraScrim.opacity(0.65),
+            .background(LeonardoPalette.cameraScrim.opacity(0.86),
                         in: Capsule())
-
-            Spacer(minLength: 1)
-
-            Button {
-                presentedSheet = .guide
-            } label: {
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(LeonardoPalette.ivory)
-                    .frame(width: 44, height: 44)
-                    .background(LeonardoPalette.cameraScrim.opacity(0.7),
-                                in: Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open field notes and privacy guide")
-
-            Label(LocalizedStringKey(presentation.statusTitle), systemImage: presentation.statusSymbol)
-                .labelStyle(.titleAndIcon)
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.4)
-                .foregroundStyle(LeonardoPalette.ivory)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.horizontal, 9)
-                .frame(minHeight: 34)
-                .background(LeonardoPalette.cameraScrim.opacity(0.86),
-                            in: Capsule())
-                .accessibilityLabel(LocalizedStringKey(presentation.statusTitle))
-        }
-        // The 34-pt manuscript strip is visual only; controls retain
-        // at least 44-pt hit targets and respect the real iPhone safe area.
-        .frame(minHeight: 44)
-        .accessibilityElement(children: .contain)
+            .accessibilityLabel(LocalizedStringKey(presentation.statusTitle))
     }
 
     /// On-device callback cadence, not camera or GPU display FPS.
