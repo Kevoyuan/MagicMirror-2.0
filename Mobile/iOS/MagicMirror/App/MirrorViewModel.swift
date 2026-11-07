@@ -17,6 +17,7 @@ final class MirrorViewModel {
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
     var referenceSelection: AnatomyReferenceSelection?
+    var reviewedPartSelection: ReviewedAnatomySelection?
     /// A system is selectable only after its own approved registered
     /// source atlas has produced coherent geometry on this capture.
     var readyAnatomyLayers: Set<AnatomyDisplayLayer> = []
@@ -93,12 +94,24 @@ final class MirrorViewModel {
                         self.skinnedAtlasBatch = skinned
                     }
                 }
+                if let selectedPart = self.reviewedPartSelection {
+                    let matches = self.skinnedAtlasBatch.map { batch in
+                        selectedPart.system == self.selectedAnatomyLayer &&
+                        selectedPart.sourceRevision == batch.sourceRevision &&
+                        batch.renderedParts.contains {
+                            $0.sourceHierarchyPath ==
+                                selectedPart.sourceHierarchyPath
+                        }
+                    } ?? false
+                    if !matches { self.reviewedPartSelection = nil }
+                }
                 if self.skinnedAtlasBatch != nil ||
                    self.calibratedAtlasBatch != nil {
                     self.referenceSelection = nil
                 } else if let selected = self.referenceSelection,
                           !(smooth.map { selected.visible(in: $0) } ?? false) {
                     self.referenceSelection = nil
+                    self.reviewedPartSelection = nil
                 }
                 self.canSectionReviewedAtlas = self.skinnedAtlasBatch != nil
                 if !self.canSectionReviewedAtlas {
@@ -134,6 +147,7 @@ final class MirrorViewModel {
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
                 self.referenceSelection = nil
+                self.reviewedPartSelection = nil
                 self.canSectionReviewedAtlas = false
                 self.activeSection = nil
                 self.resetAutomaticCamera()
@@ -160,6 +174,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         referenceSelection = nil
+        reviewedPartSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
         reviewedAtlasLayers.values.forEach { $0.reset() }
@@ -184,6 +199,7 @@ final class MirrorViewModel {
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
                     self.referenceSelection = nil
+                    self.reviewedPartSelection = nil
                     self.canSectionReviewedAtlas = false
                     self.activeSection = nil
                     self.resetAutomaticCamera()
@@ -236,6 +252,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         referenceSelection = nil
+        reviewedPartSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
         reviewedAtlasLayers.values.forEach { $0.reset() }
@@ -260,6 +277,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         referenceSelection = nil
+        reviewedPartSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
     }
@@ -270,6 +288,7 @@ final class MirrorViewModel {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         referenceSelection = nil
+        reviewedPartSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
     }
@@ -318,11 +337,28 @@ final class MirrorViewModel {
         }
     }
 
-    /// Select only a visible procedural reference segment. Do not hit-test
-    /// the same landmarks as if they were verified internal atlas bones.
+    /// The installed view uses one tap handler for both source-authored
+    /// atlas triangles and the fallback visible proxy, never conflating them.
     func selectReference(at location: CGPoint, viewport: CGSize) {
-        guard !isPaused, skinnedAtlasBatch == nil,
-              calibratedAtlasBatch == nil else {
+        guard !isPaused else {
+            referenceSelection = nil
+            reviewedPartSelection = nil
+            return
+        }
+        if let batch = skinnedAtlasBatch, let snapshot,
+           batch.matches(
+               frame: snapshot, viewport: viewport,
+               focus: focus, opacity: Float(opacity)
+           ) {
+            reviewedPartSelection = ReviewedAtlasHitTester.select(
+                at: location, batch: batch,
+                system: selectedAnatomyLayer
+            )
+            referenceSelection = nil
+            return
+        }
+        reviewedPartSelection = nil
+        guard calibratedAtlasBatch == nil else {
             referenceSelection = nil
             return
         }
@@ -334,6 +370,7 @@ final class MirrorViewModel {
 
     func dismissReferenceSelection() {
         referenceSelection = nil
+        reviewedPartSelection = nil
     }
 
     func canSelectAnatomyLayer(_ layer: AnatomyDisplayLayer) -> Bool {
@@ -348,6 +385,7 @@ final class MirrorViewModel {
         canSectionReviewedAtlas = false
         activeSection = nil
         referenceSelection = nil
+        reviewedPartSelection = nil
     }
 
     func toggleDiagnostics() {
@@ -364,10 +402,11 @@ final class MirrorViewModel {
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
             referenceSelection = nil
+            reviewedPartSelection = nil
             canSectionReviewedAtlas = false
             activeSection = nil
             reviewedAtlasLayers.values.forEach { $0.reset() }
-        readyAnatomyLayers = []
+            readyAnatomyLayers = []
             deliveryMonitor.reset()
             deliveryReport = nil
             snapshot = nil

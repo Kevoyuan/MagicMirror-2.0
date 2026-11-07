@@ -55,7 +55,10 @@ struct MirrorScreen: View {
                         .padding(.top, 10)
                 }
                 Spacer()
-                if let selected = model.referenceSelection {
+                if let part = model.reviewedPartSelection {
+                    atlasPartCard(part)
+                        .padding(.bottom, 8)
+                } else if let selected = model.referenceSelection {
                     referenceCard(selected)
                         .padding(.bottom, 8)
                 }
@@ -271,6 +274,47 @@ struct MirrorScreen: View {
         .padding(.vertical, 10)
         .background(LeonardoPalette.cameraScrim.opacity(0.85),
                     in: RoundedRectangle(cornerRadius: 15))
+        .accessibilityElement(children: .contain)
+    }
+
+    /// Source-reviewed mesh detail; never a personal bone diagnosis.
+    private func atlasPartCard(
+        _ selection: ReviewedAnatomySelection
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "square.3.layers.3d")
+                .font(.title3)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(selection.displayName)
+                    .font(.system(.headline, design: .serif))
+                    .foregroundStyle(LeonardoPalette.ivory)
+                Text(selection.detail)
+                    .font(.caption)
+                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.68))
+            }
+            Spacer(minLength: 0)
+            Button {
+                model.dismissReferenceSelection()
+            } label: {
+                Image(systemName: "xmark")
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(LeonardoPalette.ivory)
+            .accessibilityLabel("Close anatomy detail")
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LeonardoPalette.cameraScrim.opacity(0.90),
+            in: RoundedRectangle(cornerRadius: 15)
+        )
         .accessibilityElement(children: .contain)
     }
 
