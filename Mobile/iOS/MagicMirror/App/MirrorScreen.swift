@@ -1,8 +1,8 @@
 import SwiftUI
 import UIKit
 
-/// One-screen phone experience. Only PoseSkeletonOverlay reads 30 Hz pose
-/// updates; labels/controls read stable phase and opacity independently.
+/// Camera-first native interface. MirrorLiveRenderSurface owns the high-
+/// frequency frame observation; controls read stable phase and focus state.
 struct MirrorScreen: View {
     private enum MirrorSheet: String, Identifiable {
         case anatomy
@@ -21,26 +21,8 @@ struct MirrorScreen: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            CameraPreview(session: model.pipeline.session)
+            MirrorLiveRenderSurface(model: model)
                 .ignoresSafeArea()
-
-            GeometryReader { geometry in
-                MetalSkeletonOverlay(
-                    alignedFrame: model.isPaused ? nil : model.alignedFrame,
-                    proxyPose: model.isPaused ? nil : model.proxyRigPose,
-                    opacity: model.opacity, focus: model.focus,
-                    calibratedAtlasBatch: model.isPaused
-                        ? nil : model.calibratedAtlasBatch
-                )
-                .onAppear {
-                    model.setViewportSize(geometry.size)
-                }
-                .onChange(of: geometry.size) { _, newSize in
-                    model.setViewportSize(newSize)
-                }
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
 
             LinearGradient(
                 colors: [
@@ -177,7 +159,7 @@ struct MirrorScreen: View {
     private var presentation: MirrorPresentationState {
         MirrorPresentationState(
             phase: model.phase,
-            coverage: model.snapshot?.coverage ?? .none,
+            coverage: model.currentCoverage,
             isPaused: model.isPaused
         )
     }
