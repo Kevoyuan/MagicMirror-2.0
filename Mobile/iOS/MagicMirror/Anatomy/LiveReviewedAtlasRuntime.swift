@@ -123,6 +123,10 @@ final class LiveReviewedAtlasRuntime {
     private var capture = AnatomyReferenceCapture()
     private var registration: BodySimilarityRegistration?
     private(set) var skinnedFrame: SkinnedAtlasDrawBatch?
+    /// Rest mesh is immutable for this approved resource set. Reuse
+    /// checked vertices across frames; only the pose palette changes.
+    private let geometryIdentity = UUID()
+    private var preparedGeometry: [AnatomyFocus: [SkinnedAtlasVertex]] = [:]
     private var lastTimestampMilliseconds = -1
     private var lastImageSize: CGSize?
 
@@ -231,8 +235,14 @@ final class LiveReviewedAtlasRuntime {
                 viewport: viewport,
                 focus: focus,
                 opacity: opacity,
-                sectionCut: cut
+                sectionCut: cut,
+                geometryIdentity: geometryIdentity,
+                preparedVertices: preparedGeometry[focus]
             )
+            if preparedGeometry[focus] == nil,
+               let frame = skinnedFrame {
+                preparedGeometry[focus] = frame.vertices
+            }
         }
         // Avoid CPU triangle regeneration when a complete reviewed
         // GPU-skinned draw has already been accepted for this frame.
