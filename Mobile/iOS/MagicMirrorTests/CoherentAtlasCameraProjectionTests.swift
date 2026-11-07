@@ -226,4 +226,123 @@ final class CoherentAtlasCameraProjectionTests: XCTestCase {
             viewport: .zero
         ))
     }
+
+    /// Synthetic fixtures prove interface wiring, not source-model approval.
+    private func meshAtlas(
+        path: String = "test/humerus",
+        revision: String = "test",
+        distal: Int = 13
+    ) -> VerifiedAnatomyAtlas {
+        let manifest = MobileAtlasManifest(
+            schemaVersion: 1,
+            sourceRepository: "synthetic://not-real",
+            sourceRevision: revision,
+            sourcePath: "fixture",
+            modelFile: "skeleton_atlas.mmgeom",
+            modelSHA256: String(repeating: "a", count: 64),
+            licenseIds: [],
+            attribution: [],
+            modificationNotes: ["synthetic XCTest only"],
+            reviewedForDistribution: true,
+            reviewedJointBindings: true,
+            parts: [
+                MobileAtlasBinding(
+                    sourceHierarchyPath: path,
+                    displayName: "Synthetic humerus",
+                    group: "arms",
+                    fromLandmark: 11, toLandmark: distal,
+                    restFrom: [-0.4, 1, 0],
+                    restTo: [-0.8, 0.4, 0],
+                    vertexOffset: 0, vertexCount: 3
+                )
+            ]
+        )
+        return VerifiedAnatomyAtlas(
+            manifest: manifest,
+            vertices: [
+                AtlasRestVertex(
+                    position: SIMD3<Float>(-0.4, 1, 0),
+                    normal: SIMD3<Float>(0, 0, 1)
+                ),
+                AtlasRestVertex(
+                    position: SIMD3<Float>(-0.5, 0.9, 0),
+                    normal: SIMD3<Float>(0, 0, 1)
+                ),
+                AtlasRestVertex(
+                    position: SIMD3<Float>(-0.6, 0.8, 0),
+                    normal: SIMD3<Float>(0, 0, 1)
+                )
+            ]
+        )
+    }
+
+    func testCoherentMeshProjectsOnlyMatchingReviewedHierarchy() {
+        let frame = snapshot()
+        let registration = registration()
+        let projector = CoherentAtlasCameraProjection.prepare(
+            pose: rig(frame: frame, transform: registration),
+            matchingFrame: frame,
+            registration: registration,
+            intrinsics: camera(),
+            extrinsics: extrinsics(),
+            independentCameraReviewConfirmed: true
+        )
+        XCTAssertNotNil(projector)
+        let triangles = CoherentAtlasMeshProjection.project(
+            atlas: meshAtlas(),
+            hierarchy: rigManifest(),
+            projector: projector!,
+            viewport: viewport,
+            focus: .arms
+        )
+        XCTAssertEqual(triangles?.count, 1)
+        XCTAssertEqual(triangles?.first?.boneId, "left-humerus")
+        XCTAssertEqual(triangles?.first?.vertices.count, 3)
+        XCTAssertEqual(
+            triangles?.first?.vertices.first?.displayPosition.x ?? -1,
+            165, accuracy: 0.01
+        )
+        XCTAssertEqual(
+            CoherentAtlasMeshProjection.project(
+                atlas: meshAtlas(),
+                hierarchy: rigManifest(),
+                projector: projector!,
+                viewport: viewport,
+                focus: .legs
+            )?.count, 0
+        )
+    }
+
+    func testMeshFailsClosedOnPathRevisionOrJointMismatch() {
+        let frame = snapshot()
+        let registration = registration()
+        let projector = CoherentAtlasCameraProjection.prepare(
+            pose: rig(frame: frame, transform: registration),
+            matchingFrame: frame,
+            registration: registration,
+            intrinsics: camera(),
+            extrinsics: extrinsics(),
+            independentCameraReviewConfirmed: true
+        )!
+        for atlas in [
+            meshAtlas(path: "unreviewed/wrong-bone"),
+            meshAtlas(revision: "different-revision"),
+            meshAtlas(distal: 14)
+        ] {
+            XCTAssertNil(CoherentAtlasMeshProjection.project(
+                atlas: atlas,
+                hierarchy: rigManifest(),
+                projector: projector,
+                viewport: viewport,
+                focus: .arms
+            ))
+        }
+        XCTAssertNil(CoherentAtlasMeshProjection.project(
+            atlas: meshAtlas(),
+            hierarchy: rigManifest(),
+            projector: projector,
+            viewport: .zero,
+            focus: .arms
+        ))
+    }
 }

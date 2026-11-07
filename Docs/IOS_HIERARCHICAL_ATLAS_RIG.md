@@ -112,3 +112,23 @@ Next implementation seam after human-reviewed source assets:
 
 The final product remains a smartphone-only educational reference AR
 illustration, never an actual X-ray scan.
+
+## Mesh-to-rig binding gate (source implementation, 2026-11-07)
+
+`CoherentAtlasMeshProjection.swift` now validates the entire triangle
+atlas against the independently reviewed hierarchical bone manifest and
+the same-frame `CoherentAtlasCameraProjection`. It requires exact source
+revision, unique node paths, one-to-one complete bone coverage, matching
+MediaPipe joint identities, matching rest anchors, contiguous triangle
+ranges, and successful projection of every selected vertex.
+
+It emits *projected triangle commands*, not a GPU draw call or a skinned
+USDZ render. A bad or missing binding, inconsistent range, unreviewed
+metadata or invalid projection rejects the entire result (nil), rather
+than publishing a partially detached skeleton. All current XCTest fixtures
+are synthetic; their review flags are test fixtures, not human sign-off.
+
+**Not wired to the default Metal renderer.** There is still no approved
+source asset, independently reviewed physical camera extrinsics, verified
+mesh-to-bone geometry or actual phone validation. Do not treat the new
+adapter as a shortcut around these blockers.

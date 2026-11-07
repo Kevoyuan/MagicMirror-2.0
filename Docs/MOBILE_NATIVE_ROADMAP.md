@@ -203,3 +203,18 @@ registration, latency, heat, battery, privacy acceptance, TestFlight and
 shipping remain outstanding. Mobile-3 licensed rig integration and Mobile-4
 validated camera-space alignment remain independent blockers. Android
 Mobile-6 remains unimplemented.
+
+## Mobile-3/4 coherent mesh connector — source work (2026-11-07)
+
+A pure Swift triangle adapter now checks correspondence between the
+reviewed binary mesh manifest and the separately validated hierarchical
+bone manifest, then projects complete atlas triangle commands through
+the existing same-frame, independently reviewed camera projection gate.
+Missing, mismatched or unprojectable anatomy fails closed. Source
+XCTest fixtures exercise a successful synthetic path and rejected
+source revisions, bone node paths and landmark IDs.
+
+This narrows the **source-level** gap between 3D forward kinematics and
+atlas mesh geometry. It does not install a reviewed anatomy model or
+activate the GPU atlas, and it does not satisfy the real-iPhone
+calibration, licensing, latency or TestFlight exit gates.
