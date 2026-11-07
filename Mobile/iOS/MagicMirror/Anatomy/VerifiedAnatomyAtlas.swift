@@ -180,7 +180,9 @@ struct VerifiedAnatomyAtlas {
         snapshot: PoseSnapshot?, viewport: CGSize, opacity: Float,
         focus: AnatomyFocus
     ) -> [BoneMeshVertex] {
-        guard let snapshot, snapshot.isUsable,
+        // A reviewed whole-body atlas still requires a stable torso anchor.
+        // Partial observations use local procedural limb proxies instead.
+        guard let snapshot, snapshot.hasTorsoAnchor,
               viewport.width > 0, viewport.height > 0 else { return [] }
         var output: [BoneMeshVertex] = []
         output.reserveCapacity(vertices.count)
