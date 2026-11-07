@@ -248,10 +248,24 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
                 )
             )
         }
+        let worldPoints: [PoseWorldPoint] = {
+            guard let tracked = result?.worldLandmarks.first,
+                  tracked.count == 33 else { return [] }
+            return tracked.map { world in
+                PoseWorldPoint(
+                    x: world.x, y: world.y, z: world.z,
+                    visibility: min(
+                        world.visibility?.floatValue ?? 1,
+                        world.presence?.floatValue ?? 1
+                    )
+                )
+            }
+        }()
         let snapshot = PoseSnapshot(
             timestampMilliseconds: timestamp,
             imageSize: size,
-            points: points
+            points: points,
+            worldPoints: worldPoints
         )
         postPose(snapshot.isUsable ? snapshot : nil)
         postPhase(snapshot.isUsable ? .tracking : .searching)
