@@ -6,6 +6,7 @@ on:
       - 'Tools/anatomy_tools/**'
       - 'Mobile/iOS/Scripts/export_full_atlas.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
+      - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
       - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
@@ -14,6 +15,7 @@ on:
       - 'Tools/anatomy_tools/**'
       - 'Mobile/iOS/Scripts/export_full_atlas.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
+      - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
       - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
@@ -46,6 +48,7 @@ jobs:
           python -m unittest discover -s Tools/anatomy_tools/tests -v
           python -m unittest discover -s Mobile/iOS/Scripts/tests -v
           python Mobile/iOS/Scripts/verify_atlas_package.py --help > /dev/null
+          python Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py --help > /dev/null
           python -m Tools.anatomy_tools.audit_unity_inventory --help > /dev/null
       - name: Scope disclaimer
         run: |
