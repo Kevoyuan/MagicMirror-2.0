@@ -78,7 +78,9 @@ enum MirrorPresentationState: Equatable {
         case .searching:
             return "Point at one person. Show shoulders or a visible limb."
         case .partial:
-            return "A partial reference is visible. Move back for more coverage."
+            // The status pill already says PARTIAL; keep the live subject
+            // unobstructed while confidence-gated visible limbs render.
+            return nil
         case .tracking:
             return nil
         case .paused:
