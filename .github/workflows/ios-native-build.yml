@@ -41,8 +41,11 @@ jobs:
             -scheme MagicMirror \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            -arch arm64 \
             -derivedDataPath "$RUNNER_TEMP/MagicMirrorDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
+            ARCHS=arm64 \
+            EXCLUDED_ARCHS=x86_64 \
             build-for-testing
       - name: Clarify test scope
         if: always()
