@@ -8,6 +8,8 @@ enum LeonardoPalette {
     static let ink = Color(red: 0.200, green: 0.176, blue: 0.153)
     static let mutedInk = Color(red: 0.455, green: 0.408, blue: 0.353)
     static let copper = Color(red: 0.651, green: 0.475, blue: 0.322)
+    /// Darker copper for small manuscript labels (5.2:1 on parchment).
+    static let copperInk = Color(red: 0.510, green: 0.345, blue: 0.227)
     static let verdigris = Color(red: 0.220, green: 0.404, blue: 0.365)
     static let ivory = Color(red: 0.985, green: 0.968, blue: 0.920)
     static let cameraScrim = Color(red: 0.083, green: 0.095, blue: 0.086)
