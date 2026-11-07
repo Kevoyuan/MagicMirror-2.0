@@ -178,6 +178,27 @@ internal static class CaptureWindowChecks
         Assert(!w.TryAdd(demo), "demo source never calibrates a real atlas");
 
         w.Reset();
+        var sessionA = Frame(0, 1000);
+        sessionA.streamSessionId = 11;
+        Assert(w.TryAdd(sessionA), "accept first source TCP generation");
+        var sessionB = Frame(1, 1033);
+        sessionB.streamSessionId = 12;
+        Assert(!w.TryAdd(sessionB), "reject changed TCP session identity");
+        Assert(w.RequiresReset, "cross-session calibration poisons capture");
+
+        w.Reset();
+        for (int i = 0; i < 7; i++)
+        {
+            var sameSession = Frame(i, 1000 + i * 33);
+            sameSession.streamSessionId = 25;
+            Assert(w.TryAdd(sameSession), "same TCP session accepted");
+        }
+        Assert(Freeze(w, true, out calibrated, out quality),
+               "same source session can be frozen");
+        Assert(quality.StreamSessionId == 25,
+               "quality preserves trusted source TCP generation");
+
+        w.Reset();
         Assert(!Freeze(w, true, out calibrated, out quality),
                "cannot calibrate from zero or insufficient samples");
 

@@ -14,7 +14,23 @@ live webcam image, with future muscle, organ and guided-learning layers.
 > SkeletalSystem100.fbx motion are NOT yet verified.** This is a research
 > prototype, not a clinical scanner or personalized anatomical reconstruction.
 
-## Existing desktop research tests (NOT the planned mobile app)
+## M2 offline integration test
+
+No local Unity installation is needed to test the real Python producer and
+its loopback TCP framing. The test starts the sidecar **as a subprocess**,
+receives multiple ordered PoseFrame v1 packets, disconnects and reconnects,
+and verifies that a new connection starts its own frame sequence:
+
+~~~bash
+python3 -m unittest Tools.pose_sidecar.tests.test_sidecar_integration -v
+~~~
+
+If OpenCV/NumPy are installed, it also receives and validates actual JPEG
+bytes from the `--demo-video` source. GitHub Actions performs both variants.
+It does **not** prove that Unity compiled, that a real camera inferred a pose,
+or that the Z-Anatomy model is aligned.
+
+## Existing desktop research tests (NOT the phone app)
 
 ~~~bash
 python3 -m unittest discover -s Tools/pose_sidecar/tests -v
@@ -49,16 +65,16 @@ camera or Z-Anatomy assets:
 ~~~bash
 dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
 ~~~
-This tests original C# IK/pose-contract/registration/reprojection sources
-with constructed inputs, **not** Unity rendering, anatomy accuracy, true
-camera calibration or measured live-device performance.
+This tests compiled C# IK, pose-contract, registration, reprojection, and
+reviewed full-atlas limb motion planner sources with constructed inputs.
+**It does not validate Unity rendering, real anatomy, camera calibration or device latency.**
 
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
 Docs/UNITY_RUNTIME_VALIDATION.md for the batch smoke test and live-camera
 checklist. The Unity Editor and real anatomical asset are not included.
 
-## Existing desktop prototype architecture (historical)
+## Archived desktop research architecture
 
 - Camera + MediaPipe Tasks Pose Landmarker: Tools/pose_sidecar/
 - Timestamped same-frame PoseFrame v1 + JPEG over local TCP
@@ -66,21 +82,26 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Complete pinned Z-Anatomy FBX, **not independent re-exported bones**
 - Default local-only image processing and no recording/upload
 
-## Documentation — active smartphone plan and legacy research
+## Documentation — active mobile and legacy research
 
-- Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md — accepted phone-only product decision
-- Docs/MOBILE_NATIVE_ROADMAP.md — only active mobile shipping roadmap
-- Docs/PRODUCT_VISION.md — historical desktop-first vision (superseded for product delivery)
+- Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md — accepted smartphone-only architecture
+- Docs/MOBILE_NATIVE_ROADMAP.md — only active mobile delivery roadmap
+- AGENTS.md — coding agent's mobile-only development contract
+- Docs/PRODUCT_VISION.md — archived desktop vision (superseded by ADR-002)
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
-- Docs/ROADMAP.md — archived desktop M0–M9 roadmap, NOT active product delivery
+- Docs/ROADMAP.md — archived desktop milestones, NOT active mobile delivery
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
 - Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
+- Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md — synthetic quality traces; not real camera FPS
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
+- Docs/M4_M5_WHOLE_ATLAS_3D_PREVIEW.md — historical Unity source preview (not mobile product)
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
+- Docs/M3_WHOLE_ATLAS_AUDIT.md — full atlas hierarchy inventory audit (desktop research, not a license review)
 - Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
+- Docs/M5_REVIEWED_CAMERA_OVERLAY.md — historical Unity camera projection; not verified with a physical camera
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries

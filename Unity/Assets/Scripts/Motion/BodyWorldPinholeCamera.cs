@@ -11,6 +11,15 @@ namespace MagicMirror.Motion
     /// Focal lengths and principal point are normalized to source image
     /// dimensions. The image has top-left origin and is NOT pre-mirrored.
     /// </summary>
+    /// <summary>
+    /// Exact source-pixel calibrated off-axis camera frustum at near/far
+    /// distances. Values use Unity-style +X right, +Y up camera space.
+    /// </summary>
+    public struct PinholeCameraFrustum
+    {
+        public float left, right, bottom, top, nearClip, farClip;
+    }
+
     public struct BodyWorldPinholeCamera
     {
         private const float Tolerance = 0.002f;
@@ -84,6 +93,59 @@ namespace MagicMirror.Motion
             result.ImageWidth = width;
             result.ImageHeight = height;
             result.IsConfigured = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Convert model-estimated body-world coordinates to a **reviewed**
+        /// source camera's right/up/forward space (camera looks along +Z).
+        /// The result is NOT a Unity world location until a scene camera
+        /// world transform has been explicitly supplied.
+        /// </summary>
+        public bool TryToCameraSpace(
+            KinematicVector3 world, out KinematicVector3 camera)
+        {
+            camera = KinematicVector3.Zero;
+            if (!IsConfigured || !KinematicVector3.IsFinite(world))
+                return false;
+            KinematicVector3 delta = world - origin;
+            camera = new KinematicVector3(
+                KinematicVector3.Dot(delta, right),
+                KinematicVector3.Dot(delta, up),
+                KinematicVector3.Dot(delta, forward));
+            return KinematicVector3.IsFinite(camera);
+        }
+
+        /// <summary>
+        /// Construct a physically compatible off-axis frustum from *actual*
+        /// calibrated pixel intrinsics (normalized by image size), never
+        /// estimate FOV from the current screen/window aspect ratio.
+        ///
+        /// Source image top-left origin:
+        /// u = fx*X/Z + cx; v = cy - fy*Y/Z.
+        /// The matching Unity viewport has bottom-left origin.
+        /// </summary>
+        public bool TryGetSourceFrustum(
+            float nearClip, float farClip,
+            out PinholeCameraFrustum frustum)
+        {
+            frustum = default(PinholeCameraFrustum);
+            if (!IsConfigured || !Finite(nearClip) || !Finite(farClip) ||
+                nearClip <= 0f || farClip <= nearClip ||
+                nearClip > 100f || farClip > 100000f)
+                return false;
+            float left = -centerX * nearClip / focalX;
+            float right = (1f - centerX) * nearClip / focalX;
+            float bottom = -(1f - centerY) * nearClip / focalY;
+            float top = centerY * nearClip / focalY;
+            if (!Finite(left) || !Finite(right) || !Finite(bottom) ||
+                !Finite(top) || right <= left || top <= bottom)
+                return false;
+            frustum = new PinholeCameraFrustum
+            {
+                left = left, right = right, bottom = bottom, top = top,
+                nearClip = nearClip, farClip = farClip
+            };
             return true;
         }
 

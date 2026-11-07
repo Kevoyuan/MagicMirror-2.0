@@ -204,6 +204,10 @@ namespace MagicMirror.Tracking
                 return;
             }
 
+            // Assign the actual accepted connection generation. JSON cannot
+            // set this field: PoseFrame.streamSessionId is NonSerialized.
+            frame.streamSessionId = current.sessionId;
+
             // Missing JPEG in a real-camera packet would overlay a NEW pose
             // onto the PREVIOUS camera image. Only --demo may omit image bytes.
             if (!frame.demo && current.jpeg.Length == 0)
