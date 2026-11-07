@@ -124,6 +124,23 @@ final class BodyCameraProjectionTests: XCTestCase {
         ))
     }
 
+    func testPartialArmCannotUnlockWholeBodyCameraRegistration() {
+        let full = syntheticPose(sourceCamera: identity)
+        var points = full.points
+        points[23] = PosePoint(x: 0.4, y: 0.6, visibility: 0.1)
+        points[24] = PosePoint(x: 0.6, y: 0.6, visibility: 0.1)
+        let partial = PoseSnapshot(
+            timestampMilliseconds: 1001,
+            imageSize: full.imageSize,
+            points: points, worldPoints: full.worldPoints
+        )
+        XCTAssertTrue(partial.isUsable)
+        XCTAssertFalse(partial.hasTorsoAnchor)
+        XCTAssertNil(BodyReprojectionGate.evaluate(
+            snapshot: partial, camera: camera, transform: identity
+        ))
+    }
+
     func testVisibleLandmarkReprojectionHasExplicitPixelWidthUnits() {
         let source = syntheticPose(
             sourceCamera: identity, shiftX: 0.035
