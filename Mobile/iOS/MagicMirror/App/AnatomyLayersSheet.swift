@@ -107,7 +107,7 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Tap a verified system to display it. Only independently reviewed, camera-registered 3D resources unlock; unavailable systems remain locked.")
+            Text("Enable several reviewed anatomical systems together. Each has its own transparency; the reference proxy clears the selection. Locked systems still require approved local meshes and registration.")
                 .font(.footnote)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -120,8 +120,11 @@ struct AnatomyLayersSheet: View {
 
     private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
         let available = model.canSelectAnatomyLayer(layer)
-        let selected = model.selectedAnatomyLayer == layer
-        return Button {
+        let selected = layer == .referenceProxy
+            ? model.enabledAnatomyLayers.isEmpty
+            : model.enabledAnatomyLayers.contains(layer)
+        return VStack(alignment: .leading, spacing: 5) {
+        Button {
             model.selectAnatomyLayer(layer)
         } label: {
             HStack(alignment: .center, spacing: 12) {
@@ -137,7 +140,11 @@ struct AnatomyLayersSheet: View {
                     Text(LocalizedStringKey(layer.title))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(LeonardoPalette.ink)
-                    Text(LocalizedStringKey(layer.detail))
+                    Text(LocalizedStringKey(
+                        available && layer != .referenceProxy
+                            ? "Registered approved local reference mesh"
+                            : layer.detail
+                    ))
                         .font(.caption)
                         .foregroundStyle(LeonardoPalette.mutedInk)
                         .fixedSize(horizontal: false, vertical: true)
@@ -180,8 +187,29 @@ struct AnatomyLayersSheet: View {
         .disabled(!available)
         .accessibilityLabel(layer.title)
         .accessibilityHint(available
-            ? "Select an educational 3D reference system"
+            ? (layer == .referenceProxy
+                ? "Hide the anatomical systems and use the reference proxy"
+                : "Toggle this reviewed anatomical system")
             : "Requires independently reviewed and registered anatomy")
+
+        if selected, layer != .referenceProxy, available {
+            HStack(spacing: 10) {
+                Text("Opacity")
+                    .font(.caption)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                Slider(
+                    value: Binding(
+                        get: { model.layerOpacity(layer) },
+                        set: { model.setLayerOpacity(layer, $0) }
+                    ),
+                    in: 0.05...1
+                )
+                .accessibilityLabel("\(layer.title) opacity")
+            }
+            .padding(.horizontal, 15)
+            .padding(.bottom, 8)
+        }
+        }
     }
 
     private var sectionStudies: some View {
