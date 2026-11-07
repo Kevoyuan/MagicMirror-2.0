@@ -4,11 +4,15 @@ on:
   push:
     paths:
       - 'Tools/anatomy_tools/**'
+      - 'Mobile/iOS/Scripts/verify_atlas_package.py'
+      - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
   pull_request:
     paths:
       - 'Tools/anatomy_tools/**'
+      - 'Mobile/iOS/Scripts/verify_atlas_package.py'
+      - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
 
@@ -22,7 +26,7 @@ jobs:
           python-version: '3.11'
       - name: Validate Python tool syntax and manifest JSON
         run: |
-          python -m compileall -q Tools/anatomy_tools
+          python -m compileall -q Tools/anatomy_tools Mobile/iOS/Scripts/verify_atlas_package.py Mobile/iOS/Scripts/tests
           python -m json.tool Assets-Manifest/asset_sources.json > /dev/null
       - name: Validate pinned whole-FBX provenance against downloader
         run: |
@@ -38,8 +42,11 @@ jobs:
       - name: Run inventory and source-verification tests (no Blender or Unity)
         run: |
           python -m unittest discover -s Tools/anatomy_tools/tests -v
+          python -m unittest discover -s Mobile/iOS/Scripts/tests -v
+          python Mobile/iOS/Scripts/verify_atlas_package.py --help > /dev/null
           python -m Tools.anatomy_tools.audit_unity_inventory --help > /dev/null
       - name: Scope disclaimer
         run: |
           echo 'Tests cover pinned manifest and synthetic renderer inventory only.'
+          echo 'The atlas preflight runs only on synthetic fixtures, never an approved licensed model.'
           echo 'They do NOT fetch a real FBX, inspect anatomy, run Blender, compile Unity or prove rig/asset license correctness.'
