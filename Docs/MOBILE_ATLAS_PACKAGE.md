@@ -194,3 +194,43 @@ A binary MMATLAS1/skin file alone does not activate live anatomy.
 Separately independent human source licensing, anatomical review and
 physical iPhone calibration are still mandatory. Blender's USDZ
 export is an offline developer step, never an app dependency.
+
+## Standards-compliant USDZ packaging and linked release preflight
+
+The reviewed-source Blender exporter now writes a standalone binary
+`defaultLayer.usdc` stage first, then packages it as an **uncompressed,
+unencrypted USDZ** with the USD payload **aligned to a 64-byte file
+offset**. This follows the OpenUSD USDZ container specification:
+https://openusd.org/release/spec_usdz.html . Merely giving an ordinary
+ZIP file a `.usdz` extension is insufficient.
+
+`Mobile/iOS/Scripts/usdz_package.py` is a small Python-stdlib-only
+developer utility: it deterministically wraps the one self-contained
+Blender USD crate into a ZIP with an aligned local-header extra field,
+writes via an atomic `.partial` replacement, and checks the actual
+local/central ZIP headers, CRC, alignment, compression/encryption flags,
+first/root USD file, and binary USD-crate magic. The exporter refuses a
+missing or fake .usdc file, and the rig metadata generator **will not
+issue an approved USDZ SHA** unless structural USDZ verification passes.
+
+A linked **atlas + rig + skin** check is now available:
+
+```bash
+python3 Mobile/iOS/Scripts/verify_atlas_package.py \
+  --system muscles \
+  --package /private/reviewed/export \
+  --require-rig
+```
+
+It checks that USDZ/rig manifests are both present, USDZ bytes match
+the exact recorded SHA, the rig's pinned source and each source mesh
+path/landmark/rest anchor agree with MMATLAS1, parent IDs are acyclic,
+and any optional four-weight skinning bone IDs actually occur in the
+reviewed rig. An incomplete package cannot be marked release-ready.
+
+**Scope:** ZIP alignment and USD-crate header checks are not full
+OpenUSD scene parsing, source-hierarchy verification, a `usdchecker`
+or Xcode/Quick Look validation. The author must still independently
+verify the exported USD scene's actual topology, source-to-USD node
+names, supported iPhone features and visual/physical anatomy, plus
+redistribution rights. No real source model is bundled by this change.
