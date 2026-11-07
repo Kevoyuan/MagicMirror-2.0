@@ -108,6 +108,64 @@ final class VolumetricBoneMeshTests: XCTestCase {
         ).isEmpty)
     }
 
+    func testFullReferenceShowsRibCageAndPelvisButFocusIsSelective() {
+        let s = snapshot()
+        let size = CGSize(width: 390, height: 844)
+        let full = VolumetricBoneMesh.make(
+            snapshot: s, viewport: size, opacity: 0.7, focus: .full
+        )
+        let arms = VolumetricBoneMesh.make(
+            snapshot: s, viewport: size, opacity: 0.7, focus: .arms
+        )
+        let legs = VolumetricBoneMesh.make(
+            snapshot: s, viewport: size, opacity: 0.7, focus: .legs
+        )
+        // Educational ribs and pelvic arcs are present only in whole-body.
+        XCTAssertGreaterThan(full.count, arms.count + legs.count + 1500)
+        XCTAssertEqual(full.count % 3, 0)
+        XCTAssertEqual(arms.count % 3, 0)
+        XCTAssertEqual(legs.count % 3, 0)
+        XCTAssertTrue(full.allSatisfy {
+            $0.position.x.isFinite &&
+            $0.position.y.isFinite &&
+            $0.position.z.isFinite &&
+            $0.normal.x.isFinite &&
+            $0.normal.y.isFinite &&
+            $0.normal.z.isFinite
+        })
+    }
+
+    func testReferenceCraniumRequiresBothConfidentEarLandmarks() {
+        let original = snapshot()
+        var points = original.points
+        points[7] = PosePoint(x: 0.44, y: 0.17, visibility: 0.98)
+        points[8] = PosePoint(x: 0.56, y: 0.17, visibility: 0.98)
+        let withEars = PoseSnapshot(
+            timestampMilliseconds: 1001,
+            imageSize: original.imageSize,
+            points: points, worldPoints: original.worldPoints
+        )
+        points[8] = PosePoint(x: 0.56, y: 0.17, visibility: 0.1)
+        let withoutBothEars = PoseSnapshot(
+            timestampMilliseconds: 1002,
+            imageSize: original.imageSize,
+            points: points, worldPoints: original.worldPoints
+        )
+        let size = CGSize(width: 390, height: 844)
+        let fullCranium = VolumetricBoneMesh.make(
+            snapshot: withEars, viewport: size, opacity: 0.7
+        )
+        let hiddenCranium = VolumetricBoneMesh.make(
+            snapshot: withoutBothEars, viewport: size, opacity: 0.7
+        )
+        XCTAssertGreaterThan(fullCranium.count, hiddenCranium.count + 500)
+        XCTAssertEqual(fullCranium.count % 3, 0)
+        XCTAssertTrue(fullCranium.allSatisfy {
+            $0.color.x.isFinite && $0.color.w > 0 &&
+            $0.color.w <= 1
+        })
+    }
+
     @MainActor
     func testTemporalFilterFollowsMotionAndResetsOnDropout() {
         var filter = PoseTemporalFilter()
