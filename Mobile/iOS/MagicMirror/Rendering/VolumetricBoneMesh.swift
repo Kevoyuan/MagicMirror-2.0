@@ -197,7 +197,7 @@ enum VolumetricBoneMesh {
             let halfWidth = width * (0.33 - 0.085 * fraction)
             let depth = halfWidth * 0.46
             let tubeRadius = max(1.25, min(3.0, width * 0.016))
-            for sign: Float in [-1.0, 1.0] {
+            for sign in [Float(-1), Float(1)] {
                 let sections = 11
                 for step in 0..<sections {
                     func position(_ index: Int) -> SIMD3<Float> {
@@ -221,7 +221,7 @@ enum VolumetricBoneMesh {
         let pelvisWidth = simd_length(hipRight - hipLeft) * 0.5
         if pelvisWidth > 10 && pelvisWidth.isFinite {
             let tint = SIMD4<Float>(0.85, 0.94, 1.0, opacity * 0.49)
-            for sign: Float in [-1.0, 1.0] {
+            for sign in [Float(-1), Float(1)] {
                 let pieces = 12
                 for step in 0..<pieces {
                     func sample(_ index: Int) -> SIMD3<Float> {
@@ -279,7 +279,7 @@ enum VolumetricBoneMesh {
         let center = (left + right) * 0.5 - down * ry * 0.25
         let tint = SIMD4<Float>(0.94, 0.97, 1.0, opacity * 0.41)
 
-        for level: Float in [-0.48, 0.12, 0.65] {
+        for level in [Float(-0.48), Float(0.12), Float(0.65)] {
             let sectionRadius = sqrt(max(0, 1 - level * level))
             let steps = 18
             for index in 0..<steps {
