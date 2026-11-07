@@ -39,6 +39,25 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   CODE_SIGNING_ALLOWED=NO build-for-testing
 ```
 
+## Improved original procedural skeletal silhouette
+
+Until the full original reference atlas is individually reviewed, the
+offline native Metal fallback now includes lightweight **stylized rib-cage
+arcs**, connected **pelvic hoops** and a **cranial outline** in addition to
+the limb spindles. These features are generated only when the shoulders,
+hips (and both ears for the cranium) are confidently observed.
+
+The shapes are *new, original procedural educational illustrations*, not
+individual recovered bones, real anatomical rib numbers, patient anatomy
+or a licensed Z-Anatomy model. The approved-bundle atlas renderer still
+takes precedence whenever a valid, individually reviewed anatomy package
+is present. The region-focus control keeps the original arms-only and
+legs-only views without ribs or head arcs.
+
+The extra geometry uses six-sided tube segments to limit per-frame CPU
+mesh generation and Metal vertex traffic. Geometry and gating are covered
+by Xcode-compiled XCTest source; actual iPhone CPU/GPU timings are pending.
+
 ## Exact-frame Metal camera compositing (new)
 
 In tracking mode, `CameraPosePipeline` now retains **at most six** source

@@ -59,7 +59,8 @@ enum VolumetricBoneMesh {
               opacity > 0 else { return [] }
         let alpha = max(0, min(1, opacity))
         var vertices: [BoneMeshVertex] = []
-        vertices.reserveCapacity(9_000)
+        // Proxy ribs and head arcs add ~8k lightweight vertices at full focus.
+        vertices.reserveCapacity(focus == .full ? 16_000 : 9_000)
 
         func bone(_ a: Int, _ b: Int, radius: Float) {
             guard let start = sourcePoint(
@@ -106,6 +107,19 @@ enum VolumetricBoneMesh {
             }
         }
 
+        if focus == .full {
+            // Original procedural educational *silhouettes*, NOT a
+            // reviewed Z-Anatomy mesh or an image of internal structures.
+            addReferenceRibs(
+                snapshot: snapshot, viewport: viewport,
+                opacity: alpha, into: &vertices
+            )
+            addReferenceCranium(
+                snapshot: snapshot, viewport: viewport,
+                opacity: alpha, into: &vertices
+            )
+        }
+
         return vertices
     }
 
@@ -144,6 +158,182 @@ enum VolumetricBoneMesh {
                 emit(p11, normal1, tint, viewport, into: &vertices)
                 emit(p01, normal1, tint, viewport, into: &vertices)
             }
+        }
+    }
+
+    /// The first usable mobile app must look like a skeleton, rather than
+    /// an unlabeled collection of rods. These ribs are intentionally
+    /// *procedural visual guides* registered to shoulder/hip pose anchors.
+    /// No individual rib or spinal vertebra is actually detected.
+    private static func addReferenceRibs(
+        snapshot: PoseSnapshot, viewport: CGSize, opacity: Float,
+        into vertices: inout [BoneMeshVertex]
+    ) {
+        guard let left = sourcePoint(
+            index: 11, snapshot: snapshot, viewport: viewport
+        ), let right = sourcePoint(
+            index: 12, snapshot: snapshot, viewport: viewport
+        ), let hipLeft = sourcePoint(
+            index: 23, snapshot: snapshot, viewport: viewport
+        ), let hipRight = sourcePoint(
+            index: 24, snapshot: snapshot, viewport: viewport
+        ) else { return }
+
+        let shoulderCenter = (left + right) * 0.5
+        let hipCenter = (hipLeft + hipRight) * 0.5
+        let torso = hipCenter - shoulderCenter
+        let width = simd_length(right - left)
+        guard width > 18, width.isFinite,
+              simd_length(torso) > 20 else { return }
+        let lateral = simd_normalize(right - left)
+        let depthAxis = SIMD3<Float>(0, 0, 1)
+        let tint = SIMD4<Float>(0.90, 0.96, 1.0, opacity * 0.43)
+
+        // Seven stylized paired arcs form a lightweight, recognizable
+        // rib-cage silhouette. Not mapped to numbered real human ribs.
+        for row in 0..<7 {
+            let fraction = Float(row) / 6
+            let center = shoulderCenter +
+                torso * (0.19 + 0.55 * fraction)
+            let halfWidth = width * (0.33 - 0.085 * fraction)
+            let depth = halfWidth * 0.46
+            let tubeRadius = max(1.25, min(3.0, width * 0.016))
+            for sign in [Float(-1), Float(1)] {
+                let sections = 11
+                for step in 0..<sections {
+                    func position(_ index: Int) -> SIMD3<Float> {
+                        let angle = Float(index) / Float(sections) * .pi
+                        return center +
+                            lateral * (sign * halfWidth * sin(angle)) +
+                            depthAxis * (depth * cos(angle)) +
+                            torso * (0.025 * sin(angle))
+                    }
+                    addThinTube(
+                        start: position(step), end: position(step + 1),
+                        radius: tubeRadius, color: tint,
+                        viewport: viewport, into: &vertices
+                    )
+                }
+            }
+        }
+
+        // A broad pelvic ring gives the hips a connected anatomical
+        // reference even before any source-reviewed iliac mesh is shipped.
+        let pelvisWidth = simd_length(hipRight - hipLeft) * 0.5
+        if pelvisWidth > 10 && pelvisWidth.isFinite {
+            let tint = SIMD4<Float>(0.85, 0.94, 1.0, opacity * 0.49)
+            for sign in [Float(-1), Float(1)] {
+                let pieces = 12
+                for step in 0..<pieces {
+                    func sample(_ index: Int) -> SIMD3<Float> {
+                        let t = Float(index) / Float(pieces) * .pi
+                        return hipCenter +
+                            lateral * (sign * pelvisWidth * sin(t)) +
+                            depthAxis * (pelvisWidth * 0.32 * cos(t)) +
+                            torso * (0.085 * sin(t))
+                    }
+                    addThinTube(
+                        start: sample(step), end: sample(step + 1),
+                        radius: max(1.5, pelvisWidth * 0.07),
+                        color: tint, viewport: viewport,
+                        into: &vertices
+                    )
+                }
+            }
+        }
+    }
+
+    /// Sparse cranium arcs are shown ONLY when both ear landmarks are
+    /// confidently observed. No hidden face/cranial bone locations are
+    /// inferred from absent keypoints.
+    private static func addReferenceCranium(
+        snapshot: PoseSnapshot, viewport: CGSize, opacity: Float,
+        into vertices: inout [BoneMeshVertex]
+    ) {
+        guard let left = sourcePoint(
+            index: 7, snapshot: snapshot, viewport: viewport
+        ), let right = sourcePoint(
+            index: 8, snapshot: snapshot, viewport: viewport
+        ), let shoulderLeft = sourcePoint(
+            index: 11, snapshot: snapshot, viewport: viewport
+        ), let shoulderRight = sourcePoint(
+            index: 12, snapshot: snapshot, viewport: viewport
+        ), let hipLeft = sourcePoint(
+            index: 23, snapshot: snapshot, viewport: viewport
+        ), let hipRight = sourcePoint(
+            index: 24, snapshot: snapshot, viewport: viewport
+        ) else { return }
+        let span = right - left
+        let earSpan = simd_length(span)
+        let shoulderCenter = (shoulderLeft + shoulderRight) * 0.5
+        let hipCenter = (hipLeft + hipRight) * 0.5
+        let torso = hipCenter - shoulderCenter
+        guard earSpan > 16, earSpan < 400, earSpan.isFinite,
+              simd_length(torso) > 15 else { return }
+
+        let lateral = simd_normalize(span)
+        let down = simd_normalize(torso)
+        let depthAxis = SIMD3<Float>(0, 0, 1)
+        let rx = earSpan * 0.64
+        let ry = rx * 1.20
+        let rz = rx * 0.70
+        let center = (left + right) * 0.5 - down * ry * 0.25
+        let tint = SIMD4<Float>(0.94, 0.97, 1.0, opacity * 0.41)
+
+        for level in [Float(-0.48), Float(0.12), Float(0.65)] {
+            let sectionRadius = sqrt(max(0, 1 - level * level))
+            let steps = 18
+            for index in 0..<steps {
+                func sample(_ step: Int) -> SIMD3<Float> {
+                    let angle = Float(step) / Float(steps) * 2 * .pi
+                    return center + down * (level * ry) +
+                        lateral * (rx * sectionRadius * cos(angle)) +
+                        depthAxis * (rz * sectionRadius * sin(angle))
+                }
+                addThinTube(
+                    start: sample(index), end: sample(index + 1),
+                    radius: max(1.3, rx * 0.035),
+                    color: tint, viewport: viewport, into: &vertices
+                )
+            }
+        }
+    }
+
+    /// Efficient six-sided capped-free cylinder. Compared with the full
+    /// spindle it uses one ring interval per curve segment (36 vertices).
+    /// A single screen-aligned light pass shades the resulting GPU mesh.
+    private static func addThinTube(
+        start: SIMD3<Float>, end: SIMD3<Float>, radius: Float,
+        color: SIMD4<Float>, viewport: CGSize,
+        into vertices: inout [BoneMeshVertex]
+    ) {
+        let delta = end - start
+        let length = simd_length(delta)
+        guard length > 0.2, length.isFinite,
+              radius > 0, radius.isFinite else { return }
+        let axis = delta / length
+        let helper = abs(axis.z) > 0.85
+            ? SIMD3<Float>(0, 1, 0) : SIMD3<Float>(0, 0, 1)
+        let side = simd_cross(axis, helper)
+        guard simd_length_squared(side) > 1e-6 else { return }
+        let u = simd_normalize(side)
+        let v = simd_normalize(simd_cross(axis, u))
+        let sides = 6
+        for k in 0..<sides {
+            let a0 = Float(k) * 2 * .pi / Float(sides)
+            let a1 = Float(k + 1) * 2 * .pi / Float(sides)
+            let n0 = u * cos(a0) + v * sin(a0)
+            let n1 = u * cos(a1) + v * sin(a1)
+            let p0 = start + n0 * radius
+            let p1 = start + n1 * radius
+            let p2 = end + n0 * radius
+            let p3 = end + n1 * radius
+            emit(p0, n0, color, viewport, into: &vertices)
+            emit(p2, n0, color, viewport, into: &vertices)
+            emit(p3, n1, color, viewport, into: &vertices)
+            emit(p0, n0, color, viewport, into: &vertices)
+            emit(p3, n1, color, viewport, into: &vertices)
+            emit(p1, n1, color, viewport, into: &vertices)
         }
     }
 
