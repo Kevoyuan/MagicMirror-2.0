@@ -36,7 +36,7 @@
 3. Add optional segmentation and, if needed, versioned media/pose association; avoid same-frame mismatches.
 4. Run the actual Unity 6.3 Editor with synthetic TCP demo and full-body schematic; fix compile/runtime issues.
 5. Run one real webcam, test left/right and temporal alignment, disconnect/reconnect, alpha compositing, and report FPS/latency.
-6. Only then fetch/import the pinned **intact** Z-Anatomy FBX and annotate real joints.
+6. Only then fetch/import the pinned **intact** Z-Anatomy FBX and annotate real joints. An offline inventory auditor is available in `Docs/M3_WHOLE_ATLAS_AUDIT.md` but is NOT evidence of actual Unity/FBX import.
 
 ## Cross-cutting acceptance principles
 

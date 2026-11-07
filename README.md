@@ -93,6 +93,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
+- Docs/M3_WHOLE_ATLAS_AUDIT.md — full atlas hierarchy inventory audit (desktop research, not a license review)
 - Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 

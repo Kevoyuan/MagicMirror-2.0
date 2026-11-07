@@ -54,7 +54,7 @@ Schematic capsules are NOT medical or Z-Anatomy anatomy.
 1. Acquire the original full SkeletalSystem100.fbx from upstream; do NOT split it.
 2. Drag the entire FBX into Unity Assets and select it.
 3. Run MagicMirror > Phase 4 > Full Atlas Setup.
-4. Select the full FBX asset, choose Export Hierarchy Inventory (JSON).
+4. Select the full FBX asset, choose Export Hierarchy Inventory (JSON). Then run `python3 -m Tools.anatomy_tools.audit_unity_inventory --inventory /path/to/FullSkeletonHierarchyInventory.json --report /tmp/atlas-audit.json`. See `Docs/M3_WHOLE_ATLAS_AUDIT.md`: all candidate groups remain **unverified** until actual anatomy and source licenses are checked.
 5. Create Profile for Whole Model. The wizard deliberately leaves unverified anatomical joint anchors empty.
 6. Set real left/right shoulder anchor positions in ROOT LOCAL FBX coordinates, atlas facing rotation, exact source revision, attribution and asset-license review.
 7. Add region MotionGroup mappings referencing verified original hierarchy paths and source-local proximal/distal anchors. A subtree can move as one rigid body region.
