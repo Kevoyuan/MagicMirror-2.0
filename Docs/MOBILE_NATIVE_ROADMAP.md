@@ -13,6 +13,27 @@ roadmap. Docs/ROADMAP.md is archived desktop engineering history. We are
 not planning or shipping Windows/macOS versions, and Unity or Python will
 not be required in the installed iOS/Android runtime.
 
+## Current source implementation (2026-11-07)
+
+- **Mobile-0/1, source stage:** SwiftUI/AVFoundation rear camera,
+  MediaPipe Tasks LIVE_STREAM, timestamp-bound 33 image/world landmarks;
+  arm64 Xcode simulator source compilation, no physical iPhone validation.
+- **Mobile-2, source stage:** connected translucent Metal 3D **proxy**
+  with bounded estimated depth, opacity/focus controls, and temporal
+  smoothing. This is not individual human anatomy or calibrated camera space.
+- **Mobile-3, preparatory source stage:** native reviewed-atlas manifest
+  schema, offline USDZ SHA-256 gate, explicit human-license/anchor review,
+  stable reference capture and pure relative 3D joint rotation requests
+  in `Mobile/iOS/MagicMirror/Anatomy/`. **The actual atlas USDZ, rig
+  binding, licensing and visual runtime are still absent.** See
+  `Docs/IOS_ANATOMY_ATLAS_INTEGRATION.md`.
+- **Mobile-4/5:** camera-to-body extrinsics, actual USDZ articulation,
+  accurate occlusion, performance and release preparation remain pending.
+
+The owner elected to **defer physical-device validation while coding
+continues**. This does not waive the hardware/asset/legal acceptance gates
+before a distributable app can be described as completed.
+
 ## Active smartphone milestones; each must build and run on a physical handset
 
 | Milestone | Deliverable | Exit gate |
