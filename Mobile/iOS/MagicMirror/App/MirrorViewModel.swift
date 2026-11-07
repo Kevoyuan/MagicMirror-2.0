@@ -38,6 +38,9 @@ final class MirrorViewModel {
     var deliveryReport: PoseDeliveryReport?
     /// Diagnostic pose fit only; never an approved atlas calibration.
     var automaticCameraCandidate: AutomaticCameraPoseCandidate?
+    /// True only while an approved reference mesh is shown with an
+    /// estimated, non-medical camera-body alignment.
+    var estimatedAtlasAlignmentActive = false
 
     private var isActive = false
     private var mostRecentTimestamp = -1
@@ -53,6 +56,7 @@ final class MirrorViewModel {
     private var cameraEstimateTask: Task<Void, Never>?
     private var cameraEstimateLastStart = 0.0
     private var cameraEstimateEpoch: UInt64 = 0
+    private var automaticReferenceGate = AutomaticReferenceAlignmentGate()
 
     init() {
         pipeline.onAlignedFrame = { [weak self] incoming in
@@ -77,9 +81,19 @@ final class MirrorViewModel {
                 self.calibratedAtlasBatches = []
                 self.skinnedAtlasBatches = []
                 self.calibratedAtlasBatches = []
-                let reviewedCamera = smooth.flatMap {
-                    self.reviewedCameraForFrame?($0)
-                }
+                let sourceCamera: ReviewedSourceCameraFrame? =
+                    smooth.flatMap { frame in
+                        if let manuallyReviewed =
+                            self.reviewedCameraForFrame?(frame),
+                           manuallyReviewed.matches(frame) {
+                            self.automaticReferenceGate.reset()
+                            return manuallyReviewed
+                        }
+                        return self.automaticReferenceGate.alignedFrame(
+                            for: frame,
+                            candidate: self.automaticCameraCandidate
+                        )
+                    }
                 // Use stable catalog order for deterministic semi-transparent
                 // stacking. Hidden layers are warmed up only until their
                 // resource and live camera gates have first passed.
@@ -96,7 +110,7 @@ final class MirrorViewModel {
                     let alpha = Float(self.opacity *
                         self.layerOpacity(layer))
                     let rigid = runtime.render(
-                        frame: smooth, reviewedCamera: reviewedCamera,
+                        frame: smooth, reviewedCamera: sourceCamera,
                         viewport: self.viewportSize, focus: self.focus,
                         opacity: alpha,
                         section: enabled ? self.activeSection : nil,
@@ -144,6 +158,9 @@ final class MirrorViewModel {
                 if !self.canSectionReviewedAtlas {
                     self.activeSection = nil
                 }
+                self.estimatedAtlasAlignmentActive =
+                    sourceCamera?.estimatedReferenceOnly == true &&
+                    visibleCount > 0
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer
@@ -307,6 +324,8 @@ final class MirrorViewModel {
         _ provider: @escaping (PoseSnapshot) -> ReviewedSourceCameraFrame?
     ) {
         reviewedCameraForFrame = provider
+        automaticReferenceGate.reset()
+        estimatedAtlasAlignmentActive = false
         reviewedAtlasLayers.values.forEach { $0.reset() }
         readyAnatomyLayers = []
         calibratedAtlasBatch = nil
@@ -322,6 +341,8 @@ final class MirrorViewModel {
     func setViewportSize(_ size: CGSize) {
         guard size != viewportSize else { return }
         viewportSize = size
+        automaticReferenceGate.reset()
+        estimatedAtlasAlignmentActive = false
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         skinnedAtlasBatches = []
@@ -337,12 +358,15 @@ final class MirrorViewModel {
         cameraEstimateTask?.cancel()
         cameraEstimateTask = nil
         automaticCameraCandidate = nil
+        automaticReferenceGate.reset()
+        estimatedAtlasAlignmentActive = false
         cameraEstimateLastStart = 0
     }
 
-    /// Scheduled at most once every 750 ms and never on the actor that
-    /// displays camera frames. Candidate results cannot enable an
-    /// independently-reviewed atlas camera gate.
+    /// Scheduled at most once every 750 ms off the display actor.
+    /// Candidate results can only enable the explicitly marked
+    /// *estimated reference* via the strict multi-frame gate; they
+    /// NEVER attest to independent physical camera approval.
     private func maybeEstimateCamera(
         from frame: PoseSnapshot, now: Double
     ) {
