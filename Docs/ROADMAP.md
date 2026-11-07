@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — Delivery Roadmap (v2.1)
 
-> **ARCHIVED — no desktop releases planned.** The accepted and **only** product target is a native offline iOS/Android phone app, not a Unity desktop application or streamed Unity game. See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [sole active Mobile Native Roadmap](MOBILE_NATIVE_ROADMAP.md). All desktop M0–M9 targets below are historical research gates, **not** active development or mobile release criteria. No mobile runtime has been implemented yet.
+> **ARCHIVED — no desktop releases planned.** The accepted and **only** product target is a native offline iPhone/iOS app (Android canceled 2026-11-07), not a Unity desktop application or streamed Unity game. See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [sole active Mobile Native Roadmap](MOBILE_NATIVE_ROADMAP.md). All desktop M0–M9 targets below are historical research gates, **not** active development or mobile release criteria. An iOS source prototype exists, but physical-device and shipping validation remain pending.
 
 **Last revised:** 2026-11-06.  
 **Current baseline:** `new clean repository, main branch` / Phase 4B source committed; core Unity Editor and real-camera validations **not yet executed**. This roadmap is a target, **not** a list of shipped features.
