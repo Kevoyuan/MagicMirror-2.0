@@ -67,6 +67,7 @@ def verify_package(directory: Path):
     require(manifest.get("reviewedJointBindings") is True,
             "human binding review not recorded")
     require(isinstance(manifest.get("licenseIds"), list)
+            and all(isinstance(x, str) for x in manifest["licenseIds"])
             and REQUIRED_LICENSES.issubset(set(manifest["licenseIds"])),
             "required license IDs missing")
     attribution = manifest.get("attribution")
