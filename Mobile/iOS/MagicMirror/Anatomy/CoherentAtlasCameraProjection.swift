@@ -99,4 +99,27 @@ struct CoherentAtlasCameraProjection {
             cameraDepthMeters: cameraProjection.depthMeters
         )
     }
+
+    /// Transform one actual source-mesh rest normal with exactly the
+    /// same rigid bone motion, atlas-body orientation, and calibrated
+    /// body-camera rotation as its corresponding source vertex.
+    func cameraNormal(
+        boneId: String, restNormal: SIMD3<Float>
+    ) -> SIMD3<Float>? {
+        guard extrinsics.isValid,
+              let bone = pose.bone(boneId),
+              restNormal.x.isFinite, restNormal.y.isFinite,
+              restNormal.z.isFinite,
+              simd_length_squared(restNormal) > 1e-8
+        else { return nil }
+        let atlas = simd_act(bone.restToPosedRotation, restNormal)
+        guard let body = registration.atlasDirectionToBody(atlas) else {
+            return nil
+        }
+        let camera = simd_act(extrinsics.rotation, body)
+        guard camera.x.isFinite, camera.y.isFinite,
+              camera.z.isFinite,
+              simd_length_squared(camera) > 1e-8 else { return nil }
+        return simd_normalize(camera)
+    }
 }
