@@ -393,6 +393,18 @@ reviewed source display names. This is NOT observed human internal
 tissue: only legally/anatomically reviewed model source metadata
 qualifies. No unreviewed source is bundled or auto-unlocked.
 
+## Mobile-3 offline six-system source-to-MMATLAS1 exporter (2026-11-07)
+
+Expanded the Blender-only geometry exporter and Python structural
+preflight across six *actually existing* Z-Anatomy FBX sources at
+the pinned Git commit, preserving original byte/blob provenance per
+system. Optional LBS skinning data now comes only from explicitly
+reviewed authored Blender vertex groups and named hierarchy bone IDs.
+The native app can load those independent artifacts with no runtime
+Python/network. Approved USDZ hierarchy authoring/packaging, licensing,
+anatomical bindings, full size/performance and live iPhone acceptance
+are still separate gates.
+
 ## Native multi-system anatomy compositing (2026-11-07)
 
 Expanded the preexisting single-reviewed-system selector into
