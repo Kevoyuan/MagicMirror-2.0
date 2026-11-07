@@ -16,7 +16,7 @@ struct MirrorScreen: View {
 
             MetalSkeletonOverlay(
                 snapshot: model.isPaused ? nil : model.snapshot,
-                opacity: model.opacity
+                opacity: model.opacity, focus: model.focus
             )
             .ignoresSafeArea()
 
@@ -130,6 +130,14 @@ struct MirrorScreen: View {
 
     private var controls: some View {
         VStack(spacing: 16) {
+            Picker("Body region", selection: $model.focus) {
+                ForEach(AnatomyFocus.allCases) { region in
+                    Text(region.rawValue).tag(region)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Reference skeleton body region")
+
             HStack {
                 Image(systemName: "circle.lefthalf.filled")
                     .foregroundStyle(.cyan)
