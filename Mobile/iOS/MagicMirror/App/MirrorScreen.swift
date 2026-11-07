@@ -14,9 +14,9 @@ struct MirrorScreen: View {
             CameraPreview(session: model.pipeline.session)
                 .ignoresSafeArea()
 
-            PoseSkeletonOverlay(
+            MetalSkeletonOverlay(
                 snapshot: model.isPaused ? nil : model.snapshot,
-                opacity: model.opacity
+                opacity: model.opacity, focus: model.focus
             )
             .ignoresSafeArea()
 
@@ -60,7 +60,7 @@ struct MirrorScreen: View {
                 Text("MAGICMIRROR")
                     .font(.system(.title3, design: .rounded, weight: .bold))
                     .tracking(2.2)
-                Text("REFERENCE ANATOMY · ON DEVICE")
+                Text("3D PROXY BONES · ON DEVICE")
                     .font(.system(.caption2, design: .rounded, weight: .medium))
                     .tracking(0.9)
                     .foregroundStyle(.white.opacity(0.7))
@@ -130,6 +130,14 @@ struct MirrorScreen: View {
 
     private var controls: some View {
         VStack(spacing: 16) {
+            Picker("Body region", selection: $model.focus) {
+                ForEach(AnatomyFocus.allCases) { region in
+                    Text(region.rawValue).tag(region)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Reference skeleton body region")
+
             HStack {
                 Image(systemName: "circle.lefthalf.filled")
                     .foregroundStyle(.cyan)
@@ -147,7 +155,7 @@ struct MirrorScreen: View {
                 .accessibilityValue("\(Int(model.opacity * 100)) percent")
 
             HStack(spacing: 12) {
-                Text("ILLUSTRATION ONLY · NOT MEDICAL IMAGING")
+                Text("3D REFERENCE PROXY · NOT YOUR REAL BONES")
                     .font(.system(.caption2, design: .rounded, weight: .medium))
                     .foregroundStyle(.white.opacity(0.64))
                     .lineLimit(2)

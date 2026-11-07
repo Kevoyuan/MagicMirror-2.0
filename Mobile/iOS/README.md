@@ -1,8 +1,9 @@
 # MagicMirror iOS — native camera + local pose overlay
 
 **Status:** Native iOS implementation in progress. This first slice renders a
-translucent **proxy skeleton** from 33 MediaPipe surface landmarks; it does
-**not** yet display the original 3D Z-Anatomy FBX or infer real internal bones.
+shaded, translucent **volumetric 3D proxy bones** from 33 MediaPipe surface
+landmarks and optional body-relative world estimates. This is **not** an
+accurate 3D Z-Anatomy FBX rig or an image of a person's actual internal bones.
 
 The installed app uses SwiftUI, AVFoundation, and MediaPipeTasksVision.
 **No Unity, Python server, desktop connection, cloud processing, account, or
@@ -56,10 +57,19 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   session that supplies inference frames.
 - `Tracking/PoseGeometry.swift`: typed 33-point observations, confidence
   gates and aspect-fill coordinate mapping.
-- `Rendering/PoseSkeletonOverlay.swift`: small, translucent SwiftUI
-  Canvas overlay, using the same aspect-fill crop as the video.
-- `MagicMirrorTests/PoseGeometryTests.swift`: frame crop, visibility,
-  nonfinite data and connected-limb regression tests.
+- `Rendering/MetalSkeletonOverlay.swift`: native transparent GPU renderer
+  with **no second camera or ARSession**, composited over the preview.
+- `Rendering/VolumetricBoneMesh.swift`: connected tapered 3D bone proxies
+  and bounded illustrative depth; this is not individual anatomy.
+- `Rendering/SkeletonShaders.metal`: shaded translucent mesh shaders.
+- `Tracking/PoseTemporalFilter.swift`: 80 ms time-aware pose smoothing,
+  reset on dropout, pause or session stop.
+- `Rendering/PoseSkeletonOverlay.swift`: older 2D Canvas research fallback,
+  no longer used by the primary screen.
+- `MagicMirrorTests/PoseGeometryTests.swift`: camera crop, visibility,
+  nonfinite values and left/right conventions.
+- `MagicMirrorTests/VolumetricBoneMeshTests.swift`: mesh topology,
+  dropout, proxy depth and smoothing regression cases.
 
 The MediaPipe result now uses capture geometry saved for its *own* source
 timestamp, rather than taking dimensions from the newest camera frame.
@@ -93,13 +103,16 @@ distribution rights before public release.
 
 ## Gaps before actual anatomical AR
 
-The source now implements live **2D skeletal visualization**, not
-semi-transparent anatomically accurate 3D bones. Next:
+The source now includes a live **3D volumetric proxy renderer**, but
+**not** anatomically accurate 3D bones. The projected x/y endpoints still
+come from MediaPipe image landmarks; relative z is an uncalibrated
+hip-centered estimate, not an iPhone-camera-space reconstruction. Next:
 1. Pass real Xcode build and physical rear-camera capture.
 2. Validate portrait orientation and keypoint-to-preview alignment on
    several iPhone screen aspect ratios, including body motion/occlusion.
-3. Add a mobile 3D rig, review Z-Anatomy source licenses, convert the
-   intact atlas offline to an optimized mobile asset.
+3. Add a **reviewed** mobile 3D anatomy rig, verify source licenses,
+   convert the original connected atlas offline to optimized mobile assets.
+   No unreviewed atlas mesh is bundled by this PR.
 4. Implement dynamic camera/body registration, depth/occlusion and
    independent measured overlay/latency benchmarks.
 

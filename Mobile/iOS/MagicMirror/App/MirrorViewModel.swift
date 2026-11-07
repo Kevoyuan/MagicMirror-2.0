@@ -10,11 +10,13 @@ final class MirrorViewModel {
     var phase: MirrorPhase = .idle
     var snapshot: PoseSnapshot?
     var opacity = 0.64
+    var focus: AnatomyFocus = .full
     var isPaused = false
 
     private var isActive = false
     private var mostRecentTimestamp = -1
     private var lastPoseReceiptUptime = 0.0
+    private var temporalFilter = PoseTemporalFilter()
     private var expiryTask: Task<Void, Never>?
 
     init() {
@@ -26,7 +28,7 @@ final class MirrorViewModel {
                 }
                 self.mostRecentTimestamp = result.timestampMilliseconds
             }
-            self.snapshot = result
+            self.snapshot = self.temporalFilter.apply(result)
             if result != nil {
                 self.lastPoseReceiptUptime = ProcessInfo.processInfo.systemUptime
             }
@@ -44,6 +46,7 @@ final class MirrorViewModel {
         isActive = true
         isPaused = false
         mostRecentTimestamp = -1
+        temporalFilter.reset()
         expiryTask?.cancel()
         expiryTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -52,6 +55,7 @@ final class MirrorViewModel {
                 if self.snapshot != nil &&
                    ProcessInfo.processInfo.systemUptime - self.lastPoseReceiptUptime > 0.30 {
                     self.snapshot = nil
+                    self.temporalFilter.reset()
                     self.phase = .searching
                 }
             }
@@ -64,6 +68,7 @@ final class MirrorViewModel {
         isActive = false
         expiryTask?.cancel()
         expiryTask = nil
+        temporalFilter.reset()
         snapshot = nil
         phase = .idle
         pipeline.stop()
@@ -72,6 +77,7 @@ final class MirrorViewModel {
     func togglePause() {
         isPaused.toggle()
         if isPaused {
+            temporalFilter.reset()
             snapshot = nil  // Never present stale tracked bones as live data.
         } else {
             mostRecentTimestamp = -1
