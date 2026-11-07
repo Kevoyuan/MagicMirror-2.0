@@ -68,4 +68,23 @@ final class MirrorPresentationStateTests: XCTestCase {
         )
         XCTAssertFalse((state.guidance ?? "").isEmpty)
     }
+    func testCameraLifecycleOverridesPausedOverlay() {
+        XCTAssertEqual(
+            MirrorPresentationState(
+                phase: .permissionDenied,
+                coverage: .torsoAnchored,
+                isPaused: true
+            ),
+            .permissionDenied
+        )
+        XCTAssertEqual(
+            MirrorPresentationState(
+                phase: .idle,
+                coverage: .none,
+                isPaused: true
+            ),
+            .preparing
+        )
+    }
+
 }
