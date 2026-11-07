@@ -122,7 +122,7 @@ final class MirrorViewModel {
                     self.proxyRigPose = nil
                     self.reviewedAtlas?.reset()
                     self.calibratedAtlasBatch = nil
-                self.skinnedAtlasBatch = nil
+                    self.skinnedAtlasBatch = nil
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
                     self.phase = .searching
@@ -156,6 +156,9 @@ final class MirrorViewModel {
         temporalFilter.reset()
         proxyRig.reset()
         proxyRigPose = nil
+        calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
+        reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
         snapshot = nil
@@ -195,7 +198,6 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
-        skinnedAtlasBatch = nil
             reviewedAtlas?.reset()
             deliveryMonitor.reset()
             deliveryReport = nil
