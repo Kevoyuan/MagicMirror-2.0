@@ -39,10 +39,10 @@ struct AnatomyReferenceCapture {
             return nil
         }
         if let previous = window.last {
-            guard frame.timestampMilliseconds > previous.timestampMilliseconds,
-                  frame.timestampMilliseconds - previous.timestampMilliseconds <= 180,
-                  frame.imageSize == previous.imageSize,
-                  coreIsStable(reference: previous, current: frame) else {
+            if frame.timestampMilliseconds <= previous.timestampMilliseconds ||
+               frame.timestampMilliseconds - previous.timestampMilliseconds > 180 ||
+               frame.imageSize != previous.imageSize ||
+               !coreIsStable(reference: previous, current: frame) {
                 window.removeAll(keepingCapacity: true)
             }
         }
