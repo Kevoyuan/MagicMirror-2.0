@@ -16,6 +16,12 @@ final class MirrorViewModel {
     var proxyRigPose: PoseSnapshot?
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+    /// Multiple independently reviewed systems can be composited on
+    /// the one matched source camera frame, with independent tint/alpha.
+    var skinnedAtlasBatches: [SkinnedAtlasDrawBatch] = []
+    var calibratedAtlasBatches: [CalibratedAtlasDrawBatch] = []
+    var enabledAnatomyLayers: Set<AnatomyDisplayLayer> = [.skeleton]
+    var layerOpacities: [AnatomyDisplayLayer: Double] = [:]
     var referenceSelection: AnatomyReferenceSelection?
     /// A system is selectable only after its own approved registered
     /// source atlas has produced coherent geometry on this capture.
@@ -66,41 +72,61 @@ final class MirrorViewModel {
                 self.proxyRigPose = self.proxyRig.update(smooth)
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.skinnedAtlasBatches = []
+                self.calibratedAtlasBatches = []
+                self.skinnedAtlasBatches = []
+                self.calibratedAtlasBatches = []
                 let reviewedCamera = smooth.flatMap {
                     self.reviewedCameraForFrame?($0)
                 }
-                for (layer, runtime) in self.reviewedAtlasLayers {
-                    let isSelected = self.selectedAnatomyLayer == layer
-                    // Other reviewed packages are inspected only until
-                    // first confirmed success, not rendered every frame.
-                    guard isSelected ||
+                // Use stable catalog order for deterministic semi-transparent
+                // stacking. Hidden layers are warmed up only until their
+                // resource and live camera gates have first passed.
+                for layer in AnatomyDisplayLayer.allCases where
+                    layer != .referenceProxy {
+                    guard let runtime = self.reviewedAtlasLayers[layer] else {
+                        continue
+                    }
+                    let enabled = self.enabledAnatomyLayers.contains(layer)
+                    guard enabled ||
                         !self.readyAnatomyLayers.contains(layer) else {
                         continue
                     }
+                    let alpha = Float(self.opacity *
+                        self.layerOpacity(layer))
                     let rigid = runtime.render(
                         frame: smooth, reviewedCamera: reviewedCamera,
                         viewport: self.viewportSize, focus: self.focus,
-                        opacity: Float(self.opacity),
-                        section: isSelected ? self.activeSection : nil,
+                        opacity: alpha,
+                        section: enabled ? self.activeSection : nil,
                         sectionOffset: Float(self.sectionOffset)
                     )
                     let skinned = runtime.skinnedFrame
                     if rigid != nil || skinned != nil {
                         self.readyAnatomyLayers.insert(layer)
                     }
-                    if isSelected {
-                        self.calibratedAtlasBatch = rigid
-                        self.skinnedAtlasBatch = skinned
+                    guard enabled else { continue }
+                    if let skinned {
+                        self.skinnedAtlasBatches.append(skinned)
+                    } else if let rigid {
+                        self.calibratedAtlasBatches.append(rigid)
                     }
                 }
-                if self.skinnedAtlasBatch != nil ||
-                   self.calibratedAtlasBatch != nil {
+                if !self.skinnedAtlasBatches.isEmpty ||
+                   !self.calibratedAtlasBatches.isEmpty {
                     self.referenceSelection = nil
                 } else if let selected = self.referenceSelection,
                           !(smooth.map { selected.visible(in: $0) } ?? false) {
                     self.referenceSelection = nil
                 }
-                self.canSectionReviewedAtlas = self.skinnedAtlasBatch != nil
+                // Avoid uncropped rigid layers when 3D sections are
+                // enabled; all currently drawn systems need GPU skinning.
+                let visibleCount =
+                    self.skinnedAtlasBatches.count +
+                    self.calibratedAtlasBatches.count
+                self.canSectionReviewedAtlas = visibleCount > 0 &&
+                    self.calibratedAtlasBatches.isEmpty &&
+                    visibleCount == self.enabledAnatomyLayers.count
                 if !self.canSectionReviewedAtlas {
                     self.activeSection = nil
                 }
@@ -133,6 +159,8 @@ final class MirrorViewModel {
                 self.readyAnatomyLayers = []
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
+                self.skinnedAtlasBatches = []
+                self.calibratedAtlasBatches = []
                 self.referenceSelection = nil
                 self.canSectionReviewedAtlas = false
                 self.activeSection = nil
@@ -159,6 +187,8 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        skinnedAtlasBatches = []
+        calibratedAtlasBatches = []
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
@@ -183,6 +213,8 @@ final class MirrorViewModel {
                 self.readyAnatomyLayers = []
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
+                    self.skinnedAtlasBatches = []
+                    self.calibratedAtlasBatches = []
                     self.referenceSelection = nil
                     self.canSectionReviewedAtlas = false
                     self.activeSection = nil
@@ -213,7 +245,7 @@ final class MirrorViewModel {
                           !Task.isCancelled else { return }
                     for (layer, resources) in loaded {
                         self.reviewedAtlasLayers[layer] = LiveReviewedAtlasRuntime(
-                            resources: resources
+                            resources: resources, anatomicalSystem: layer
                         )
                     }
                 }
@@ -235,6 +267,8 @@ final class MirrorViewModel {
         proxyRigPose = nil
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        skinnedAtlasBatches = []
+        calibratedAtlasBatches = []
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
@@ -259,6 +293,8 @@ final class MirrorViewModel {
         readyAnatomyLayers = []
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        skinnedAtlasBatches = []
+        calibratedAtlasBatches = []
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
@@ -269,6 +305,8 @@ final class MirrorViewModel {
         viewportSize = size
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        skinnedAtlasBatches = []
+        calibratedAtlasBatches = []
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
@@ -340,11 +378,32 @@ final class MirrorViewModel {
         layer == .referenceProxy || readyAnatomyLayers.contains(layer)
     }
 
+    func layerOpacity(_ layer: AnatomyDisplayLayer) -> Double {
+        layerOpacities[layer] ?? (
+            layer == .skeleton ? 0.94 : 0.66
+        )
+    }
+
+    func setLayerOpacity(_ layer: AnatomyDisplayLayer, _ value: Double) {
+        guard canSelectAnatomyLayer(layer), value.isFinite else { return }
+        layerOpacities[layer] = min(1, max(0.05, value))
+    }
+
+    /// Toggle an independently reviewed layer. The proxy is the explicit
+    /// "clear all" fallback rather than an invented anatomical system.
     func selectAnatomyLayer(_ layer: AnatomyDisplayLayer) {
         guard canSelectAnatomyLayer(layer) else { return }
-        selectedAnatomyLayer = layer
+        if layer == .referenceProxy {
+            enabledAnatomyLayers.removeAll()
+        } else if !enabledAnatomyLayers.insert(layer).inserted {
+            enabledAnatomyLayers.remove(layer)
+        }
+        selectedAnatomyLayer = enabledAnatomyLayers.isEmpty
+            ? .referenceProxy : layer
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
+        skinnedAtlasBatches = []
+        calibratedAtlasBatches = []
         canSectionReviewedAtlas = false
         activeSection = nil
         referenceSelection = nil
@@ -363,6 +422,8 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
+            skinnedAtlasBatches = []
+            calibratedAtlasBatches = []
             referenceSelection = nil
             canSectionReviewedAtlas = false
             activeSection = nil
