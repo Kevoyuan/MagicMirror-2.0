@@ -27,7 +27,8 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
     const device float4x4* bones [[buffer(1)]],
     constant float4& camera [[buffer(2)]],
     constant float4& crop [[buffer(3)]],
-    constant float4& viewport [[buffer(4)]]
+    constant float4& viewport [[buffer(4)]],
+    constant uint2& selectedRange [[buffer(5)]]
 ) {
     const SkinnedAtlasVertex v = mesh[id];
     float4 p = float4(0.0);
@@ -46,6 +47,14 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
     out.color = v.color;
     // Mesh alpha is static; uniform Z carries current user opacity.
     out.color.a *= clamp(viewport.z, 0.0, 1.0);
+    // Highlight actual source-node triangles without rewriting the
+    // immutable resident GPU mesh or fabricating a person's bone surface.
+    if (id >= selectedRange.x && id < selectedRange.y) {
+        out.color.rgb = mix(
+            out.color.rgb, float3(0.26, 0.85, 0.68), 0.74
+        );
+        out.color.a = min(1.0, out.color.a * 1.6);
+    }
     out.cameraPosition = p.xyz;
     out.normal = length(n) > 1e-6 ? normalize(n) : float3(0, 0, 1);
 
