@@ -14,6 +14,7 @@ namespace MagicMirror.Motion
         public long LastFrameId { get; internal set; }
         public long FirstTimestampMs { get; internal set; }
         public long LastTimestampMs { get; internal set; }
+        public int StreamSessionId { get; internal set; }
         public float MaximumJointDriftInShoulderWidths { get; internal set; }
         public bool IsSyntheticOrHardwareValidated { get { return false; } }
     }
@@ -44,6 +45,7 @@ namespace MagicMirror.Motion
         private int imageWidth, imageHeight;
         private long lastFrameId, lastTimestampMs;
         private long firstFrameId, firstTimestampMs;
+        private int captureStreamSessionId;
         private bool hasFrame, poisoned, frozen;
 
         public int AcceptedFrames { get { return samples.Count; } }
@@ -78,6 +80,7 @@ namespace MagicMirror.Motion
             imageWidth = imageHeight = 0;
             lastFrameId = lastTimestampMs = 0;
             firstFrameId = firstTimestampMs = 0;
+            captureStreamSessionId = 0;
             hasFrame = poisoned = frozen = false;
         }
 
@@ -97,7 +100,8 @@ namespace MagicMirror.Motion
                               frame.timestampMs <= lastTimestampMs ||
                               frame.timestampMs - lastTimestampMs > maxGapMs ||
                               frame.width != imageWidth ||
-                              frame.height != imageHeight)))
+                              frame.height != imageHeight ||
+                              frame.streamSessionId != captureStreamSessionId)))
                 return Poison();
 
             KinematicVector3 left, right, hipL, hipR;
@@ -113,6 +117,7 @@ namespace MagicMirror.Motion
                 imageHeight = frame.height;
                 firstFrameId = frame.frameId;
                 firstTimestampMs = frame.timestampMs;
+                captureStreamSessionId = frame.streamSessionId;
             }
             lastFrameId = frame.frameId;
             lastTimestampMs = frame.timestampMs;
@@ -177,6 +182,7 @@ namespace MagicMirror.Motion
                 LastFrameId = lastFrameId,
                 FirstTimestampMs = firstTimestampMs,
                 LastTimestampMs = lastTimestampMs,
+                StreamSessionId = captureStreamSessionId,
                 MaximumJointDriftInShoulderWidths = driftNormalized
             };
             frozen = true;

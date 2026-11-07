@@ -39,8 +39,10 @@ namespace MagicMirror.Editor
                 M5BodyCalibrationSelfCheck.Run();
                 current = "M4/M5 reviewed full atlas motion planner";
                 M4M5AtlasMotionPreviewSelfCheck.Run();
+                current = "M5 reviewed camera projection matrix";
+                M5ReviewedSourceCameraSelfCheck.Run();
 
-                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — eight synthetic Editor suites. "
+                Debug.Log("MAGICMIRROR_M2_BATCH_PASS — nine synthetic Editor suites. "
                     + "Physical camera, real FBX, visual alignment and FPS NOT verified.");
                 EditorApplication.Exit(0);
             }

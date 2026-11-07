@@ -25,6 +25,10 @@ namespace MagicMirror.Tracking
         public int version;
         public long frameId;
         public long timestampMs;
+        // Receiver-generated transport session identity (NOT a wire field).
+        // Assigned ONLY after the receiver verifies its TCP frame guard.
+        // Prevents reusing a frozen reference on a different socket session.
+        [NonSerialized] public int streamSessionId;
         public int width;
         public int height;
         public bool mirrored;

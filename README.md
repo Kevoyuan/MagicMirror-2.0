@@ -96,6 +96,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
 - Docs/M3_WHOLE_ATLAS_AUDIT.md — full atlas hierarchy inventory audit (desktop research, not a license review)
 - Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
+- Docs/M5_REVIEWED_CAMERA_OVERLAY.md — historical Unity camera projection; not verified with a physical camera
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries

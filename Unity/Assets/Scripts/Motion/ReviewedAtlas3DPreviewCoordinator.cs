@@ -23,6 +23,14 @@ namespace MagicMirror.Motion
         [Tooltip("Explicit operator confirmation. Does not auto-start capture.")]
         [SerializeField] private bool operatorApprovedDiagnosticOnly;
 
+        [Header("OPTIONAL source-camera AR preview (disabled by default)")]
+        [Tooltip("False = FBX coordinate diagnostic only. True requires independently reviewed source camera parameters.")]
+        [SerializeField] private bool requestReviewedCameraOverlay;
+        [Tooltip("No default guessed values: a physically measured source camera asset is required.")]
+        [SerializeField] private ReviewedCameraCalibrationProfile cameraCalibrationProfile;
+        [Tooltip("Separate manual approval of actual source camera intrinsics and body-world extrinsics.")]
+        [SerializeField] private bool operatorApprovedCameraRegistration;
+
         private const int RequiredSamples = 12;
         private ReferencePoseCaptureWindow capture;
         private bool capturing;
@@ -42,14 +50,14 @@ namespace MagicMirror.Motion
             FullBodyAtlasRetargeter retargeter,
             FullBodyAtlasProfile atlasProfile)
         {
-            if (isActiveAndEnabled && source != null)
+            if (Application.isPlaying && isActiveAndEnabled && source != null)
                 source.FrameReceived -= OnPoseFrame;
             source = stream;
             atlasRetargeter = retargeter;
             profile = atlasProfile;
             capturing = false;
             capture = null;
-            if (isActiveAndEnabled && source != null)
+            if (Application.isPlaying && isActiveAndEnabled && source != null)
                 source.FrameReceived += OnPoseFrame;
         }
 
@@ -117,6 +125,13 @@ namespace MagicMirror.Motion
         {
             if (!capturing || capture == null)
                 return;
+            if (frame == null || frame.streamSessionId <= 0)
+            {
+                capturing = false;
+                Debug.LogWarning("MagicMirror: no trusted TCP session. " +
+                    "Refusing reference pose capture.");
+                return;
+            }
             if (!capture.TryAdd(frame))
             {
                 capturing = false;
@@ -157,6 +172,34 @@ namespace MagicMirror.Motion
                 Debug.LogWarning(
                     "MagicMirror M4/M5: stable capture failed or " +
                     "full-atlas preview gate rejected. Nothing activated.");
+                return;
+            }
+
+            if (requestReviewedCameraOverlay)
+            {
+                BodyWorldPinholeCamera reviewedCamera =
+                    default(BodyWorldPinholeCamera);
+                PinholeCameraFrustum frustum =
+                    default(PinholeCameraFrustum);
+                if (!operatorApprovedCameraRegistration ||
+                    cameraCalibrationProfile == null ||
+                    !cameraCalibrationProfile.TryBuild(
+                        out reviewedCamera, out frustum) ||
+                    !atlasRetargeter.TryEnableReviewedCameraOverlay(
+                        reviewedCamera, frustum,
+                        cameraCalibrationProfile.maxPoseProjectionP90,
+                        operatorApprovedCameraRegistration))
+                {
+                    atlasRetargeter.DisableReviewed3DPreview();
+                    Debug.LogWarning(
+                        "MagicMirror M5: rejected uncalibrated camera overlay. " +
+                        "No RGB-aligned anatomical model will be shown.");
+                    return;
+                }
+
+                Debug.Log("MagicMirror M5: reviewed camera projection " +
+                    "preview ARMED; requires per-frame pose reprojection " +
+                    "validation. Real anatomy/camera alignment remains unverified.");
                 return;
             }
 
