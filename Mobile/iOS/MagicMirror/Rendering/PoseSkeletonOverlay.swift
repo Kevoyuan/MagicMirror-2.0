@@ -12,7 +12,7 @@ struct PoseSkeletonOverlay: View {
                 guard let snapshot, snapshot.isUsable else { return }
 
                 var path = Path()
-                for edge in PoseSkeleton.segments {
+                for edge in snapshot.drawableSegments {
                     guard let start = PoseSkeleton.pointInPreview(
                         snapshot.points[edge.from],
                         imageSize: snapshot.imageSize, viewSize: size
