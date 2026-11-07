@@ -169,3 +169,5 @@
 "Visible hip landmarks define a proxy pelvis guide, not the actual pelvic bones." = "Visible hip landmarks define a proxy pelvis guide, not the actual pelvic bones.";
 "Observed pose guide · not your internal bones" = "Observed pose guide · not your internal bones";
 "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING" = "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING";
+"Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live." = "Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live.";
+"The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available." = "The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available.";
