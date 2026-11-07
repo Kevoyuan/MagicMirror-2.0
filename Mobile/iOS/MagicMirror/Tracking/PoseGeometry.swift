@@ -14,10 +14,35 @@ struct PosePoint: Sendable, Equatable {
     }
 }
 
+/// MediaPipe body-relative world estimate, in approximate meters.
+/// It does not provide accurate camera extrinsics or actual bone coordinates.
+struct PoseWorldPoint: Sendable, Equatable {
+    let x: Float
+    let y: Float
+    let z: Float
+    let visibility: Float
+
+    var isUsable: Bool {
+        x.isFinite && y.isFinite && z.isFinite && visibility >= 0.55 &&
+        abs(x) < 10 && abs(y) < 10 && abs(z) < 10
+    }
+}
+
 struct PoseSnapshot: Sendable {
     let timestampMilliseconds: Int
     let imageSize: CGSize
     let points: [PosePoint]
+    let worldPoints: [PoseWorldPoint]
+
+    init(
+        timestampMilliseconds: Int, imageSize: CGSize,
+        points: [PosePoint], worldPoints: [PoseWorldPoint] = []
+    ) {
+        self.timestampMilliseconds = timestampMilliseconds
+        self.imageSize = imageSize
+        self.points = points
+        self.worldPoints = worldPoints
+    }
 
     var isUsable: Bool {
         points.count == 33 &&
