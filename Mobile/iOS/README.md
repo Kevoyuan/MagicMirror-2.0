@@ -44,6 +44,11 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   opacity control, pause, and an always-visible nonmedical label.
 - `App/MirrorViewModel.swift`: iOS Observation state with small view
   invalidation and 300ms stale-pose expiration.
+- `Tracking/PoseFrameAssociationGate.swift`: bounded timestamp-to-source-
+  dimensions mapping for asynchronous LIVE_STREAM callbacks; rejects stale,
+  replayed, out-of-order and old-session results, with no stored pixels.
+- `MagicMirrorTests/PoseFrameAssociationGateTests.swift`: XCTest covering
+  exact frame dimensions, eviction, lifecycle reset and source ordering.
 - `Camera/CameraPosePipeline.swift`: **one AVFoundation rear camera**,
   32BGRA portrait video, monotonic timestamps, and MediaPipe
   `.liveStream` running **on device**.
@@ -55,6 +60,12 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   Canvas overlay, using the same aspect-fill crop as the video.
 - `MagicMirrorTests/PoseGeometryTests.swift`: frame crop, visibility,
   nonfinite data and connected-limb regression tests.
+
+The MediaPipe result now uses capture geometry saved for its *own* source
+timestamp, rather than taking dimensions from the newest camera frame.
+This reduces 2D overlay drift after source resolution/orientation changes.
+The native preview layer can still display a newer frame than inference:
+actual end-to-end frame alignment and perceived latency require iPhone tests.
 
 The unmirrored rear-camera buffer is rotated to portrait before both
 tracking and preview. The source coordinate system is **not secretly
