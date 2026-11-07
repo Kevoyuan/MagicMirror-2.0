@@ -27,16 +27,11 @@ final class CameraPosePipeline: NSObject {
     private let framesQueue = DispatchQueue(
         label: "dev.kevoyuan.magicmirror.camera.frames", qos: .userInitiated
     )
-    private let timingLock = NSLock()
+    private let frameGate = PoseFrameAssociationGate()
 
     private var landmarker: PoseLandmarker?
     private var configured = false
     private var wantsRunning = false
-    private var lastSubmittedMs = -1   // framesQueue only
-    private var latestCapturedMs = -1  // timingLock guarded
-    private var lastPublishedMs = -1   // timingLock guarded
-    private var currentImageSize = CGSize.zero
-    private var acceptResults = false
 
     func start() {
         sessionQueue.async { [weak self] in
@@ -70,9 +65,7 @@ final class CameraPosePipeline: NSObject {
         sessionQueue.async { [weak self] in
             guard let self else { return }
             self.wantsRunning = false
-            self.timingLock.lock()
-            self.acceptResults = false
-            self.timingLock.unlock()
+            self.frameGate.reset(active: false)
             if self.session.isRunning { self.session.stopRunning() }
             self.postPose(nil)
             self.postPhase(.idle)
@@ -89,11 +82,7 @@ final class CameraPosePipeline: NSObject {
                 try configureCamera()
                 configured = true
             }
-            timingLock.lock()
-            acceptResults = true
-            latestCapturedMs = -1
-            lastPublishedMs = -1
-            timingLock.unlock()
+            frameGate.reset(active: true)
             // AVCaptureSession.startRunning MUST NOT run on main.
             if !session.isRunning { session.startRunning() }
             postPhase(.searching)
@@ -198,8 +187,6 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
         let seconds = CMTimeGetSeconds(timestamp)
         guard seconds.isFinite, seconds >= 0 else { return }
         let timeMs = Int((seconds * 1000).rounded(.down))
-        guard timeMs > lastSubmittedMs else { return }
-        lastSubmittedMs = timeMs
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             return
@@ -209,14 +196,9 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
             height: CVPixelBufferGetHeight(pixelBuffer)
         )
 
-        timingLock.lock()
-        let accepting = acceptResults
-        if accepting {
-            latestCapturedMs = timeMs
-            currentImageSize = size
-        }
-        timingLock.unlock()
-        guard accepting, let landmarker else { return }
+        guard frameGate.register(
+            timestampMilliseconds: timeMs, imageSize: size
+        ), let landmarker else { return }
 
         do {
             let image = try MPImage(
@@ -239,20 +221,12 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         timestampInMilliseconds timestamp: Int,
         error: Error?
     ) {
-        timingLock.lock()
-        let currentTimestamp = latestCapturedMs
-        let size = currentImageSize
-        let accepting = acceptResults
-        let newer = timestamp > lastPublishedMs
-        // Reject stale or out-of-order poses; never present an old body
-        // landmark overlay as if it belongs to today's latest preview.
-        let timely = currentTimestamp >= timestamp &&
-                     currentTimestamp - timestamp <= 160
-        if accepting && newer && timely {
-            lastPublishedMs = timestamp
-        }
-        timingLock.unlock()
-        guard accepting, newer, timely else { return }
+        // Only accept a callback that matches a submitted source frame in
+        // THIS capture session. A late callback from before stop/restart,
+        // an out-of-order result or a >160ms-old result cannot be shown.
+        guard let size = frameGate.consume(
+            timestampMilliseconds: timestamp
+        ) else { return }
 
         if let error {
             postPhase(.unavailable("Pose inference error: \(error.localizedDescription)"))
