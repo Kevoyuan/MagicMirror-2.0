@@ -33,6 +33,14 @@ jobs:
           bash Mobile/iOS/Scripts/fetch_model.sh
           cd Mobile/iOS
           xcodegen generate --spec project.yml
+      - name: Compile and EXECUTE independent synthetic camera fit math
+        run: |
+          swiftc -o "$RUNNER_TEMP/magicmirror-pose-math-smoke" \
+            Mobile/iOS/MagicMirror/Tracking/PoseGeometry.swift \
+            Mobile/iOS/MagicMirror/Calibration/BodyCameraProjection.swift \
+            Mobile/iOS/MagicMirror/Calibration/BodyCameraPoseEstimator.swift \
+            Mobile/iOS/Tools/pose_math_smoke.swift
+          "$RUNNER_TEMP/magicmirror-pose-math-smoke"
       - name: Compile complete SwiftUI app and XCTest (iOS Simulator)
         run: |
           set -o pipefail
