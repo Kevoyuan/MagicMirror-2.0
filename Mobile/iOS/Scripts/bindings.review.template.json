@@ -7,5 +7,7 @@
   "bindings": [],
   "anatomicalSystem": "skeleton",
   "reviewedJointWeights": false,
-  "skinningInstructions": "When reviewedJointWeights is true, every mesh binding needs vertexGroupToBoneId mapping authored Blender vertex groups to approved hierarchy bone IDs; otherwise no skinning data is generated."
+  "skinningInstructions": "When reviewedJointWeights is true, every mesh binding needs vertexGroupToBoneId mapping authored Blender vertex groups to approved hierarchy bone IDs; otherwise no skinning data is generated.",
+  "reviewedUSDZHierarchy": false,
+  "rigInstructions": "Only set reviewedUSDZHierarchy true after explicitly assigning a unique boneId and optional parentBoneId on every binding, reviewing original source/world anchors and legal redistribution. Exporter will produce USDZ + verified hierarchy manifest; original model review remains required."
 }
