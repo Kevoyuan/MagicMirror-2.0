@@ -577,3 +577,40 @@ a full vertex rewrite when the user moves the opacity slider. A new
 reviewed model runtime receives a distinct UUID and invalidates its
 previous GPU cache automatically. This is a code-level optimization,
 not a claim of achieved physical iPhone FPS, memory or thermal figures.
+
+## Independent multi-system anatomy resource slots (native layers)
+
+The Leonardo notebook now has real selection controls for skeleton,
+muscles, organs, vessels, nerves, and joints/ligaments, in addition to
+the always-available illustrative reference proxy. Each anatomical
+system must provide its **own** offline model bundle and rig, not a
+renamed or reused skeleton atlas:
+
+| Layer | MMATLAS1 base name | Reviewed USDZ hierarchy manifest |
+|---|---|---|
+| Skeleton | `skeleton_atlas` | `anatomy_atlas_manifest.json` |
+| Muscles | `muscles_atlas` | `muscles_atlas_manifest.json` |
+| Organs | `organs_atlas` | `organs_atlas_manifest.json` |
+| Vessels | `vessels_atlas` | `vessels_atlas_manifest.json` |
+| Nerves | `nerves_atlas` | `nerves_atlas_manifest.json` |
+| Joints/ligaments | `joints_atlas` | `joints_atlas_manifest.json` |
+
+Each `<base>.manifest.json` must match the exact source binary
+`<base>.mmgeom`, approved hierarchy, hash and legal attribution.
+Additional non-skeleton package manifests require
+`anatomicalSystem` equal to the requested layer's raw value
+(`muscles`, `organs`, `vessels`, `nerves`, `joints`). The existing
+legacy skeleton package may omit that field. Optional
+`<base>.skinning.json` carries the audited, model-hash-bound
+per-vertex influences.
+
+Independent resource loading runs off-main. A layer only becomes
+selectable after its verified source has **actually produced
+camera-registered coherent geometry** during the current tracking
+session. Switching layers uses one source-matched Metal renderer and
+falls back to the educational proxy when reviewed anatomy is
+unavailable. The default camera tries skeleton first, but the user
+does not need a manual calibration wizard. This repository still
+**does not include any independently approved multi-system models or
+an approved live camera extrinsics provider**, so the additional
+layer controls remain correctly locked in distributed builds.

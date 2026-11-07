@@ -17,6 +17,10 @@ final class MirrorViewModel {
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
     var referenceSelection: AnatomyReferenceSelection?
+    /// A system is selectable only after its own approved registered
+    /// source atlas has produced coherent geometry on this capture.
+    var readyAnatomyLayers: Set<AnatomyDisplayLayer> = []
+    var selectedAnatomyLayer: AnatomyDisplayLayer = .skeleton
     var activeSection: AnatomySectionPlane?
     var sectionOffset: Double = 0
     var canSectionReviewedAtlas = false
@@ -33,7 +37,7 @@ final class MirrorViewModel {
     private var lastPoseReceiptUptime = 0.0
     private var temporalFilter = PoseTemporalFilter()
     private var proxyRig = LiveProxyRigRetargeter()
-    private var reviewedAtlas: LiveReviewedAtlasRuntime?
+    private var reviewedAtlasLayers: [AnatomyDisplayLayer: LiveReviewedAtlasRuntime] = [:]
     private var reviewedAtlasLoad: Task<Void, Never>?
     private var reviewedCameraForFrame: ((PoseSnapshot) -> ReviewedSourceCameraFrame?)?
     private var viewportSize: CGSize = .zero
@@ -60,18 +64,35 @@ final class MirrorViewModel {
                     self.currentCoverage = coverage
                 }
                 self.proxyRigPose = self.proxyRig.update(smooth)
-                self.calibratedAtlasBatch = self.reviewedAtlas?.render(
-                    frame: smooth,
-                    reviewedCamera: smooth.flatMap {
-                        self.reviewedCameraForFrame?($0)
-                    },
-                    viewport: self.viewportSize,
-                    focus: self.focus,
-                    opacity: Float(self.opacity),
-                    section: self.activeSection,
-                    sectionOffset: Float(self.sectionOffset)
-                )
-                self.skinnedAtlasBatch = self.reviewedAtlas?.skinnedFrame
+                self.calibratedAtlasBatch = nil
+                self.skinnedAtlasBatch = nil
+                let reviewedCamera = smooth.flatMap {
+                    self.reviewedCameraForFrame?($0)
+                }
+                for (layer, runtime) in self.reviewedAtlasLayers {
+                    let isSelected = self.selectedAnatomyLayer == layer
+                    // Other reviewed packages are inspected only until
+                    // first confirmed success, not rendered every frame.
+                    guard isSelected ||
+                        !self.readyAnatomyLayers.contains(layer) else {
+                        continue
+                    }
+                    let rigid = runtime.render(
+                        frame: smooth, reviewedCamera: reviewedCamera,
+                        viewport: self.viewportSize, focus: self.focus,
+                        opacity: Float(self.opacity),
+                        section: isSelected ? self.activeSection : nil,
+                        sectionOffset: Float(self.sectionOffset)
+                    )
+                    let skinned = runtime.skinnedFrame
+                    if rigid != nil || skinned != nil {
+                        self.readyAnatomyLayers.insert(layer)
+                    }
+                    if isSelected {
+                        self.calibratedAtlasBatch = rigid
+                        self.skinnedAtlasBatch = skinned
+                    }
+                }
                 if self.skinnedAtlasBatch != nil ||
                    self.calibratedAtlasBatch != nil {
                     self.referenceSelection = nil
@@ -108,7 +129,8 @@ final class MirrorViewModel {
                 self.alignedFrame = nil
                 self.proxyRigPose = nil
                 self.proxyRig.reset()
-                self.reviewedAtlas?.reset()
+                self.reviewedAtlasLayers.values.forEach { $0.reset() }
+                self.readyAnatomyLayers = []
                 self.calibratedAtlasBatch = nil
                 self.skinnedAtlasBatch = nil
                 self.referenceSelection = nil
@@ -140,7 +162,8 @@ final class MirrorViewModel {
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
-        reviewedAtlas?.reset()
+        reviewedAtlasLayers.values.forEach { $0.reset() }
+        readyAnatomyLayers = []
         deliveryMonitor.reset()
         deliveryReport = nil
         expiryTask?.cancel()
@@ -156,7 +179,8 @@ final class MirrorViewModel {
                     self.temporalFilter.reset()
                     self.proxyRig.reset()
                     self.proxyRigPose = nil
-                    self.reviewedAtlas?.reset()
+                    self.reviewedAtlasLayers.values.forEach { $0.reset() }
+                self.readyAnatomyLayers = []
                     self.calibratedAtlasBatch = nil
                     self.skinnedAtlasBatch = nil
                     self.referenceSelection = nil
@@ -171,15 +195,27 @@ final class MirrorViewModel {
         }
         // Verify large atlas/companion USDZ assets off the main actor.
         // No reviewed model is present in the normal app bundle.
-        if reviewedAtlas == nil {
+        if reviewedAtlasLayers.isEmpty {
             reviewedAtlasLoad?.cancel()
             reviewedAtlasLoad = Task.detached(priority: .utility) { [weak self] in
-                let assets = try? ReviewedAtlasRuntimeResources.load()
+                var loaded: [AnatomyDisplayLayer: ReviewedAtlasRuntimeResources] = [:]
+                for layer in AnatomyDisplayLayer.allCases {
+                    guard layer != .referenceProxy,
+                          !Task.isCancelled else { continue }
+                    if let resources = try? ReviewedAtlasRuntimeResources.load(
+                        system: layer
+                    ) {
+                        loaded[layer] = resources
+                    }
+                }
                 await MainActor.run {
-                    guard let self, self.isActive, let assets else { return }
-                    self.reviewedAtlas = LiveReviewedAtlasRuntime(
-                        resources: assets
-                    )
+                    guard let self, self.isActive,
+                          !Task.isCancelled else { return }
+                    for (layer, resources) in loaded {
+                        self.reviewedAtlasLayers[layer] = LiveReviewedAtlasRuntime(
+                            resources: resources
+                        )
+                    }
                 }
             }
         }
@@ -202,7 +238,8 @@ final class MirrorViewModel {
         referenceSelection = nil
         canSectionReviewedAtlas = false
         activeSection = nil
-        reviewedAtlas?.reset()
+        reviewedAtlasLayers.values.forEach { $0.reset() }
+        readyAnatomyLayers = []
         deliveryMonitor.reset()
         deliveryReport = nil
         snapshot = nil
@@ -218,7 +255,8 @@ final class MirrorViewModel {
         _ provider: @escaping (PoseSnapshot) -> ReviewedSourceCameraFrame?
     ) {
         reviewedCameraForFrame = provider
-        reviewedAtlas?.reset()
+        reviewedAtlasLayers.values.forEach { $0.reset() }
+        readyAnatomyLayers = []
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         referenceSelection = nil
@@ -298,6 +336,20 @@ final class MirrorViewModel {
         referenceSelection = nil
     }
 
+    func canSelectAnatomyLayer(_ layer: AnatomyDisplayLayer) -> Bool {
+        layer == .referenceProxy || readyAnatomyLayers.contains(layer)
+    }
+
+    func selectAnatomyLayer(_ layer: AnatomyDisplayLayer) {
+        guard canSelectAnatomyLayer(layer) else { return }
+        selectedAnatomyLayer = layer
+        calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
+        canSectionReviewedAtlas = false
+        activeSection = nil
+        referenceSelection = nil
+    }
+
     func toggleDiagnostics() {
         showDiagnostics.toggle()
     }
@@ -314,7 +366,8 @@ final class MirrorViewModel {
             referenceSelection = nil
             canSectionReviewedAtlas = false
             activeSection = nil
-            reviewedAtlas?.reset()
+            reviewedAtlasLayers.values.forEach { $0.reset() }
+        readyAnatomyLayers = []
             deliveryMonitor.reset()
             deliveryReport = nil
             snapshot = nil

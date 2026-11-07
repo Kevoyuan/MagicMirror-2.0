@@ -19,12 +19,23 @@ struct ReviewedAtlasRuntimeResources {
     }
 
     /// Release builds must use this hash-verified, offline loader.
-    static func load(bundle: Bundle = .main)
-        throws -> ReviewedAtlasRuntimeResources {
-        let mesh = try VerifiedAnatomyAtlas.load(bundle: bundle)
-        let approved = try AnatomyAtlasStore.loadApproved(bundle: bundle)
+    static func load(
+        bundle: Bundle = .main,
+        system: AnatomyDisplayLayer = .skeleton
+    ) throws -> ReviewedAtlasRuntimeResources {
+        guard let base = system.resourceBaseName,
+              let manifestName = system.hierarchyManifestName
+        else { throw ResourceError.mismatchedOrIncompleteBinding }
+        let mesh = try VerifiedAnatomyAtlas.load(
+            bundle: bundle,
+            resourceBaseName: base, expectedSystem: system
+        )
+        let approved = try AnatomyAtlasStore.loadApproved(
+            manifestName: manifestName, bundle: bundle
+        )
         let influences = try AtlasSkinningPackage.load(
-            bundle: bundle, atlas: mesh, hierarchy: approved.manifest
+            bundle: bundle, atlas: mesh, hierarchy: approved.manifest,
+            resourceBaseName: base
         )
         guard let resources = ReviewedAtlasRuntimeResources(
             mesh: mesh, hierarchy: approved.manifest,

@@ -22,6 +22,9 @@ struct MobileAtlasManifest: Decodable {
     let reviewedForDistribution: Bool
     let reviewedJointBindings: Bool
     let parts: [MobileAtlasBinding]
+    /// Required for additional anatomical systems; legacy skeleton
+    /// exports may omit this field while retaining the skeletal source.
+    var anatomicalSystem: String? = nil
 }
 
 struct MobileAtlasBinding: Decodable {
@@ -65,10 +68,17 @@ struct VerifiedAnatomyAtlas {
     let manifest: MobileAtlasManifest
     let vertices: [AtlasRestVertex]
 
-    static func load(bundle: Bundle = .main) throws -> VerifiedAnatomyAtlas {
-        guard let url = bundle.url(
-            forResource: "skeleton_atlas.manifest", withExtension: "json"
-        ) else { throw MobileAtlasError.absent }
+    static func load(
+        bundle: Bundle = .main,
+        resourceBaseName: String = "skeleton_atlas",
+        expectedSystem: AnatomyDisplayLayer = .skeleton
+    ) throws -> VerifiedAnatomyAtlas {
+        guard expectedSystem != .referenceProxy,
+              expectedSystem.resourceBaseName == resourceBaseName,
+              let url = bundle.url(
+                  forResource: "\(resourceBaseName).manifest",
+                  withExtension: "json"
+              ) else { throw MobileAtlasError.absent }
         let manifest = try JSONDecoder().decode(
             MobileAtlasManifest.self, from: Data(contentsOf: url)
         )
@@ -77,7 +87,10 @@ struct VerifiedAnatomyAtlas {
               manifest.reviewedJointBindings else {
             throw MobileAtlasError.unreviewed
         }
-        guard manifest.modelFile == "skeleton_atlas.mmgeom",
+        guard manifest.modelFile == "\(resourceBaseName).mmgeom",
+              (manifest.anatomicalSystem == expectedSystem.rawValue ||
+               (expectedSystem == .skeleton &&
+                manifest.anatomicalSystem == nil)),
               manifest.sourceRevision.count == 40,
               !manifest.sourceRepository.isEmpty,
               !manifest.sourcePath.isEmpty,
@@ -92,7 +105,7 @@ struct VerifiedAnatomyAtlas {
         }
 
         guard let meshURL = bundle.url(
-            forResource: "skeleton_atlas", withExtension: "mmgeom"
+            forResource: resourceBaseName, withExtension: "mmgeom"
         ) else { throw MobileAtlasError.absent }
         let modelData = try Data(contentsOf: meshURL, options: .mappedIfSafe)
         let sha = SHA256.hash(data: modelData).map {
