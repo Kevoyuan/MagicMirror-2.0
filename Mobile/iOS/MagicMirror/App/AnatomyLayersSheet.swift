@@ -73,7 +73,7 @@ struct AnatomyLayersSheet: View {
                 Text("STUDI DI ANATOMIA")
                     .font(.system(size: 11, weight: .semibold, design: .serif))
                     .tracking(2.0)
-                    .foregroundStyle(LeonardoPalette.copper)
+                    .foregroundStyle(LeonardoPalette.copperInk)
                 Spacer(minLength: 8)
                 Text("FOLIO · II")
                     .font(.system(size: 11, weight: .medium, design: .serif))
