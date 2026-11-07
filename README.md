@@ -112,3 +112,14 @@ The repository retains prior desktop experiments: a Python MediaPipe pose sideca
 MagicMirror visualizes a **standard educational reference**, not an individual's internal anatomy. A single RGB camera cannot see actual bones or organs. The procedural proxy and estimated MediaPipe world points are not medical measurements, calibrated depth, X-ray, CT, MRI, or clinical diagnostics.
 
 **No reviewed Z-Anatomy / BodyParts3D anatomical asset is distributed with the iOS prototype.** Verify source-specific licenses and attribution before packaging derivatives. Do not assume the repository's *code* has an open-source license unless the owner adds an explicit LICENSE.
+
+## Live IK reference proxy (native iOS source)
+
+The iPhone camera-to-Metal source path now integrates stable
+on-device body-world reference capture with fixed-length, two-bone IK
+for confidently observed arms and legs. The renderer uses the resulting
+per-frame, geometry-only reference pose only when it matches the
+actual source video timestamp and dimensions; otherwise it keeps the
+existing partial-body procedural fallback. This does **not** unlock
+licensed Z-Anatomy, calibrate camera extrinsics or prove performance
+on a real iPhone. See the [iOS guide](Mobile/iOS/README.md).
