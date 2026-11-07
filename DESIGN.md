@@ -1,7 +1,7 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.0 design foundation (2026-11-07)  
-**Status:** Proposed visual direction and implementation specification; not a claim of device-verified behavior  
+**Version:** 1.1 — Leonardo anatomy notebook direction (2026-11-07)  
+**Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Repository:** https://github.com/Kevoyuan/MagicMirror-2.0  
 **Applies to:** Mobile/iOS/MagicMirror/ — iOS UI and user-facing real-time rendering only  
@@ -49,45 +49,28 @@ The current source uses a dark color scheme, cyan accent, a top status pill, a l
 
 **Validation boundary:** Arm64 Simulator build-for-testing is documented as passing; real rear camera, true moving-person overlay registration, actual anatomy atlas, iPhone performance/thermal, accessibility and TestFlight remain unverified. An open draft PR may contain further camera-fit experiments; those changes are not treated as merged main.
 
-## 3. Three genuinely different visual directions
+## 3. Confirmed visual identity — B · Leonardo Anatomy Notebook
 
-Huashu-style design exploration and gstack design consultation are applied here as **concept directions**, not as screenshots or device-validated mockups.
+**Owner decision:** Replace the former provisional A · Instrument Mirror recommendation with **B · Anatomical Field Guide, refined into a Leonardo da Vinci anatomy sketchbook**.
 
-### A — Instrument Mirror (RECOMMENDED)
+The screen should feel like an illustrated anatomical research notebook brought to life by a real-time camera: muted parchment, sepia ink, copperplate rules, verdigris-green selections, extremely restrained handwritten-style labels, and scientifically reviewed anatomy illustrations.
 
-**World:** A precision optical instrument that happens to reveal educational anatomy.  
-**Layout:** Full-screen live image; small restrained top brand/status; subject-centered visualization; bottom-edge compact control dock; no bulky cards over the person.  
-**Type:** Native SF Pro with strong legibility and quiet numeric opacity readout.  
-**Color:** Near-black neutral surfaces, ice-blue proxy geometry, single aquatic-cyan interactive tint.  
-**Motion:** Status crossfade and brief acquisition confirmation; anatomy movement itself is the animation.  
-**Strength:** Faithful to the existing SwiftUI/Metal implementation; fastest path to a credible first-run experience.  
-**Risk:** Dark chrome and translucent geometry need contrast testing in bright environments.
+**The camera, not paper decoration, is the hero.** The earlier B concept used a large top banner and overgrown parchment panel; both must shrink. Keep the live person and reference skeleton visible. Use thin margin marks, very light paper texture, and small contextual annotations only when they communicate a useful fact. No decorative medical measurements.
 
-### B — Anatomical Field Guide
+### Chosen composition
 
-**World:** A museum-quality, contemporary reference atlas.  
-**Layout:** Live camera occupies a contained upper region with a light editorial lower learning panel; prominent anatomy labels and explanatory copy.  
-**Type:** System reading styles plus restrained editorial display typography.  
-**Color:** Warm ivory, graphite, muted teal, engraved bone-colored annotations.  
-**Motion:** Learning cards and sectional reveals; minimal on the live image.  
-**Strength:** Clear educational context and excellent long-form reading potential.  
-**Risk:** Reduced live camera area and intrusive UI undermine the one-screen, camera-first promise.
+- **Top:** one slender manuscript-style brand/status row, visually about **34 pt of content strip**, excluding the actual iOS safe area; interactive hit targets remain **44 pt minimum**.
+- **Center:** full-bleed live camera with translucent reference anatomy. Aim for about **70% or more visible camera region** in the collapsed default layout on a representative portrait iPhone, **not** a hard-coded screen height. Dynamic Type and safe areas take priority.
+- **Bottom:** compact parchment control dock with existing Whole / Arms / Legs focus, overlay pause, transparency control and persistent educational disclaimer. Complex anatomy controls expand only on demand.
+- **Layers:** a compact "图层 / Layers" entry opens a native bottom sheet. Do not turn the entire camera into a parchment page.
+- **Annotations:** short editorial notes can appear in a contextual sheet after true reviewed anatomy is available. Long explanatory copy must never block first-run camera detection.
 
-### C — Motion Observatory
+### Rejected design directions
 
-**World:** A field instrument for visual motion study.  
-**Layout:** Full-bleed image, framed alignment marks, compact bottom control rail, visible pose confidence and diagnostics in a developer mode.  
-**Type:** Dense system labels and tabular numeric feedback.  
-**Color:** Charcoal, high-visibility lime, neutral white.  
-**Motion:** Tracking acquisition and subtle timing/pose traces.  
-**Strength:** Powerful for later lab/testing functionality.  
-**Risk:** Looks like a posture-scoring product, invites unsupported precision claims and adds cognitive load.
+- **A · Instrument Mirror:** retained as a lesson in uncluttered camera-first hierarchy, but **not** the active visual identity.
+- **C · Motion Observatory:** technical HUD/grid styling is reserved for optional diagnostics, not normal users; it falsely suggests clinical precision.
 
-### Direction decision
-
-Use **A — Instrument Mirror** as the **provisional implementation baseline** for this document. It preserves the established dark/cyan visual identity and the current single-screen journey while improving control hierarchy, wording and accessibility. Selection remains revisable after real iPhone prototypes and owner approval.
-
-**Do not combine all three aesthetics.** Later educational detail surfaces may inherit the same system, not import B's typography as a second product identity.
+This is a visual design decision, not proof that the SwiftUI prototype or a reviewed multi-system 3D renderer has been built.
 
 ## 4. Information architecture: keep the product small
 
@@ -105,6 +88,18 @@ MagicMirror (one immersive screen)
 ~~~
 
 No home dashboard, login, profile, settings tab, anatomy library, save gallery or camera flip is currently implemented. **Do not add any of these merely to make the UI look more like a generic app.**
+
+
+### Owner-selected future concept: Z-Anatomy-style anatomy layers
+
+MagicMirror should explore **system-based visibility and combinations**, while keeping Whole / Arms / Legs as a separate **body-region focus** control. The proposed layers are **骨骼 (skeleton), 肌肉 (muscles), 内脏 (organs), 血管 (vessels), 神经 (nerves), 关节与韧带 (joints/ligaments)**. These are *proposed UI categories*, not a verified inventory of independent, redistribution-cleared, rigged mobile meshes.
+
+- **Collapsed:** one small Layers entry at the bottom with the active layer name, retaining maximum camera height.
+- **Expanded:** native parchment bottom sheet with labelled rows, show/hide, an accessible Solo choice and individual opacity **only if** independently rendered layer geometry is really implemented.
+- **Unavailable:** production controls must remain disabled or absent and say why; a visual HTML demonstration must be identified as a **concept**.
+- **Advanced section planes:** a separate native sheet may eventually offer **横断面 / axial**, **矢状面 / sagittal**, and **冠状面 / coronal** controls. True slices require validated 3D mesh clipping/capping, coordinate registration, coherent licensed anatomy and actual rendering; moving a decorative guideline over a photograph is not slicing.
+- **Scientific boundary:** MediaPipe body landmarks do not reveal actual inner tissue. Regions without reliable pose evidence should be hidden instead of extrapolated confidently.
+- **Asset gate:** Z-Anatomy/BodyParts3D source licenses, individual system inventory, mapping, rigging and mobile GPU constraints require real review before any layer is described as supported.
 
 ### Optional future interaction, NOT in current design acceptance
 
@@ -152,7 +147,7 @@ The schematic is illustrative, not a verified device screenshot.
 
 ### Header behavior
 
-- Left: compact MAGICMIRROR wordmark and optional short on-device reference subtitle.
+- Left: a thin manuscript-style MagicMirror label, without a tall title block; keep the readable status at right.
 - Right: **one textual status pill**, not a stack of floating diagnostics.
 - Do not display TRACKING just because a camera session is running; it means a current usable pose is present.
 - In paused state, say “OVERLAY PAUSED”, not SEARCHING or TRACKING.
@@ -184,40 +179,34 @@ The schematic is illustrative, not a verified device screenshot.
 - Present **Pause overlay / Resume overlay** as a distinct 44 pt minimum control.
 - Treat opacity as a secondary adjustment: initial release may keep visible slider, but production variant should evaluate a compact “Opacity” disclosure to preserve camera stage.
 - Show the nonmedical/reference note persistently, including while successfully tracking. The wording can be compact but must remain readable and VoiceOver-accessible.
-- Avoid multiple stacked translucent cards and ambiguous icon-only actions.
+- Avoid multiple stacked translucent cards and ambiguous icon-only actions. The selected Leonardo direction uses a compact parchment-like dock; a future Layers button opens an on-demand sheet rather than permanently expanding the dock.
 
-## 6. Design tokens and component contract
+## 6. Design tokens and component contract — Leonardo direction
 
-These are **proposed tokens**, not a claim that they are already declared in source.
+These are **proposed tokens**, not a claim that they are already declared in source. **The selected Leonardo palette below supersedes the earlier dark/cyan Instrument Mirror proposal for future UI work.** The existing Metal proxy appearance need not change during an unrelated UI redesign.
 
-### 6.1 Color
 
-The live camera is visually unpredictable. Use **solid or reliably darkened surfaces** behind essential text; never assume white labels contrast directly against video.
+### 6.1 Color — paper, sepia, verdigris
 
-| Token | Proposed dark value | Role |
+| Token | Proposed value | Meaning |
 | --- | --- | --- |
-| canvasFallback | #071013 | Used only before/without camera pixels |
-| chromeSurface | #102125 | Opaque or nearly opaque control dock |
-| chromeElevated | #1C3539 | Selected/expanded control background |
-| borderSubtle | #39575B | Separators and state boundaries |
-| textPrimary | #F7FBFB | Primary text on dark chrome |
-| textSecondary | #C4D4D6 | Secondary text on dark chrome |
-| actionTint | #5CE0DD | One interactive accent |
-| proxyBone | #D1F0FF | Existing proxy's icy color family |
-| success | system green | Confirmed operable state, not pose accuracy |
-| caution | system orange | Framing, recovery or uncertainty |
-| failure | system red | Permission or camera failure |
+| parchment | #F3EBDD | Notebook drawer, notes, expanded surfaces |
+| agedPaper | #DFD1B9 | Dividers, insets, quiet rules |
+| sepiaInk | #332D27 | Primary text over paper |
+| mutedInk | #74685A | Secondary annotations |
+| copper | #A67952 | Delicate manuscript rule accents |
+| verdigris | #38675D | Selected action, accessible primary accent |
+| viewfinderScrim | #151916 | Small dark backing behind camera status text |
+| viewfinderText | #FBF8F1 | Status text over the live camera |
+| proxyIce | #D1F0FF | Existing illustrative proxy color family |
 
-The existing render mesh derives its tint from separate Metal color values; **do not silently replace Metal geometry color with the UI tint**. Proxy color and interaction tint have separate semantics.
+Later layer legend colors can distinguish bone ivory, muscle terracotta, vessel burgundy, nerve ochre, organ mauve and ligament sage. These are **legend suggestions**, not evidence of available anatomy meshes. Use text and toggles, never color alone. Do not apply a sepia filter to camera pixels. Make narrow controls readable on bright footage; the currently forced dark app appearance can be revised only with proper native contrast checks.
 
-Do not use green to imply tracking is medically correct. Status must have a text label and SF Symbol, never color alone. Material/gradient scrims are allowed only where they solve real camera-content legibility.
-
-A future light-appearance interface should use a separately validated semantic palette. The **current** live mirror is dark-first and explicitly forced to dark in MagicMirrorApp.swift; this spec does not claim system-wide light-mode support today.
 
 ### 6.2 Type
 
-- Native San Francisco system styles for all app UI.
-- Screen/brand: title3 or headline as appropriate; avoid giant marketing copy across live video.
+- Native San Francisco system styles for all interactive labels, controls and explanatory body copy; short notebook headings may use a restrained historical serif or italic if font rights are verified.
+- Screen/brand: a single compact header row; avoid giant titles or decorative lettering across live video.
 - Status: subheadline/caption with readable casing; no all-caps accessibility-only phrasing.
 - Secondary copy: subheadline/body; long permission and recovery instructions must wrap.
 - Numeric opacity: monospacedDigit for percentage only.
@@ -226,7 +215,7 @@ A future light-appearance interface should use a separately validated semantic p
 
 ### 6.3 Spatial and touch scale
 
-- Base spacing grid: 4 pt; common distances 8, 12, 16, 20, 24 and 32 pt.
+- Base spacing grid: 4 pt; common distances 8, 12, 16, 20, 24 and 32 pt. The thin 34 pt header refers to its visual content strip, **not** iPhone safe area or touch target size.
 - Horizontal controls inset: nominal 16–20 pt, adjusted for device size and safe area.
 - Dock vertical padding: about 12–16 pt, subject to Dynamic Type.
 - Button/selectable target: at least **44 × 44 pt**.
@@ -288,7 +277,10 @@ Design target components (not all currently separated into code):
 | MetalSkeletonOverlay | Pose-gated GPU geometry overlay | Latest eligible PoseSnapshot, focus and opacity |
 | MirrorTopBar | Brand, trustworthy tracking/paused status | Lightweight phase and isPaused |
 | MirrorGuidance | Permission/framing/recovery instructions | Phase and eligibility |
-| MirrorControlDock | Focus, pause/resume, opacity disclosure | Focus, opacity, isPaused |
+| MirrorControlDock | Existing focus/pause/opacity controls; future compact Layers entry | Focus, opacity, isPaused |
+| AnatomyLayersSheet (future) | Approved layer visibility, Solo, per-layer legend/opacity | Licensed asset availability and independent render state |
+| AnatomySectionSheet (future) | Axial/sagittal/coronal clipping controls | Validated 3D mesh sectioning state |
+| AnatomyNoteSheet (future) | Reviewed structure information in manuscript style | Actual selected anatomy and provenance |
 | ReferenceDisclosure | Always-reachable nonmedical/reference notice | Actual asset class (proxy vs reviewed) |
 | MirrorViewModel | Owns screen-visible state and lifecycle | Camera pipeline callbacks; temporal expiry |
 
@@ -337,12 +329,12 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 
 ## 11. Prioritized design implementation plan
 
-### D0 — Design audit and prototype (this document)
+### D0 — Leonardo design exploration and prototype (concept stage)
 
 - Document current live-screen behavior and truthfully label source vs aspirations.
-- Compare three real visual directions and approve one baseline.
+- Three directions were compared and **the owner selected B / Leonardo Anatomy Notebook** with substantially increased live camera space.
 - Create iPhone-sized static screen concepts for: searching, tracking, paused, permission denied and camera interrupted.
-- Build an interactive visual prototype **only after design direction approval**; a browser prototype is not evidence of native camera success.
+- HTML prototypes for live view, searching/paused/permission states, layers and section controls have been explored in the conversation. These are **static/illustrative UI concepts**, not evidence of real-time native 3D anatomy or a shipped iPhone app.
 
 **Exit:** Clear design sign-off, readable component specification and no claims about unavailable anatomy assets.
 
@@ -370,7 +362,13 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 - Add anatomy-level information affordances only if it helps the core camera interaction and the model can support true hit targets.
 - Consider a contextual native sheet rather than turning the app into a navigation-heavy learning portal prematurely.
 
-### D4 — Android adaptation (later)
+### D4 — Approved multi-system layer and section explorer (later)
+- Review actual Z-Anatomy model grouping and redistribution permissions before introducing layer choices in production.
+- Support independently composited bone/muscle/organ/vessel/nerve/ligament meshes only after approved mobile asset/rig and GPU validation.
+- Only introduce real anatomical planes when the native renderer can actually clip/cap coherent 3D meshes. The HTML mock has no such capability.
+- Layer drawer remains opt-in and must not interfere with the core camera experience.
+
+### D5 — Android adaptation (later)
 
 - Preserve the same product language and UX principles, but use native Android conventions; do not pixel-copy iOS controls into Jetpack Compose.
 - Match landmark, 3D pose and fail-closed behavior with platform parity tests.
@@ -387,6 +385,10 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 
 ### Interface quality
 
+- [ ] Actual iPhone UI reflects **B / Leonardo notebook**, not the previous A recommendation.
+- [ ] Top banner is slim and the collapsed view dedicates about 70%+ of usable composition to the camera where feasible (while respecting safe areas and Dynamic Type).
+- [ ] Expanded anatomy layer sheet is on demand; non-shipping systems are never falsely interactive.
+- [ ] Any production section-plane controls perform actual validated 3D slicing, not a cosmetic mock.
 - [ ] Header, guidance, focus controls, opacity and pause remain readable across tested camera backgrounds.
 - [ ] Every target is at least 44 pt; compact and large iPhones have no clipped safe-area content.
 - [ ] Whole/Arms/Legs map to **existing** AnatomyFocus cases.
@@ -403,14 +405,11 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 - [ ] No desktop archived roadmap is used as the active delivery plan.
 - [ ] Native screenshots and measured behavior come from actual iOS Simulator/device testing, not a browser composition.
 
-## 13. Design decisions still open
+## 13. Confirmed design direction and remaining decisions
 
-1. **Visual approval:** Proceed with A — Instrument Mirror or revisit B/C after mockups?
-2. **Opacity hierarchy:** Visible slider in first version or a compact disclosure, based on real-device usability.
-3. **Camera permission recovery:** Should an explicit manual Retry button accompany the Settings deep link for recoverable interruptions?
-4. **Reference disclaimer wording:** Select short text balancing permanent clarity and screen space, then validate Chinese/English.
-5. **Target device range / performance:** Confirm real physical device findings before finalizing size and frame pacing assumptions.
-6. **Reviewed full atlas:** No appearance or anatomy-detail workflow approval until underlying assets, licensing, projection and physical evidence are complete.
+**Confirmed by the owner:** B · Leonardo Anatomy Notebook; minimize the tall header and give more space to the live camera; add a compact Layers entry and future anatomy-system and section-plane explorer.
+
+**Still open / requires implementation and evidence:** opacity disclosure density; exact Z-Anatomy licensed system inventory; actual independent GPU layer visibility/opacity; true 3D slice clipping; bilingual/accessibility checks; partial-body pose handling on merged native code; hardware FPS, latency, camera/mesh registration and thermal testing. The HTML prototype is not validation of any of these.
 
 ## 14. Design references and hierarchy of authority
 
@@ -442,4 +441,4 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 
 ---
 
-**Handoff rule:** Design improvements must remain faithful to the phone-only reference-anatomy mirror and clearly distinguish **implemented source**, **compiled source**, **real-device verified behavior**, and **future reviewed anatomical rendering**. Update this DESIGN.md when the design direction is approved or current mobile functionality materially changes.
+**Handoff rule:** Follow the owner-selected Leonardo Anatomy Notebook style for new UI; do not revert to the earlier A baseline. Keep **implemented source**, **compiled source**, **HTML-only design interactions**, **physical-device verification**, and **future licensed anatomical systems** distinct.
