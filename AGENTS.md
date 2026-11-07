@@ -6,7 +6,7 @@
 
 ## 1. Product north star (non-negotiable)
 
-**MagicMirror is a phone-only, offline-first, real-time educational anatomy AR app.**
+**MagicMirror is an iPhone/iOS-only, offline-first, real-time educational anatomy AR app.**
 
 The intended user journey is:
 
@@ -24,9 +24,9 @@ a manual bone calibration workflow. Inference, rigging, compositing and UI
 run on the **phone itself** after installation. Developer machines,
 Xcode and offline asset-conversion tools are allowed **for development only**.
 
-**Only mobile products will ship. Implement iOS first with native Swift;
-Android is a subsequent native phone target. Do not develop or release a
-Windows/macOS desktop product.** Do not reintroduce Unity or a Python
+**Only an iPhone/iOS product is planned. Build and ship with native Swift;
+Android and Windows/macOS desktop products are out of scope and must not be
+scheduled or developed.** Do not reintroduce Unity or a Python
 sidecar into the installed app or call desktop TCP code from mobile.
 
 The end result is **a real articulated anatomical 3D model**, NOT merely a
@@ -42,7 +42,7 @@ anatomically exact personal reconstruction.
 
 Read these in order:
 
-1. `Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md` — accepted phone-only product
+1. `Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md` — accepted iOS-only product
    and architecture decision.
 2. `Docs/MOBILE_NATIVE_ROADMAP.md` — **only active product delivery roadmap**.
 3. `Mobile/iOS/README.md` — iOS build/run instructions, when available.
@@ -151,8 +151,7 @@ without a separate explicit cleanup decision.
    joint motion, proper perspective, reprojection and controlled occlusion.
 6. **Mobile-5 — iOS release quality:** Usability, privacy/attribution,
    TestFlight, framing/recovery, real device FPS/latency/thermal testing.
-7. **Mobile-6 — Android:** Kotlin, on-device MediaPipe and native GPU
-   rendering using equivalent pose/rig/math tests. No desktop alternative.
+**Platform constraint (2026-11-07):** The former Mobile-6 Android milestone is canceled. Do not create Android code, tasks, CI pipelines or parity gates without an explicit new owner product decision.
 
 **Current reality:** native iOS Xcode `build-for-testing` passes for
 arm64 Simulator with the pinned MediaPipe XCFramework, including source
