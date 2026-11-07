@@ -8,7 +8,7 @@ copyright/licensing or the user's camera registration.
 import hashlib
 import math
 from pathlib import Path
-import zipfile
+from usdz_package import USDZPackageError, verify_usdz
 
 from atlas_sources import SOURCE_COMMIT, SOURCE_REPOSITORY, SYSTEM_SOURCES, resource_base
 
@@ -37,8 +37,10 @@ def build_rig_manifest(review, mesh_manifest, usdz_file, system):
     usdz_file = Path(usdz_file)
     if not usdz_file.is_file() or usdz_file.stat().st_size < 128:
         raise RigPackageError("missing or empty USDZ")
-    if not zipfile.is_zipfile(usdz_file):
-        raise RigPackageError("USDZ must be a valid ZIP archive")
+    try:
+        verify_usdz(usdz_file)
+    except USDZPackageError as exc:
+        raise RigPackageError(f"invalid OpenUSD USDZ archive: {exc}") from exc
     usd_bytes = usdz_file.read_bytes()
 
     bindings = review.get("bindings")
