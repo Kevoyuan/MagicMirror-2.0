@@ -25,6 +25,30 @@ enum AnatomyDisplayLayer: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Explicit offline source prefix. Each system has its own verified
+    /// MMATLAS1, USDZ hierarchy and, optionally, skinning weights.
+    /// No generic skeleton asset is passed off as muscle/organ anatomy.
+    var resourceBaseName: String? {
+        switch self {
+        case .referenceProxy: return nil
+        case .skeleton: return "skeleton_atlas"
+        case .muscles: return "muscles_atlas"
+        case .organs: return "organs_atlas"
+        case .vessels: return "vessels_atlas"
+        case .nerves: return "nerves_atlas"
+        case .joints: return "joints_atlas"
+        }
+    }
+
+    var hierarchyManifestName: String? {
+        guard let resourceBaseName else { return nil }
+        return self == .skeleton
+            ? "anatomy_atlas_manifest"
+            : "\(resourceBaseName)_manifest"
+    }
+
+    /// Static availability describes this repository's distributed assets.
+    /// Runtime switches use a separate independently verified resource gate.
     var isAvailable: Bool { self == .referenceProxy }
 
     var detail: String {
