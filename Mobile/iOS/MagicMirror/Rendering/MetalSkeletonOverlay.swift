@@ -16,6 +16,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     /// Absent until a reviewed atlas and independently calibrated camera
     /// can produce a validated same-frame batch. Default UI passes nil.
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch? = nil
+    /// Requires audited vertex influences and a verified camera frame.
+    var skinnedAtlasBatch: SkinnedAtlasDrawBatch? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
 
@@ -42,7 +44,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         context.coordinator.update(
             alignedFrame: alignedFrame, proxyPose: proxyPose,
             opacity: Float(opacity), focus: focus,
-            calibratedAtlasBatch: calibratedAtlasBatch
+            calibratedAtlasBatch: calibratedAtlasBatch,
+            skinnedAtlasBatch: skinnedAtlasBatch
         )
         view.draw()
     }
@@ -51,6 +54,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var device: MTLDevice?
         private var commands: MTLCommandQueue?
         private var bonePipeline: MTLRenderPipelineState?
+        private var skinnedPipeline: MTLRenderPipelineState?
         private var videoPipeline: MTLRenderPipelineState?
         private var textureCache: CVMetalTextureCache?
 
@@ -59,6 +63,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var opacity: Float = 0.65
         private var focus: AnatomyFocus = .full
         private var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
+        private var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -67,6 +72,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             guard let shaders = device.makeDefaultLibrary(),
                   let boneVertex = shaders.makeFunction(name: "boneVertex"),
                   let boneFragment = shaders.makeFunction(name: "boneFragment"),
+                  let skinVertex = shaders.makeFunction(
+                    name: "skinnedAtlasVertex"
+                  ),
                   let videoVertex = shaders.makeFunction(
                     name: "matchedCameraVertex"
                   ),
@@ -98,6 +106,22 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                 descriptor: boneDescriptor
             )
 
+            let skinDescriptor = MTLRenderPipelineDescriptor()
+            skinDescriptor.vertexFunction = skinVertex
+            skinDescriptor.fragmentFunction = boneFragment
+            let skinColor = skinDescriptor.colorAttachments[0]!
+            skinColor.pixelFormat = .bgra8Unorm
+            skinColor.isBlendingEnabled = true
+            skinColor.rgbBlendOperation = .add
+            skinColor.alphaBlendOperation = .add
+            skinColor.sourceRGBBlendFactor = .sourceAlpha
+            skinColor.destinationRGBBlendFactor = .oneMinusSourceAlpha
+            skinColor.sourceAlphaBlendFactor = .one
+            skinColor.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            skinnedPipeline = try? device.makeRenderPipelineState(
+                descriptor: skinDescriptor
+            )
+
             var cache: CVMetalTextureCache?
             if CVMetalTextureCacheCreate(
                 kCFAllocatorDefault, nil, device, nil, &cache
@@ -115,13 +139,15 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             alignedFrame: AlignedPoseVideoFrame?,
             proxyPose: PoseSnapshot?,
             opacity: Float, focus: AnatomyFocus,
-            calibratedAtlasBatch: CalibratedAtlasDrawBatch?
+            calibratedAtlasBatch: CalibratedAtlasDrawBatch?,
+            skinnedAtlasBatch: SkinnedAtlasDrawBatch?
         ) {
             self.alignedFrame = alignedFrame
             self.proxyPose = proxyPose
             self.opacity = max(0, min(1, opacity))
             self.focus = focus
             self.calibratedAtlasBatch = calibratedAtlasBatch
+            self.skinnedAtlasBatch = skinnedAtlasBatch
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -193,8 +219,62 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             // The *single* AVFoundation preview keeps showing behind it.
             // Never render model-only geometry over a mismatched frame.
             if canDrawAnatomy,
-               let frame = alignedFrame,
-               let bonePipeline {
+               let frame = alignedFrame {
+                var drewSkinnedAtlas = false
+                if let skin = skinnedAtlasBatch,
+                   skin.matches(
+                    frame: frame.pose, viewport: view.bounds.size,
+                    focus: focus, opacity: opacity
+                   ),
+                   let skinnedPipeline,
+                   let source = skin.vertices.withUnsafeBytes({
+                    bytes -> MTLBuffer? in
+                    guard let address = bytes.baseAddress else { return nil }
+                    return device.makeBuffer(
+                        bytes: address, length: bytes.count,
+                        options: .storageModeShared
+                    )
+                   }),
+                   let posePalette = skin.cameraMatrices.withUnsafeBytes({
+                    bytes -> MTLBuffer? in
+                    guard let address = bytes.baseAddress else { return nil }
+                    return device.makeBuffer(
+                        bytes: address, length: bytes.count,
+                        options: .storageModeShared
+                    )
+                   }) {
+                    encoder.setRenderPipelineState(skinnedPipeline)
+                    encoder.setCullMode(.none)
+                    encoder.setVertexBuffer(source, offset: 0, index: 0)
+                    encoder.setVertexBuffer(posePalette, offset: 0, index: 1)
+                    var camera = skin.cameraParameters
+                    var crop = skin.viewportParameters
+                    var screen = SIMD4<Float>(
+                        Float(view.bounds.width), Float(view.bounds.height),
+                        0, 0
+                    )
+                    encoder.setVertexBytes(
+                        &camera, length: MemoryLayout<SIMD4<Float>>.stride,
+                        index: 2
+                    )
+                    encoder.setVertexBytes(
+                        &crop, length: MemoryLayout<SIMD4<Float>>.stride,
+                        index: 3
+                    )
+                    encoder.setVertexBytes(
+                        &screen, length: MemoryLayout<SIMD4<Float>>.stride,
+                        index: 4
+                    )
+                    encoder.drawPrimitives(
+                        type: .triangle, vertexStart: 0,
+                        vertexCount: skin.vertices.count
+                    )
+                    drewSkinnedAtlas = true
+                }
+
+                // Never layer an unaudited rigid copy over approved
+                // skinned geometry. Otherwise keep existing safe paths.
+                if !drewSkinnedAtlas, let bonePipeline {
                 let geometry: [BoneMeshVertex]
                 if let batch = calibratedAtlasBatch,
                    batch.matches(
@@ -243,6 +323,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                             vertexCount: geometry.count
                         )
                     }
+                }
                 }
             }
 

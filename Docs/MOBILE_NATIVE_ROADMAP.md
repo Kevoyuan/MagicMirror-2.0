@@ -300,3 +300,18 @@ These improvements compile as part of the native renderer but do not
 manufacture unreviewed anatomy, real RGB depth, occlusion or a valid
 per-device camera registration. The source atlas and iPhone performance
 and visual QA gates remain open.
+
+## Mobile-3/4 actual GPU linear blend skinning slice (2026-11-07)
+
+Added a Metal vertex path that blends four source-mesh bone influences
+and normals with a per-frame uniform bone palette and calibrated pinhole
+camera projection, rather than generating every bent triangle on the
+CPU. The app now loads optional, model-SHA-bound, audited skinning
+weights and conditionally selects that path when a verified atlas
+and independently reviewed camera exist. Source-frame identity,
+viewport, focus and opacity gates remain intact. Old proxy and rigid
+atlas fallback paths remain available.
+
+This closes the native **shader/palette/runtime plumbing**, not the
+reviewed weights authoring, real source atlas, independent camera
+calibration, physical iPhone rendering or anatomical correctness gates.

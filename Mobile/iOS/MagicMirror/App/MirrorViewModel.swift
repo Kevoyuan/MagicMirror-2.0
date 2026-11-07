@@ -15,6 +15,7 @@ final class MirrorViewModel {
     /// Geometry-only, fixed-length reference pose for this source frame.
     var proxyRigPose: PoseSnapshot?
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
+    var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
@@ -56,6 +57,7 @@ final class MirrorViewModel {
                     focus: self.focus,
                     opacity: Float(self.opacity)
                 )
+                self.skinnedAtlasBatch = self.reviewedAtlas?.skinnedFrame
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer
@@ -80,6 +82,7 @@ final class MirrorViewModel {
                 self.proxyRig.reset()
                 self.reviewedAtlas?.reset()
                 self.calibratedAtlasBatch = nil
+                self.skinnedAtlasBatch = nil
             }
         }
         pipeline.onPhase = { [weak self] phase in
@@ -100,6 +103,7 @@ final class MirrorViewModel {
         proxyRig.reset()
         proxyRigPose = nil
         calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
         reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
@@ -118,6 +122,7 @@ final class MirrorViewModel {
                     self.proxyRigPose = nil
                     self.reviewedAtlas?.reset()
                     self.calibratedAtlasBatch = nil
+                    self.skinnedAtlasBatch = nil
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
                     self.phase = .searching
@@ -151,6 +156,9 @@ final class MirrorViewModel {
         temporalFilter.reset()
         proxyRig.reset()
         proxyRigPose = nil
+        calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
+        reviewedAtlas?.reset()
         deliveryMonitor.reset()
         deliveryReport = nil
         snapshot = nil
@@ -168,12 +176,14 @@ final class MirrorViewModel {
         reviewedCameraForFrame = provider
         reviewedAtlas?.reset()
         calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
     }
 
     func setViewportSize(_ size: CGSize) {
         guard size != viewportSize else { return }
         viewportSize = size
         calibratedAtlasBatch = nil
+        skinnedAtlasBatch = nil
     }
 
     func toggleDiagnostics() {
@@ -187,6 +197,7 @@ final class MirrorViewModel {
             proxyRig.reset()
             proxyRigPose = nil
             calibratedAtlasBatch = nil
+            skinnedAtlasBatch = nil
             reviewedAtlas?.reset()
             deliveryMonitor.reset()
             deliveryReport = nil

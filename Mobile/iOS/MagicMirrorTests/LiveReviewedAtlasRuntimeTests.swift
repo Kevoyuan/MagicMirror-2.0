@@ -274,4 +274,128 @@ final class LiveReviewedAtlasRuntimeTests: XCTestCase {
         }
         XCTAssertNil(last)
     }
+
+    func testReviewedFourWeightSkinningUsesGPUPathAfterReferenceCapture() {
+        let base = resources()!
+        let bones = base.hierarchy.bones
+        var vertexRecords: [ReviewedAtlasSkinningFile.Vertex] = []
+        for part in base.mesh.manifest.parts {
+            let id = bones.first {
+                $0.nodePath == part.sourceHierarchyPath
+            }!.id
+            for _ in 0..<part.vertexCount {
+                vertexRecords.append(ReviewedAtlasSkinningFile.Vertex(
+                    boneIds: [id, id, id, id],
+                    weights: [0.7, 0.3, 0, 0]
+                ))
+            }
+        }
+        let candidate = ReviewedAtlasSkinningFile(
+            schemaVersion: 1,
+            sourceRevision: base.mesh.manifest.sourceRevision,
+            modelSHA256: base.mesh.manifest.modelSHA256,
+            reviewedJointWeights: true,
+            vertices: vertexRecords
+        )
+        let influences = try? AtlasSkinningPackage.validate(
+            candidate, atlas: base.mesh, hierarchy: base.hierarchy
+        )
+        XCTAssertEqual(influences?.count, base.mesh.vertices.count)
+        let resources = ReviewedAtlasRuntimeResources(
+            mesh: base.mesh,
+            hierarchy: base.hierarchy,
+            skinning: influences
+        )
+        XCTAssertNotNil(resources)
+        let live = LiveReviewedAtlasRuntime(resources: resources!)
+        for index in 0..<11 {
+            let sample = referenceFrame(1000 + index * 33)
+            XCTAssertNil(live.render(
+                frame: sample, reviewedCamera: reviewedCamera(sample),
+                viewport: viewport, focus: .arms, opacity: 0.7
+            ))
+        }
+        let sample = referenceFrame(1363)
+        // The GPU path replaces the CPU-projected rigid atlas, and
+        // both remain source-frame and viewport bound.
+        XCTAssertNil(live.render(
+            frame: sample, reviewedCamera: reviewedCamera(sample),
+            viewport: viewport, focus: .arms, opacity: 0.7
+        ))
+        let gpu = live.skinnedFrame
+        XCTAssertNotNil(gpu)
+        XCTAssertEqual(gpu?.vertices.count, 9)
+        XCTAssertEqual(gpu?.cameraMatrices.count, bones.count)
+        XCTAssertTrue(gpu!.matches(
+            frame: sample, viewport: viewport,
+            focus: .arms, opacity: 0.7
+        ))
+        XCTAssertFalse(gpu!.matches(
+            frame: referenceFrame(1396), viewport: viewport,
+            focus: .arms, opacity: 0.7
+        ))
+        XCTAssertEqual(MemoryLayout<SkinnedAtlasVertex>.stride, 80)
+        let worldPoint = base.mesh.vertices[0].position
+        let gpuPoint = gpu!.cameraMatrices[0] * SIMD4<Float>(
+            worldPoint.x, worldPoint.y, worldPoint.z, 1
+        )
+        let cameraPoint = BodyCameraProjection.project(
+            bodyWorld: worldPoint, camera: intrinsics(),
+            bodyToCamera: cameraTransform()
+        )
+        XCTAssertNotNil(cameraPoint)
+        XCTAssertEqual(gpuPoint.z, 3, accuracy: 0.001)
+        live.reset()
+        XCTAssertNil(live.skinnedFrame)
+    }
+
+    func testInvalidSkinningHashesWeightsAndUnknownBonesFailClosed() {
+        let base = resources()!
+        let index = SIMD4<UInt32>(repeating: 0)
+        let good = AtlasSkinInfluence(
+            joints: index, weights: SIMD4<Float>(1, 0, 0, 0)
+        )
+        XCTAssertTrue(good.isValid(boneCount: base.hierarchy.bones.count))
+        XCTAssertFalse(AtlasSkinInfluence(
+            joints: index, weights: SIMD4<Float>(0.4, 0.4, 0, 0)
+        ).isValid(boneCount: base.hierarchy.bones.count))
+        XCTAssertFalse(AtlasSkinInfluence(
+            joints: index, weights: SIMD4<Float>(.nan, 0, 0, 0)
+        ).isValid(boneCount: base.hierarchy.bones.count))
+        XCTAssertFalse(AtlasSkinInfluence(
+            joints: SIMD4<UInt32>(99, 0, 0, 0),
+            weights: SIMD4<Float>(1, 0, 0, 0)
+        ).isValid(boneCount: base.hierarchy.bones.count))
+
+        let vertices = (0..<base.mesh.vertices.count).map { _ in
+            ReviewedAtlasSkinningFile.Vertex(
+                boneIds: ["unknown", "unknown", "unknown", "unknown"],
+                weights: [1, 0, 0, 0]
+            )
+        }
+        let invalid = ReviewedAtlasSkinningFile(
+            schemaVersion: 1,
+            sourceRevision: base.mesh.manifest.sourceRevision,
+            modelSHA256: "unmatched",
+            reviewedJointWeights: true,
+            vertices: vertices
+        )
+        XCTAssertThrowsError(try AtlasSkinningPackage.validate(
+            invalid, atlas: base.mesh, hierarchy: base.hierarchy
+        ))
+        let badID = ReviewedAtlasSkinningFile(
+            schemaVersion: 1,
+            sourceRevision: base.mesh.manifest.sourceRevision,
+            modelSHA256: base.mesh.manifest.modelSHA256,
+            reviewedJointWeights: true,
+            vertices: vertices
+        )
+        XCTAssertThrowsError(try AtlasSkinningPackage.validate(
+            badID, atlas: base.mesh, hierarchy: base.hierarchy
+        ))
+        XCTAssertNil(ReviewedAtlasRuntimeResources(
+            mesh: base.mesh, hierarchy: base.hierarchy,
+            skinning: [good]
+        ))
+    }
 }

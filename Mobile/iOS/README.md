@@ -469,3 +469,30 @@ the normal transform, mesh batch normals, and proxy clip bounds.
 There is still **no shipped reviewed anatomical atlas**, no independently
 reviewed per-frame body/camera transform provider, and no physical iPhone
 GPU/occlusion benchmark. Passing CI compilation is not device validation.
+
+## Native four-influence Metal GPU Skinning (new source implementation)
+
+`SkinnedAtlasShaders.metal` now performs **linear blend skinning on the GPU**
+with up to four named bone influences per source vertex. An exact-frame
+`CoherentAtlasCameraProjection` supplies independently calibrated
+atlas-rest-to-camera bone transforms. The shader blends rest positions and
+surface normals, then projects with the source-frame camera intrinsics and
+the same aspect-fill crop used for camera video. The renderer selects this
+batch ahead of rigid atlas geometry only when source timestamp, image size,
+viewport, opacity and focus all match. Missing input preserves the existing
+procedural and rigid pathways; no second camera is opened.
+
+The optional `skeleton_atlas.skinning.json` bundle sidecar requires schema
+version 1, the identical `sourceRevision`, exact `modelSHA256` of the
+original `skeleton_atlas.mmgeom`, `reviewedJointWeights: true`, and exactly
+one `vertices` entry per unindexed MMATLAS1 triangle vertex. Each entry
+has `boneIds` (four reviewed hierarchy bone IDs) and `weights` (four
+finite nonnegative values summing to 1); unused slots have weight zero.
+Joint names are not guessed or derived by proximity. A corrupted or
+inconsistent sidecar prevents the reviewed atlas package from loading.
+
+No audited weights or original anatomical atlas are bundled today; the
+live GPU path is **implemented and compile-tested but not activated on a
+real person**. This does not establish real human bone locations, real
+camera extrinsics or license approval. Full mesh deformation quality,
+transparency and sustained GPU performance need device validation.
