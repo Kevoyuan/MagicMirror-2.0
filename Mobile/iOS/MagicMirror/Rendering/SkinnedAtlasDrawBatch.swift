@@ -44,6 +44,9 @@ struct SkinnedAtlasDrawBatch {
     let sourceImageSize: CGSize
     let viewportSize: CGSize
     let sourceRevision: String
+    /// Unique to an immutable reviewed runtime resource set; never reused
+    /// when a new atlas / approved weight set is installed.
+    let geometryIdentity: UUID
     let focus: AnatomyFocus
     let opacity: Float
     let vertices: [SkinnedAtlasVertex]
@@ -76,7 +79,9 @@ struct SkinnedAtlasDrawBatch {
         viewport: CGSize,
         focus: AnatomyFocus,
         opacity: Float,
-        sectionCut: AnatomySectionCut? = nil
+        sectionCut: AnatomySectionCut? = nil,
+        geometryIdentity: UUID = UUID(),
+        preparedVertices: [SkinnedAtlasVertex]? = nil
     ) -> SkinnedAtlasDrawBatch? {
         guard (try? hierarchy.validateForUse()) != nil,
               atlas.manifest.reviewedForDistribution,
@@ -99,18 +104,24 @@ struct SkinnedAtlasDrawBatch {
               Set(bones.map(\.nodePath)).count == bones.count,
               Set(projector.pose.bones.map(\.boneId))
                   == Set(bones.map(\.id)),
-              influences.allSatisfy({ $0.isValid(boneCount: bones.count) })
+              (preparedVertices != nil || influences.allSatisfy({
+                  $0.isValid(boneCount: bones.count)
+              }))
         else { return nil }
 
         let byPath = Dictionary(uniqueKeysWithValues: bones.map {
             ($0.nodePath, $0)
         })
         var cursor = 0
-        var included: [SkinnedAtlasVertex] = []
-        included.reserveCapacity(atlas.vertices.count)
-        let alpha = opacity * 0.58
-        let color = SIMD4<Float>(0.93, 0.89, 0.78, alpha)
+        var included: [SkinnedAtlasVertex] = preparedVertices ?? []
+        if preparedVertices == nil {
+            included.reserveCapacity(atlas.vertices.count)
+        }
+        // Static color lives in the cached GPU buffer. Live opacity is
+        // sent as a tiny uniform instead of rebuilding all mesh vertices.
+        let color = SIMD4<Float>(0.93, 0.89, 0.78, 1)
         var names = Set<String>()
+        var expectedVertexCount = 0
         for part in atlas.manifest.parts {
             guard let bone = byPath[part.sourceHierarchyPath],
                   names.insert(part.sourceHierarchyPath).inserted,
@@ -130,6 +141,8 @@ struct SkinnedAtlasDrawBatch {
             cursor += part.vertexCount
             if focus == .arms && part.group != "arms" { continue }
             if focus == .legs && part.group != "legs" { continue }
+            expectedVertexCount += part.vertexCount
+            if preparedVertices != nil { continue }
             for index in part.vertexOffset..<cursor {
                 let v = atlas.vertices[index]
                 let skin = influences[index]
@@ -150,6 +163,7 @@ struct SkinnedAtlasDrawBatch {
         }
         guard cursor == atlas.vertices.count,
               names == Set(bones.map(\.nodePath)),
+              included.count == expectedVertexCount,
               !included.isEmpty
         else { return nil }
 
@@ -177,6 +191,7 @@ struct SkinnedAtlasDrawBatch {
             sourceImageSize: image,
             viewportSize: viewport,
             sourceRevision: atlas.manifest.sourceRevision,
+            geometryIdentity: geometryIdentity,
             focus: focus,
             opacity: opacity,
             vertices: included,

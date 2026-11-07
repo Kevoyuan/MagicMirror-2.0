@@ -44,6 +44,8 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
     }
     SkinnedAtlasRaster out;
     out.color = v.color;
+    // Mesh alpha is static; uniform Z carries current user opacity.
+    out.color.a *= clamp(viewport.z, 0.0, 1.0);
     out.cameraPosition = p.xyz;
     out.normal = length(n) > 1e-6 ? normalize(n) : float3(0, 0, 1);
 
