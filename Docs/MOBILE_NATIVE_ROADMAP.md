@@ -286,3 +286,17 @@ added and checked before real atlas drawing is eligible. Synthetic
 camera/mesh regression checks do not lift those gates. Real-device
 framing, source-asset legal review and sustained latency testing are
 still pending. No Android work is planned.
+
+## Mobile-3/4 3D anatomical surface shading and clip-space fix (2026-11-07)
+
+The reviewed atlas projection now carries source-mesh surface normals
+through parent-connected bone rotation, atlas/body coordinate rotation
+and reviewed camera rotation into Metal's shaded vertex format. Removed
+the flat normal placeholder from calibrated batches. Corrected
+normalized camera depth and procedural proxy Z positions into Metal's
+0-to-1 clip range to avoid near-plane clipping of stylized rear arcs.
+
+These improvements compile as part of the native renderer but do not
+manufacture unreviewed anatomy, real RGB depth, occlusion or a valid
+per-device camera registration. The source atlas and iPhone performance
+and visual QA gates remain open.

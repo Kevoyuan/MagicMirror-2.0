@@ -72,6 +72,22 @@ struct BodySimilarityRegistration {
         return Self.finite(value) ? value : nil
     }
 
+    /// Uniform-scale atlas normals need orientation only (no translation
+    /// and no inverse scale). This preserves real source mesh shading
+    /// while using the same right-handed registration as rest vertices.
+    func atlasDirectionToBody(
+        _ atlasNormal: SIMD3<Float>
+    ) -> SIMD3<Float>? {
+        guard Self.finite(atlasNormal),
+              simd_length_squared(atlasNormal) > 1e-8 else { return nil }
+        let body = Self.rotate(
+            atlasNormal, from: atlasAxes, to: sourceAxes
+        )
+        guard Self.finite(body),
+              simd_length_squared(body) > 1e-8 else { return nil }
+        return simd_normalize(body)
+    }
+
     private typealias Axes = (
         x: SIMD3<Float>, y: SIMD3<Float>, z: SIMD3<Float>
     )

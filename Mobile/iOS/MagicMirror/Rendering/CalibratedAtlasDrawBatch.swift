@@ -76,7 +76,8 @@ struct CalibratedAtlasDrawBatch {
         vertices.reserveCapacity(triangles.count * 3)
 
         for triangle in triangles {
-            guard triangle.vertices.count == 3 else { return nil }
+            guard triangle.vertices.count == 3,
+                  triangle.cameraNormals.count == 3 else { return nil }
             var projected: [SIMD4<Float>] = []
             projected.reserveCapacity(3)
             for vertex in triangle.vertices {
@@ -89,7 +90,7 @@ struct CalibratedAtlasDrawBatch {
                 let clip = SIMD4<Float>(
                     2 * Float(p.x) / width - 1,
                     1 - 2 * Float(p.y) / height,
-                    max(-0.8, min(0.8, (depth - 3) / 10)),
+                    max(0, min(1, (depth - 0.05) / 19.95)),
                     1
                 )
                 guard clip.x.isFinite, clip.y.isFinite,
@@ -109,13 +110,18 @@ struct CalibratedAtlasDrawBatch {
             let area = simd_length_squared(simd_cross(b - a, c - a))
             guard area.isFinite, area > 1e-12 else { return nil }
 
-            // Screen-facing, flat illustrative shading: projected 2D
-            // triangles do not provide physically measured surface normals.
-            let normal = SIMD4<Float>(0, 0, 1, 0)
+            // Camera-oriented source surface normals rotate with
+            // each approved rigid bone instead of using a flat billboard
+            // normal. These are reference-mesh normals, never person
+            // surface measurements.
             let color = SIMD4<Float>(0.93, 0.89, 0.78, alpha)
-            for vertex in projected {
+            for index in 0..<3 {
+                let n = triangle.cameraNormals[index]
+                guard n.x.isFinite, n.y.isFinite, n.z.isFinite,
+                      abs(simd_length(n) - 1) < 0.005 else { return nil }
+                let normal = SIMD4<Float>(n.x, n.y, n.z, 0)
                 vertices.append(BoneMeshVertex(
-                    position: vertex, normal: normal, color: color
+                    position: projected[index], normal: normal, color: color
                 ))
             }
         }

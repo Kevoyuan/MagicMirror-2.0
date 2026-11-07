@@ -310,8 +310,9 @@ camera extrinsics. The old weak-perspective algorithm remains research code.
 **Important:** the normal camera screen does not yet construct a calibrated
 batch. There is no approved Z-Anatomy asset or independently reviewed live
 camera extrinsic provider, so the app continues to render only the reference
-proxy. The generated clip-space depth and flat shading are illustrative,
-not measured tissue depth or medically accurate surface lighting. Do not
+proxy. The mapped clip-space depth is still illustrative; source-atlas
+surface normals are now rigidly rotated into camera space. Neither is
+a measurement of the person's internal tissue or bone geometry. Do not
 represent this source bridge as live atlas AR or physical-device verification.
 
 ## Offline atlas package preflight
@@ -391,3 +392,23 @@ shipping prototype. The synthetic full-path XCTest fixture is a
 programming regression, not independent license/anatomy/device review.
 Full-mesh per-frame CPU/GPU performance and actual skinning quality still
 need physical iPhone profiling before this mode can ship.
+
+## Articulated anatomy normals and safe Metal depth (source implementation)
+
+The coherent camera atlas path now carries **actual verified-model vertex
+normals** through each bone's 3D rest-to-pose rotation, atlas/body frame,
+and reviewed body/camera rotation before delivering them to Metal. The
+shading no longer uses the same flat billboard normal for every triangle.
+Only source-authored normals are used, not normals inferred from a user's
+RGB camera image. The calibrated projection maps camera depth to
+Metal's nonnegative clip range.
+
+Also corrected the currently visible original **procedural proxy** depth:
+Metal expects clip-space Z between 0 and 1, so reference rib, pelvis and
+skull arcs no longer risk disappearing at the near plane merely because
+their illustrative depth is negative. Synthetic XCTest source checks
+the normal transform, mesh batch normals, and proxy clip bounds.
+
+There is still **no shipped reviewed anatomical atlas**, no independently
+reviewed per-frame body/camera transform provider, and no physical iPhone
+GPU/occlusion benchmark. Passing CI compilation is not device validation.
