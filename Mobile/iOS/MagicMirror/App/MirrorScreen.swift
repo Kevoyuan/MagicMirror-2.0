@@ -281,19 +281,33 @@ struct MirrorScreen: View {
     private func atlasPartCard(
         _ selection: ReviewedAnatomySelection
     ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        let note = AnatomyEducationCatalog.installed.note(
+            for: selection
+        )
+        return HStack(alignment: .top, spacing: 12) {
             Image(systemName: "square.3.layers.3d")
                 .font(.title3)
                 .foregroundStyle(LeonardoPalette.ivory)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
-                Text(selection.displayName)
+                Text(note?.title ?? selection.displayName)
                     .font(.system(.headline, design: .serif))
                     .foregroundStyle(LeonardoPalette.ivory)
-                Text(selection.detail)
+                Text(note?.summary ?? selection.detail)
                     .font(.caption)
                     .foregroundStyle(LeonardoPalette.ivory.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
+                if let function = note?.function {
+                    Text(function)
+                        .font(.caption)
+                        .foregroundStyle(LeonardoPalette.ivory.opacity(0.80))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let author = note?.authorCredit {
+                    Text("Educational text: \(author)")
+                        .font(.caption2)
+                        .foregroundStyle(LeonardoPalette.ivory.opacity(0.65))
+                }
                 Text("SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(LeonardoPalette.ivory.opacity(0.68))

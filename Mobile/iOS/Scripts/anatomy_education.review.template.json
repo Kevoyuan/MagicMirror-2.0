@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "anatomicalSystem": "skeleton",
+  "sourceRevision": "REPLACE_WITH_EXACT_PINNED_MODEL_SOURCE_REVISION",
+  "reviewedForEducationalDisplay": false,
+  "authorCredit": "REPLACE_WITH_ACTUAL_REVIEWED_EDUCATIONAL_TEXT_AUTHOR_AND_RIGHTS",
+  "entries": [
+    {
+      "sourceHierarchyPath": "REPLACE_WITH_EXACT_REVIEWED_MESH_SOURCE_HIERARCHY_PATH",
+      "title": "REPLACE_WITH_REVIEWED_ENGLISH_NAME",
+      "titleZh": "替换为经过审核的中文名称",
+      "summary": "REPLACE_WITH_REVIEWED_EDUCATIONAL_NOTE",
+      "summaryZh": "替换为经过审核的中文教学说明",
+      "functionalNote": "REPLACE_WITH_REVIEWED_EDUCATIONAL_FUNCTION",
+      "functionalNoteZh": "替换为经过审核的中文功能说明"
+    }
+  ]
+}
