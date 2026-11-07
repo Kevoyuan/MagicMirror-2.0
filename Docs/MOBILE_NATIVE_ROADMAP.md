@@ -29,6 +29,20 @@ not be required in the installed iOS/Android runtime.
   in `Mobile/iOS/MagicMirror/Anatomy/`. **The actual atlas USDZ, rig
   binding, licensing and visual runtime are still absent.** See
   `Docs/IOS_ANATOMY_ATLAS_INTEGRATION.md`.
+- **Mobile-3/4, hierarchical rig kernel source stage:** reviewed
+  `AnatomyAtlasManifest` parent hierarchy plus a frozen
+  `BodySimilarityRegistration` now produce rigid, bone-length-preserving
+  atlas-space pose frames with parent-propagated joints. Compile-checked
+  synthetic XCTest sources cover attachment, low-confidence data and
+  scale mismatch. **Not yet wired to a human-reviewed 3D atlas, skinning,
+  physical camera extrinsics or real iPhone renderer.** See
+  `Docs/IOS_HIERARCHICAL_ATLAS_RIG.md`.
+- **Mobile-4, camera-to-rig projection contract:** pure Swift maps
+  approved, parent-connected atlas rest vertices through the exact
+  source-frame camera model **only after independent camera review
+  and a passing P90 reprojection gate**. Synthetic tests are authored;
+  no live reviewed Z-Anatomy mesh has been bound to this path, and no
+  physical iPhone camera fit has been measured.
 - **Mobile-4, preparatory source stage:** implemented optional real
   AVFoundation per-frame camera intrinsics, timestamp-bound calibration,
   explicit 3D pinhole projection, and source-landmark P90 reprojection
