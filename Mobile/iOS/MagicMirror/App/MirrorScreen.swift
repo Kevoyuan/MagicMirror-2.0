@@ -55,6 +55,25 @@ struct MirrorScreen: View {
                         .padding(.top, 10)
                 }
                 Spacer()
+                if model.estimatedAtlasAlignmentActive {
+                    Label(
+                        "ESTIMATED 3D REFERENCE · NOT PERSONAL ANATOMY",
+                        systemImage: "viewfinder"
+                    )
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(LeonardoPalette.ivory)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 30)
+                    .background(
+                        LeonardoPalette.cameraScrim.opacity(0.86),
+                        in: Capsule()
+                    )
+                    .padding(.bottom, 8)
+                    .accessibilityLabel(
+                        "Estimated 3D reference anatomy, not measured internal bones"
+                    )
+                }
                 if let part = model.reviewedPartSelection {
                     atlasPartCard(part)
                         .padding(.bottom, 8)
