@@ -560,3 +560,20 @@ tracking pauses or a reviewed atlas replaces the proxy. There is no
 cross-person persisted identity, image upload, or fake anatomical
 structure name. Picking actual Z-Anatomy mesh parts remains conditional
 on a separately reviewed atlas and associated geometry metadata.
+
+## Static GPU anatomy mesh reuse (native performance work)
+
+The reviewed 4-weight skinned rest mesh is immutable across camera
+frames. The live runtime now prepares its Whole/Arms/Legs vertex arrays
+once per approved atlas resource set and reuses them for successive
+tracked frames. The Metal renderer keeps one resident vertex buffer for
+the active geometry identity and focus, instead of allocating/uploading
+up to 180,000 static 80-byte vertices on every callback. Real-time
+joint matrices, camera projection, alpha and the 3D section plane stay
+dynamic, so body motion and UI controls still update every frame.
+
+The shader now applies opacity from a tiny per-frame uniform, avoiding
+a full vertex rewrite when the user moves the opacity slider. A new
+reviewed model runtime receives a distinct UUID and invalidates its
+previous GPU cache automatically. This is a code-level optimization,
+not a claim of achieved physical iPhone FPS, memory or thermal figures.
