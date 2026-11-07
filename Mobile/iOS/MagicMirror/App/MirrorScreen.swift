@@ -16,11 +16,21 @@ struct MirrorScreen: View {
             CameraPreview(session: model.pipeline.session)
                 .ignoresSafeArea()
 
-            MetalSkeletonOverlay(
-                alignedFrame: model.isPaused ? nil : model.alignedFrame,
-                proxyPose: model.isPaused ? nil : model.proxyRigPose,
-                opacity: model.opacity, focus: model.focus
-            )
+            GeometryReader { geometry in
+                MetalSkeletonOverlay(
+                    alignedFrame: model.isPaused ? nil : model.alignedFrame,
+                    proxyPose: model.isPaused ? nil : model.proxyRigPose,
+                    opacity: model.opacity, focus: model.focus,
+                    calibratedAtlasBatch: model.isPaused
+                        ? nil : model.calibratedAtlasBatch
+                )
+                .onAppear {
+                    model.setViewportSize(geometry.size)
+                }
+                .onChange(of: geometry.size) { _, newSize in
+                    model.setViewportSize(newSize)
+                }
+            }
             .ignoresSafeArea()
 
             LinearGradient(

@@ -267,3 +267,22 @@ skinning, hidden-bone reconstruction or passed live XCTest. It does
 not satisfy the Mobile-3 reviewed anatomy model gate or Mobile-4
 real-person calibrated registration exit gate. Future code should
 prioritize those substantive gaps rather than more standalone stubs.
+
+## Mobile-3/4 native live atlas runtime connector (2026-11-07)
+
+Connected the previously separate verified asset loaders, frozen
+body-world reference, reviewed atlas shoulder/hip anchors, coherent
+parent-propagated rig planner, independently reviewed same-source-camera
+projector and Metal geometry-batch output into the active
+`MirrorViewModel` → `MirrorScreen` → `MetalSkeletonOverlay` path.
+Resource file loading happens outside the main actor. Source timestamp,
+image dimensions, region and viewport mismatch invalidate geometry;
+partial tracking and dropouts keep the procedural proxy.
+
+**Not an active anatomically verified AR model:** the repository has no
+reviewed distributed atlas binary and the installed app does not provide
+independently approved per-frame body-to-camera extrinsics. Both must be
+added and checked before real atlas drawing is eligible. Synthetic
+camera/mesh regression checks do not lift those gates. Real-device
+framing, source-asset legal review and sustained latency testing are
+still pending. No Android work is planned.

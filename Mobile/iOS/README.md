@@ -367,3 +367,27 @@ source-resolution changes and loss/reacquisition; normal CI
 `build-for-testing` compiles these tests, it does not execute them.
 Real iPhone tracking quality, motion latency and battery/thermal load
 remain outstanding.
+
+## Live reviewed-atlas runtime integration (source stage)
+
+The native camera screen now has a real, conditional runtime path for a
+reviewed anatomical package: it loads both the verified MMATLAS1 model and
+the independently checked USDZ/rig manifest in a background task, verifies
+their source revision and hierarchy correspondence, extracts consistently
+reviewed shoulder/hip rest anchors, captures a stable 12-frame reference,
+runs the parent-connected coherent 3D rig, projects all selected triangles
+through a source-matched independently reviewed camera transform, and
+publishes the resulting Metal vertex batch **only for that same frame and
+viewport**. On any missing or invalid input the visible app remains on its
+existing procedural reference skeleton; it never guesses camera
+extrinsics or invents a source model.
+
+The production camera-calibration provider is intentionally **not
+installed**: a camera intrinsics matrix and MediaPipe body-world estimates
+alone are insufficient evidence of calibrated extrinsics. No reviewed
+Z-Anatomy package is committed/bundled. This means the *code path exists
+and compiles*, but the real atlas is still **not displayed** in the
+shipping prototype. The synthetic full-path XCTest fixture is a
+programming regression, not independent license/anatomy/device review.
+Full-mesh per-frame CPU/GPU performance and actual skinning quality still
+need physical iPhone profiling before this mode can ship.
