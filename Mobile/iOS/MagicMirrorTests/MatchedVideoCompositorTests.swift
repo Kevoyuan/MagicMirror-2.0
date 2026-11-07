@@ -130,7 +130,7 @@ final class MatchedVideoCompositorTests: XCTestCase {
         ))
         XCTAssertNil(VideoAspectFillCrop.bounds(
             source: source,
-            viewport: CGSize(width: .nan, height: 840)
+            viewport: CGSize(width: CGFloat.nan, height: 840)
         ))
         XCTAssertNil(VideoAspectFillCrop.bounds(
             source: source,
