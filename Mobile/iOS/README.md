@@ -71,6 +71,15 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
 - `MagicMirrorTests/VolumetricBoneMeshTests.swift`: mesh topology,
   dropout, proxy depth and smoothing regression cases.
 
+An optional, reviewed whole-atlas package now uses a gated orthographic
+weak-perspective fit between same-frame model-estimated world landmarks and
+tracked camera-image landmarks. It projects each reviewed 3D triangle
+through the fitted body-to-source-image transform; bad fits fail closed.
+The app still falls back to a clearly labelled procedural 3D proxy when
+no reviewed atlas package is present. This is NOT true calibrated camera
+extrinsics, inferred internal bones, or a proven mobile rig.
+See `Docs/MOBILE_CAMERA_WEAK_PERSPECTIVE.md`.
+
 The MediaPipe result now uses capture geometry saved for its *own* source
 timestamp, rather than taking dimensions from the newest camera frame.
 This reduces 2D overlay drift after source resolution/orientation changes.
