@@ -4,5 +4,8 @@
   "modificationNotes": [
     "Replace with accurate notes for the actual human-reviewed derivative"
   ],
-  "bindings": []
+  "bindings": [],
+  "anatomicalSystem": "skeleton",
+  "reviewedJointWeights": false,
+  "skinningInstructions": "When reviewedJointWeights is true, every mesh binding needs vertexGroupToBoneId mapping authored Blender vertex groups to approved hierarchy bone IDs; otherwise no skinning data is generated."
 }
