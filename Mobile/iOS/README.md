@@ -313,3 +313,22 @@ camera extrinsic provider, so the app continues to render only the reference
 proxy. The generated clip-space depth and flat shading are illustrative,
 not measured tissue depth or medically accurate surface lighting. Do not
 represent this source bridge as live atlas AR or physical-device verification.
+
+## Offline atlas package preflight
+
+An optional audited whole-atlas build now runs an independent structural
+verifier before claiming export success. You can also run it directly:
+
+```bash
+python3 Mobile/iOS/Scripts/verify_atlas_package.py \
+  --package /private/reviewed/export
+python3 -m unittest discover -s Mobile/iOS/Scripts/tests -v
+```
+
+The verifier checks the source pin, manifest/binary hash, actual vertex
+records, triangle alignment and full hierarchy path coverage. GitHub CI
+runs the synthetic regression fixtures. No anatomical assets or model data
+are fetched, committed, or redistributed by this test. Human asset rights,
+anatomical accuracy, coherent 3D skin/rig and calibrated real iPhone
+overlay remain separate blockers; successful preflight never unlocks
+an unreviewed model.

@@ -212,6 +212,11 @@ def main():
         "\nSee respective source licenses before distribution.\n",
         encoding="utf-8"
     )
+    # Independently re-open emitted artifacts after writing them, so the
+    # Blender export cannot claim success for an inconsistent binary/manifest.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from verify_atlas_package import verify_package
+    verify_package(args.out)
     print(f"Built {count} vertices / {len(parts)} reviewed meshes, sha256={model_sha}")
     print("Asset is developer-produced, NOT a human/device anatomical validation.")
 

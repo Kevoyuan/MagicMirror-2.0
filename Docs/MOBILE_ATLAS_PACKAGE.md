@@ -94,3 +94,28 @@ occlusion/body-space fitting; none are automatically proven by a hash.
 - Diagnostic labels say **illustrative reference, not internal imaging**.
 
 The user chose to defer hardware verification, not to fabricate approval.
+
+## Independent MMATLAS1 package preflight (source implementation)
+
+The offline exporter now **re-opens and verifies its own artifacts** after
+writing the binary, manifest, and attribution text. Independently run it
+on a developer machine before attempting to include any reviewed model:
+
+```bash
+python3 Mobile/iOS/Scripts/verify_atlas_package.py \
+  --package /private/reviewed/export
+```
+
+This dependency-free check validates the pinned whole-atlas source identity,
+the declared licence IDs and attribution, explicit review-flag records,
+nonempty modification notes, the expected filename and SHA-256 of the
+actual `MMATLAS1` bytes, bounded vertex counts and exact binary length,
+unique hierarchy paths, full contiguous triangle coverage, landmark and
+rest-anchor shape, finite positions, and nonzero vertex normals.
+
+`python3 -m unittest discover -s Mobile/iOS/Scripts/tests -v`
+exercises entirely **synthetic** binary fixtures with intentional corruptions.
+The anatomy inventory GitHub Action runs those tests without Blender or a
+real licensed mesh. A structurally valid model is **not** human-approved
+anatomy, a legal determination, a complete coherent skin/rig, a calibrated
+camera-space registration, or a validated iPhone rendering result.

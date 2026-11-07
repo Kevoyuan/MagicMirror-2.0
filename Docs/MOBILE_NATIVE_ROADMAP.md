@@ -233,3 +233,17 @@ real iPhone validation and licensed assets remain blocked. New synthetic
 XCTest source checks valid projected geometry and fail-closed behavior,
 but CI `build-for-testing` is not device validation. The iOS-only platform
 scope remains unchanged.
+
+## Mobile-3 offline asset verification slice (2026-11-07)
+
+The developer-only Blender exporter now invokes an independent
+standard-library `MMATLAS1` verifier after writing its atlas package.
+A standalone CLI and CI-tested synthetic fixtures reject wrong source
+pins, missing review records, damaged binary lengths/hashes, broken
+triangle spans, malformed rest anchors and invalid vertex data.
+
+This is a **build-time structural gate**, not asset release acceptance.
+A human must still perform mesh-level copyright/attribution review,
+complete reviewed bone hierarchy and skinning/attachments, generate the
+actual optimized model, and validate calibration and rendering on an
+identified iPhone. Only iOS work is planned.
