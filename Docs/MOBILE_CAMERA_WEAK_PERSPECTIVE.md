@@ -15,10 +15,12 @@ landmark timestamp.
 - The camera preview still uses the source capture's aspectFill crop.
 - Native iOS processing only. No additional camera, server, Python runtime,
   special wearable or LiDAR required.
-- A reviewed atlas package can project its physically shaped source mesh
-  *after* rigid parts are transformed into the observed body-relative
-  3D pose-world frame, instead of stretching triangles directly in the
-  2D image plane.
+- The native reviewed-atlas renderer now projects *each* rigidly moved source
+  triangle through the fitted 3D body-world → 2D image transform after
+  binding its human-reviewed rest anchors to the current world-pose segment.
+  It no longer performs a per-region 2D segment stretch. Invalid fits,
+  missing world points and unprojectable triangles are hidden rather than
+  replaced with an uncalibrated 2D atlas warp.
 
 **Not a camera intrinsics/extrinsics calibration.** MediaPipe world points
 are model estimates, the camera's true focal length/distortion remains
