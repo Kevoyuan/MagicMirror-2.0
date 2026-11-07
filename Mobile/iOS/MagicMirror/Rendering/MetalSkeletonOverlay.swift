@@ -1,19 +1,18 @@
+import CoreVideo
 import Metal
 import MetalKit
 import SwiftUI
 import UIKit
 
-/// A translucent Metal layer *over* AVFoundation's live video, not another
-/// camera owner or ARSession. The GPU draws a shaded 3D proxy mesh based on
-/// current, source-time-associated MediaPipe landmarks.
+/// One Metal drawable contains BOTH the actual camera BGRA frame that
+/// MediaPipe analyzed and the 3D reference geometry from its pose result.
+/// There is no second camera session, cloud upload, or hidden video copy.
 struct MetalSkeletonOverlay: UIViewRepresentable {
-    let snapshot: PoseSnapshot?
+    let alignedFrame: AlignedPoseVideoFrame?
     let opacity: Double
     let focus: AnatomyFocus
 
-    func makeCoordinator() -> Renderer {
-        Renderer()
-    }
+    func makeCoordinator() -> Renderer { Renderer() }
 
     func makeUIView(context: Context) -> MTKView {
         let view = MTKView(frame: .zero)
@@ -36,19 +35,20 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
 
     func updateUIView(_ view: MTKView, context: Context) {
         context.coordinator.update(
-            snapshot: snapshot,
+            alignedFrame: alignedFrame,
             opacity: Float(opacity), focus: focus
         )
         view.draw()
     }
 
-    /// Render state is owned by this one view and never stored in global
-    /// SwiftUI state. Metal command queue and pipeline are reused.
     final class Renderer: NSObject, MTKViewDelegate {
         private var device: MTLDevice?
         private var commands: MTLCommandQueue?
-        private var pipeline: MTLRenderPipelineState?
-        private var snapshot: PoseSnapshot?
+        private var bonePipeline: MTLRenderPipelineState?
+        private var videoPipeline: MTLRenderPipelineState?
+        private var textureCache: CVMetalTextureCache?
+
+        private var alignedFrame: AlignedPoseVideoFrame?
         private var opacity: Float = 0.65
         private var focus: AnatomyFocus = .full
         private var approvedAtlas: VerifiedAnatomyAtlas?
@@ -57,40 +57,62 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             guard let device else { return }
             self.device = device
             self.commands = device.makeCommandQueue()
+            guard let shaders = device.makeDefaultLibrary(),
+                  let boneVertex = shaders.makeFunction(name: "boneVertex"),
+                  let boneFragment = shaders.makeFunction(name: "boneFragment"),
+                  let videoVertex = shaders.makeFunction(
+                    name: "matchedCameraVertex"
+                  ),
+                  let videoFragment = shaders.makeFunction(
+                    name: "matchedCameraFragment"
+                  ) else { return }
 
-            guard let shaderLibrary = device.makeDefaultLibrary(),
-                  let vertex = shaderLibrary.makeFunction(name: "boneVertex"),
-                  let fragment = shaderLibrary.makeFunction(name: "boneFragment")
-            else { return }
-            let descriptor = MTLRenderPipelineDescriptor()
-            descriptor.vertexFunction = vertex
-            descriptor.fragmentFunction = fragment
-            let attachment = descriptor.colorAttachments[0]!
-            attachment.pixelFormat = .bgra8Unorm
-            attachment.isBlendingEnabled = true
-            attachment.rgbBlendOperation = .add
-            attachment.alphaBlendOperation = .add
-            attachment.sourceRGBBlendFactor = .sourceAlpha
-            attachment.destinationRGBBlendFactor = .oneMinusSourceAlpha
-            attachment.sourceAlphaBlendFactor = .one
-            attachment.destinationAlphaBlendFactor = .oneMinusSourceAlpha
-            self.pipeline = try? device.makeRenderPipelineState(
-                descriptor: descriptor
+            let videoDescriptor = MTLRenderPipelineDescriptor()
+            videoDescriptor.vertexFunction = videoVertex
+            videoDescriptor.fragmentFunction = videoFragment
+            videoDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            videoPipeline = try? device.makeRenderPipelineState(
+                descriptor: videoDescriptor
             )
-            // Heavy, optional bundle verification stays off the main thread.
-            // A missing/invalid atlas never breaks the offline proxy path.
+
+            let boneDescriptor = MTLRenderPipelineDescriptor()
+            boneDescriptor.vertexFunction = boneVertex
+            boneDescriptor.fragmentFunction = boneFragment
+            let color = boneDescriptor.colorAttachments[0]!
+            color.pixelFormat = .bgra8Unorm
+            color.isBlendingEnabled = true
+            color.rgbBlendOperation = .add
+            color.alphaBlendOperation = .add
+            color.sourceRGBBlendFactor = .sourceAlpha
+            color.destinationRGBBlendFactor = .oneMinusSourceAlpha
+            color.sourceAlphaBlendFactor = .one
+            color.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            bonePipeline = try? device.makeRenderPipelineState(
+                descriptor: boneDescriptor
+            )
+
+            var cache: CVMetalTextureCache?
+            if CVMetalTextureCacheCreate(
+                kCFAllocatorDefault, nil, device, nil, &cache
+            ) == kCVReturnSuccess {
+                textureCache = cache
+            }
+
+            // Approved atlas stays optional and still fails closed if
+            // licensing, SHA, mesh identities or anchor reviews are absent.
             DispatchQueue.global(qos: .utility).async { [weak self] in
-                let approved = try? VerifiedAnatomyAtlas.load()
+                let atlas = try? VerifiedAnatomyAtlas.load()
                 DispatchQueue.main.async { [weak self] in
-                    self?.approvedAtlas = approved
+                    self?.approvedAtlas = atlas
                 }
             }
         }
 
         func update(
-            snapshot: PoseSnapshot?, opacity: Float, focus: AnatomyFocus
+            alignedFrame: AlignedPoseVideoFrame?,
+            opacity: Float, focus: AnatomyFocus
         ) {
-            self.snapshot = snapshot
+            self.alignedFrame = alignedFrame
             self.opacity = max(0, min(1, opacity))
             self.focus = focus
         }
@@ -99,52 +121,114 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             view.draw()
         }
 
+        private func wrapBGRA(
+            _ buffer: CVPixelBuffer
+        ) -> CVMetalTexture? {
+            guard let textureCache,
+                  CVPixelBufferGetPixelFormatType(buffer)
+                    == kCVPixelFormatType_32BGRA else { return nil }
+            var texture: CVMetalTexture?
+            let status = CVMetalTextureCacheCreateTextureFromImage(
+                kCFAllocatorDefault,
+                textureCache, buffer, nil,
+                .bgra8Unorm,
+                CVPixelBufferGetWidth(buffer),
+                CVPixelBufferGetHeight(buffer),
+                0, &texture
+            )
+            guard status == kCVReturnSuccess else { return nil }
+            return texture
+        }
+
         func draw(in view: MTKView) {
             guard let pass = view.currentRenderPassDescriptor,
                   let drawable = view.currentDrawable,
                   let device, let commands,
-                  let commandBuffer = commands.makeCommandBuffer(),
-                  let encoder = commandBuffer.makeRenderCommandEncoder(
-                      descriptor: pass
+                  let buffer = commands.makeCommandBuffer(),
+                  let encoder = buffer.makeRenderCommandEncoder(
+                    descriptor: pass
                   ) else { return }
 
-            if let pipeline {
+            var canDrawAnatomy = false
+            if let frame = alignedFrame,
+               frame.pose.isUsable,
+               let videoPipeline,
+               let bounds = VideoAspectFillCrop.bounds(
+                    source: frame.pose.imageSize,
+                    viewport: view.bounds.size
+               ),
+               frame.pose.imageSize.width
+                    == CGFloat(CVPixelBufferGetWidth(frame.pixelBuffer)),
+               frame.pose.imageSize.height
+                    == CGFloat(CVPixelBufferGetHeight(frame.pixelBuffer)),
+               let coreVideoTexture = wrapBGRA(frame.pixelBuffer),
+               let imageTexture = CVMetalTextureGetTexture(coreVideoTexture) {
+                encoder.setCullMode(.none)
+                encoder.setRenderPipelineState(videoPipeline)
+                encoder.setFragmentTexture(imageTexture, index: 0)
+                var crop = bounds
+                encoder.setFragmentBytes(
+                    &crop, length: MemoryLayout<SIMD4<Float>>.stride,
+                    index: 0
+                )
+                encoder.drawPrimitives(
+                    type: .triangle, vertexStart: 0, vertexCount: 6
+                )
+                // Keep CoreVideo's pixel buffer texture wrapper alive
+                // until the GPU is finished sampling it.
+                buffer.addCompletedHandler { _ in
+                    _ = coreVideoTexture
+                }
+                canDrawAnatomy = true
+            }
+
+            // When no matched source exists, clear to fully transparent.
+            // The *single* AVFoundation preview keeps showing behind it.
+            // Never render model-only geometry over a mismatched frame.
+            if canDrawAnatomy,
+               let frame = alignedFrame,
+               let bonePipeline {
                 let geometry: [BoneMeshVertex]
                 if let approvedAtlas {
                     geometry = approvedAtlas.makeProjectedMesh(
-                        snapshot: snapshot, viewport: view.bounds.size,
+                        snapshot: frame.pose,
+                        viewport: view.bounds.size,
                         opacity: opacity, focus: focus
                     )
                 } else {
                     geometry = VolumetricBoneMesh.make(
-                        snapshot: snapshot, viewport: view.bounds.size,
+                        snapshot: frame.pose,
+                        viewport: view.bounds.size,
                         opacity: opacity, focus: focus
                     )
                 }
+
                 if !geometry.isEmpty {
-                    let bytes = geometry.withUnsafeBytes { raw -> MTLBuffer? in
-                        guard let base = raw.baseAddress else { return nil }
+                    let gpuVertices = geometry.withUnsafeBytes {
+                        raw -> MTLBuffer? in
+                        guard let address = raw.baseAddress else { return nil }
                         return device.makeBuffer(
-                            bytes: base, length: raw.count,
+                            bytes: address, length: raw.count,
                             options: .storageModeShared
                         )
                     }
-                    if let bytes {
-                        encoder.setRenderPipelineState(pipeline)
+                    if let gpuVertices {
+                        encoder.setRenderPipelineState(bonePipeline)
                         encoder.setCullMode(.none)
-                        encoder.setVertexBuffer(bytes, offset: 0, index: 0)
+                        encoder.setVertexBuffer(
+                            gpuVertices, offset: 0, index: 0
+                        )
                         encoder.drawPrimitives(
-                            type: .triangle,
-                            vertexStart: 0, vertexCount: geometry.count
+                            type: .triangle, vertexStart: 0,
+                            vertexCount: geometry.count
                         )
                     }
                 }
             }
-            // Empty geometry still submits a transparent clear: no ghost
-            // body remains when the subject leaves frame or user pauses.
+
             encoder.endEncoding()
-            commandBuffer.present(drawable)
-            commandBuffer.commit()
+            buffer.present(drawable)
+            buffer.commit()
         }
     }
 }

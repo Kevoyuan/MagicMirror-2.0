@@ -39,6 +39,30 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   CODE_SIGNING_ALLOWED=NO build-for-testing
 ```
 
+## Exact-frame Metal camera compositing (new)
+
+In tracking mode, `CameraPosePipeline` now retains **at most six** source
+BGRA buffers for a maximum of 160ms. The asynchronous MediaPipe callback
+can consume ONLY the buffer with the exact same capture timestamp as
+the 33-point pose. These are published as one `AlignedPoseVideoFrame`.
+
+`MetalSkeletonOverlay` renders that **source image first** and then the
+proxy/approved anatomical triangles in one Metal command buffer/drawable.
+`VideoAspectFillCrop` uses the source frame's actual width/height and the
+view's current size. The on-device skeleton and video can no longer be
+silently taken from unrelated source timestamps during tracking.
+
+**Fallback:** if no pose, tracking is lost, the GPU cannot wrap the BGRA
+buffer, or the app is paused, the transparent Metal layer clears and
+the same-session `AVCaptureVideoPreviewLayer` underneath continues showing
+live video. This is not a second camera or an upload.
+
+**Trade-off:** while tracking, displaying only completed MediaPipe source
+frames can increase apparent video latency and reduce displayed camera
+frame rate. Benchmarks must measure actual camera-to-photon p95 on a
+physical iPhone before declaring real-time product acceptance. Timestamp
+matching alone does not prove fast enough motion response.
+
 ## What is included
 
 - `App/MirrorScreen.swift`: SwiftUI one-screen, camera permission hint,
@@ -54,6 +78,14 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
 - `MagicMirrorTests/CameraIntrinsicMatrixReaderTests.swift` and
   `BodyCameraProjectionTests.swift`: synthetic matrix identity,
   3D reprojection, confidence/frame mismatch tests.
+- `Tracking/BoundedVideoFrameStore.swift`: local BGRA memory retention,
+  frame timestamp matching, bounded buffer size and session reset.
+- `Rendering/VideoAspectFillCrop.swift`: video texture-to-preview crop
+  mapping, shared with the pose geometry conventions.
+- `Rendering/MatchedCameraShaders.metal`: direct BGRA texture sampling
+  into the Metal drawable before bone shading.
+- `MagicMirrorTests/MatchedVideoCompositorTests.swift`: synthetic
+  source-buffer ownership, eviction and crop parity tests.
 - `Tracking/PoseFrameAssociationGate.swift`: bounded timestamp-to-source-
   dimensions mapping for asynchronous LIVE_STREAM callbacks; rejects stale,
   replayed, out-of-order and old-session results, with no stored pixels.

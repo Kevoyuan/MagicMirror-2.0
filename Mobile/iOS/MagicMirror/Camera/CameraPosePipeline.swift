@@ -18,7 +18,8 @@ enum MirrorPhase: Equatable {
 final class CameraPosePipeline: NSObject {
     let session = AVCaptureSession()
 
-    var onPose: ((PoseSnapshot?) -> Void)?
+    // A single callback carries the matching image + pose together.
+    var onAlignedFrame: ((AlignedPoseVideoFrame?) -> Void)?
     var onPhase: ((MirrorPhase) -> Void)?
 
     private let sessionQueue = DispatchQueue(
@@ -28,6 +29,7 @@ final class CameraPosePipeline: NSObject {
         label: "dev.kevoyuan.magicmirror.camera.frames", qos: .userInitiated
     )
     private let frameGate = PoseFrameAssociationGate()
+    private let sourceImages = BoundedVideoFrameStore()
 
     private var landmarker: PoseLandmarker?
     private var configured = false
@@ -52,7 +54,8 @@ final class CameraPosePipeline: NSObject {
             guard let self else { return }
             self.sessionQueue.async {
                 self.frameGate.reset(active: false)
-                self.postPose(nil)
+                self.sourceImages.reset(active: false)
+                self.postAlignedFrame(nil)
                 if self.wantsRunning {
                     self.postPhase(.unavailable(
                         "Camera temporarily interrupted. Waiting to reconnect."
@@ -79,7 +82,8 @@ final class CameraPosePipeline: NSObject {
             let canRecover = error?.code == .mediaServicesWereReset
             self.sessionQueue.async {
                 self.frameGate.reset(active: false)
-                self.postPose(nil)
+                self.sourceImages.reset(active: false)
+                self.postAlignedFrame(nil)
                 guard self.wantsRunning else { return }
                 if canRecover {
                     self.startAuthorized()
@@ -132,8 +136,9 @@ final class CameraPosePipeline: NSObject {
             guard let self else { return }
             self.wantsRunning = false
             self.frameGate.reset(active: false)
+            self.sourceImages.reset(active: false)
             if self.session.isRunning { self.session.stopRunning() }
-            self.postPose(nil)
+            self.postAlignedFrame(nil)
             self.postPhase(.idle)
         }
     }
@@ -149,6 +154,7 @@ final class CameraPosePipeline: NSObject {
                 configured = true
             }
             frameGate.reset(active: true)
+            sourceImages.reset(active: true)
             // AVCaptureSession.startRunning MUST NOT run on main.
             if !session.isRunning { session.startRunning() }
             postPhase(.searching)
@@ -219,9 +225,9 @@ final class CameraPosePipeline: NSObject {
         }
     }
 
-    private func postPose(_ pose: PoseSnapshot?) {
+    private func postAlignedFrame(_ frame: AlignedPoseVideoFrame?) {
         DispatchQueue.main.async { [weak self] in
-            self?.onPose?(pose)
+            self?.onAlignedFrame?(frame)
         }
     }
 
@@ -271,7 +277,11 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard frameGate.register(
             timestampMilliseconds: timeMs, imageSize: size,
             intrinsics: intrinsic
-        ), let landmarker else { return }
+        ), let landmarker,
+              sourceImages.retain(
+                timestampMilliseconds: timeMs,
+                pixelBuffer: pixelBuffer
+              ) else { return }
 
         do {
             let image = try MPImage(
@@ -282,7 +292,7 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
             )
         } catch {
             postPhase(.unavailable("Pose inference error: \(error.localizedDescription)"))
-            postPose(nil)
+            postAlignedFrame(nil)
         }
     }
 }
@@ -299,15 +309,23 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         // an out-of-order result or a >160ms-old result cannot be shown.
         guard let metadata = frameGate.consumeMetadata(
             timestampMilliseconds: timestamp
+        ), let sourceImage = sourceImages.take(
+            timestampMilliseconds: timestamp
         ) else { return }
+        guard metadata.imageSize.width
+                == CGFloat(CVPixelBufferGetWidth(sourceImage)),
+              metadata.imageSize.height
+                == CGFloat(CVPixelBufferGetHeight(sourceImage)) else {
+            return
+        }
 
         if let error {
             postPhase(.unavailable("Pose inference error: \(error.localizedDescription)"))
-            postPose(nil)
+            postAlignedFrame(nil)
             return
         }
         guard let pose = result?.landmarks.first, pose.count == 33 else {
-            postPose(nil)
+            postAlignedFrame(nil)
             postPhase(.searching)
             return
         }
@@ -341,7 +359,9 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
             worldPoints: worldPoints,
             cameraIntrinsics: metadata.intrinsics
         )
-        postPose(snapshot.isUsable ? snapshot : nil)
+        postAlignedFrame(snapshot.isUsable
+            ? AlignedPoseVideoFrame(pose: snapshot, pixelBuffer: sourceImage)
+            : nil)
         postPhase(snapshot.isUsable ? .tracking : .searching)
     }
 }
