@@ -271,6 +271,27 @@ clipping exists. This interface does not bundle Z-Anatomy, introduce a
 second camera, or turn off local privacy gates. Synthetic catalog XCTest
 source enforces that all unreviewed categories remain unavailable.
 
+The next native UI refinement keeps the same AVFoundation/MediaPipe/Metal
+pipeline and improves **how** its existing controls are presented:
+
+- A slim manuscript-style camera header with accessible 44-point diagnostics
+  control; tracking states now distinguish preparing, blocked and interrupted
+  camera states from actual pose acquisition.
+- A quiet paper/sepia/verdigris control dock with a notebook folio rule,
+  focus Picker, compact Layers/Opacity/Pause buttons, and an always-readable
+  reference disclaimer. At accessibility text sizes, action buttons stack.
+- A two-page native **Systems / Sections** anatomy notebook. Systems list
+  identifies only the current proxy as available; future licensed anatomical
+  layers and real 3D section planes remain clearly unavailable. The section
+  drawings are visual *concept cues*, not a running clipping engine.
+- Respect for Reduce Motion when opening the opacity adjustment, with no
+  changes to pose landmarks, retargeting, camera ownership or Metal geometry.
+
+**Verification required:** Xcode arm64 Simulator build-for-testing via CI,
+followed by actual iPhone visual layout, VoiceOver/Dynamic Type and
+camera/overlay latency testing. This source update does **not** prove
+real-device presentation or complete reviewed anatomy.
+
 See [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.
 
 ## Coherent atlas triangle adapter (research source)
