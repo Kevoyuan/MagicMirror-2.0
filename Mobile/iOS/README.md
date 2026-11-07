@@ -713,3 +713,32 @@ does not determine hand-over-rib depth, occluded interior anatomy,
 true tissue locations, LiDAR occlusion or medical X-ray structure.
 Precise segmentation orientation/quality and thermal performance
 still need physical iPhone review before release.
+
+## Leonardo compact camera and study folio (design iteration 2026-11-08)
+
+On launch the parchment dock defaults to a compact row with body-region
+menu, Layers, Pause/Resume and an Adjustments disclosure; the small
+illustrative-reference note stays visible. Expanding Adjustments reveals
+the existing Whole/Arms/Legs segmented picker and the 15–90% overall
+opacity slider. This deliberately returns camera space to the subject,
+while keeping the frequently needed actions available at 44pt minimum
+touch size. Large Dynamic Type reflows the buttons.
+
+Tapping a current, visible proxy segment or a real reviewed rendered
+atlas triangle shows a short selection strip; **Study** opens the
+source-backed educational note in a separate parchment folio. This is
+a frozen *text description* of the selected reference, not a photo
+capture or frozen camera frame. A missing reviewed note displays only a
+safe generic educational disclaimer, never fabricated anatomy facts.
+
+Layer-status UI is now determined by
+`AnatomyLayerPresentation`: visually selected means **enabled AND
+actually runtime-ready**; otherwise the proxy is shown as the
+selected fallback. The deterministic unit tests in
+`AnatomyLayerPresentationTests.swift` cover unavailable,
+ready, selected and multi-system scenarios. The installed iOS package
+still needs signed-device and licensed-asset validation; available
+source code alone is not proof that real atlas resources ship.
+
+Primary references: [DESIGN.md](../../DESIGN.md) and
+[UI user journeys](../../Docs/IOS_UI_USER_JOURNEYS.md).
