@@ -29,6 +29,8 @@ struct AtlasRigBonePose {
 /// A complete, connected atlas-space frame. No individual part is exposed
 /// as successful if a single reviewed parent-child attachment fails.
 struct CoherentAtlasRigPose {
+    let sourceTimestampMilliseconds: Int
+    let sourceImageSize: CGSize
     let bones: [AtlasRigBonePose]
 
     func bone(_ id: String) -> AtlasRigBonePose? {
@@ -216,7 +218,11 @@ enum CoherentAtlasRigPlanner {
         }
         let ordered = manifest.bones.compactMap { results[$0.id] }
         guard ordered.count == manifest.bones.count else { return nil }
-        return CoherentAtlasRigPose(bones: ordered)
+        return CoherentAtlasRigPose(
+            sourceTimestampMilliseconds: current.timestampMilliseconds,
+            sourceImageSize: current.imageSize,
+            bones: ordered
+        )
     }
 
     private static func angle(
