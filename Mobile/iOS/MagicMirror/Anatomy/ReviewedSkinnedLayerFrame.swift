@@ -8,6 +8,13 @@ struct ReviewedSkinnedLayerFrame {
     let batch: SkinnedAtlasDrawBatch
 }
 
+/// A separately reviewed source layer without audited four-weight
+/// skinning can still appear as its rigid reference mesh.
+struct ReviewedRigidLayerFrame {
+    let layer: AnatomyDisplayLayer
+    let batch: CalibratedAtlasDrawBatch
+}
+
 /// Pure selection policy; user intent survives temporary tracking loss.
 /// Availability is still checked on every new camera frame by the
 /// separately source- and calibration-gated atlas runtime.
