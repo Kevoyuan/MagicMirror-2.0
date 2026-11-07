@@ -52,12 +52,14 @@ Read these in order:
    `Docs/ROADMAP.md` are **archived desktop-prototype context**.
    Do not continue their desktop milestones.
 
-**Repository consolidation (2026-11-07):** PRs #1–#13 have all been merged
-into `main`. All older feature branches have zero unmerged commits
-relative to `main`; the refs may still be visible in GitHub.
-PR #13 integrated a bounded same-capture-frame timestamp/geometry gate
-into native iOS. There are currently no unmerged historical feature PRs.
-Re-check current PRs and CI rather than treating this as immutable status.
+**Repository consolidation (2026-11-07):** the earlier mobile integration
+PRs through #26 were merged into `main` at the time of this update.
+The native iOS project now includes on-device tracking, partial-pose
+support, Metal proxy rendering, source-frame alignment, camera/atlas
+research kernels, local diagnostics, and a compact Leonardo UI with
+honestly gated anatomy layers. These are source milestones, not actual
+physical-iPhone, reviewed-atlas or App Store acceptance. Always re-check
+current PRs and CI rather than treating this snapshot as immutable.
 
 Before editing or opening a PR, inspect the live repository branches,
 PR bases, changed files and current CI. Do **not** assume these statuses
@@ -152,13 +154,12 @@ without a separate explicit cleanup decision.
 7. **Mobile-6 — Android:** Kotlin, on-device MediaPipe and native GPU
    rendering using equivalent pose/rig/math tests. No desktop alternative.
 
-**Current reality:** PR #12's original x86_64 Simulator linker failure
-was fixed by restricting Xcode's simulator compilation to arm64 while
-retaining the actual MediaPipe XCFramework. Xcode `build-for-testing`
-now passes on macOS, but that only **compiles** app and XCTest targets:
-the tests have not been executed on simulator and no camera/pose has
-been validated on a physical iPhone. The Mobile-1 bounded pose-frame association source is now Xcode-compiled;
-next prioritize a signed real iPhone camera/landmark smoke test, explicit
+**Current reality:** native iOS Xcode `build-for-testing` passes for
+arm64 Simulator with the pinned MediaPipe XCFramework, including source
+for partial-pose tracking, atlas/camera kernels, diagnostics and the
+Leonardo layers interface. This **compiles** the app/XCTest target; it
+neither executes XCTest on an iPhone nor validates real camera behavior.
+Next prioritize a signed real iPhone smoke test, real landmark overlay
 alignment and measured end-to-end movement latency.
 
 ## 5. Testing and evidence requirements
