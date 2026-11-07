@@ -360,7 +360,9 @@ final class MirrorViewModel {
     /// the same landmarks as if they were verified internal atlas bones.
     func selectReference(at location: CGPoint, viewport: CGSize) {
         guard !isPaused, skinnedAtlasBatch == nil,
-              calibratedAtlasBatch == nil else {
+              calibratedAtlasBatch == nil,
+              skinnedAtlasBatches.isEmpty,
+              calibratedAtlasBatches.isEmpty else {
             referenceSelection = nil
             return
         }
