@@ -14,6 +14,7 @@ struct SkinnedAtlasRaster {
     float4 position [[position]];
     float3 normal;
     float4 color;
+    float3 cameraPosition;
 };
 
 /// Live atlas-rest -> camera-space linear blend skinning, then calibrated
@@ -43,6 +44,7 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
     }
     SkinnedAtlasRaster out;
     out.color = v.color;
+    out.cameraPosition = p.xyz;
     out.normal = length(n) > 1e-6 ? normalize(n) : float3(0, 0, 1);
 
     if (!isfinite(p.z) || p.z <= 0.05) {
@@ -69,3 +71,29 @@ vertex SkinnedAtlasRaster skinnedAtlasVertex(
 
 /// Use the same boneFragment shading as rigid verified anatomy, rather
 /// than creating a second material or implying measured body normals.
+
+
+/// A real per-fragment 3D half-space clip of GPU-skinned reference mesh.
+/// This cuts rendered SURFACES; it does not generate solid end caps or
+/// reveal hidden medical voxels. Zero normal disables clipping.
+fragment half4 skinnedSectionFragment(
+    SkinnedAtlasRaster input [[stage_in]],
+    constant float4& sectionPlane [[buffer(0)]]
+) {
+    if (dot(sectionPlane.xyz, sectionPlane.xyz) > 0.5 &&
+        dot(sectionPlane.xyz, input.cameraPosition) +
+        sectionPlane.w < 0.0) {
+        discard_fragment();
+    }
+    const float3 light = normalize(float3(-0.34, 0.54, 0.78));
+    const float3 n = normalize(input.normal);
+    const float diffuse = max(dot(n, light), 0.0);
+    const float rim = pow(1.0 - abs(n.z), 2.0) * 0.20;
+    const float brightness = 0.37 + 0.52 * diffuse + rim;
+    const float3 shaded = clamp(
+        input.color.rgb * brightness, 0.0, 1.0
+    );
+    return half4(
+        half3(shaded), half(clamp(input.color.a, 0.0, 1.0))
+    );
+}

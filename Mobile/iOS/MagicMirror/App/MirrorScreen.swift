@@ -66,7 +66,7 @@ struct MirrorScreen: View {
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .anatomy:
-                AnatomyLayersSheet()
+                AnatomyLayersSheet(model: model)
             case .guide:
                 MirrorGuideSheet(showDiagnostics: $model.showDiagnostics)
             }

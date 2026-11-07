@@ -330,3 +330,18 @@ This is a substantive camera-pose algorithm and source-runtime
 integration. It still requires real iPhone reprojection statistics,
 motion/facing/outlier tests, latency and independent camera/body
 calibration before attaching approved anatomy.
+
+## Mobile-3/4/5 true GPU surface sections — code stage (2026-11-07)
+
+Integrated a live 3D half-space section plane with the verified,
+GPU-skinned atlas: axial, sagittal and coronal directions are derived
+from the current confident torso basis in camera space, and the actual
+Metal shader clips on the camera-space interpolated skinned position.
+The Leonardo Layers sheet can select a plane, adjust its position and
+return to a complete atlas. The controls remain locked unless verified
+atlas and camera evidence are present.
+
+**Scope distinction:** this implements 3D mesh *surface clipping*, not
+medical/internal volume slices or watertight cut caps. Live phone
+facing/occlusion quality, source anatomy/weights and camera registration
+still need human and physical-device acceptance.

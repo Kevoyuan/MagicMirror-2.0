@@ -143,7 +143,9 @@ final class LiveReviewedAtlasRuntime {
         reviewedCamera: ReviewedSourceCameraFrame?,
         viewport: CGSize,
         focus: AnatomyFocus,
-        opacity: Float
+        opacity: Float,
+        section: AnatomySectionPlane? = nil,
+        sectionOffset: Float = 0
     ) -> CalibratedAtlasDrawBatch? {
         skinnedFrame = nil
         guard let frame, frame.hasTorsoAnchor,
@@ -207,6 +209,20 @@ final class LiveReviewedAtlasRuntime {
         else { return nil }
 
         if let weights = resources.skinning {
+            // Sectioning is restricted to reviewed GPU skinning. A rigid
+            // atlas/illustrative proxy never receives fake 3D cuts.
+            let cut: AnatomySectionCut?
+            if let section {
+                guard let computed = AnatomySectionCut.make(
+                    section: section,
+                    offsetInShoulderWidths: sectionOffset,
+                    frame: frame,
+                    camera: reviewedCamera
+                ) else { return nil }
+                cut = computed
+            } else {
+                cut = nil
+            }
             skinnedFrame = SkinnedAtlasDrawBatch.build(
                 atlas: resources.mesh,
                 hierarchy: resources.hierarchy,
@@ -214,7 +230,8 @@ final class LiveReviewedAtlasRuntime {
                 influences: weights,
                 viewport: viewport,
                 focus: focus,
-                opacity: opacity
+                opacity: opacity,
+                sectionCut: cut
             )
         }
         // Avoid CPU triangle regeneration when a complete reviewed

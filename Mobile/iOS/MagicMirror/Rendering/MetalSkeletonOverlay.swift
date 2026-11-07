@@ -75,6 +75,9 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                   let skinVertex = shaders.makeFunction(
                     name: "skinnedAtlasVertex"
                   ),
+                  let skinnedSectionFragment = shaders.makeFunction(
+                    name: "skinnedSectionFragment"
+                  ),
                   let videoVertex = shaders.makeFunction(
                     name: "matchedCameraVertex"
                   ),
@@ -108,7 +111,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
 
             let skinDescriptor = MTLRenderPipelineDescriptor()
             skinDescriptor.vertexFunction = skinVertex
-            skinDescriptor.fragmentFunction = boneFragment
+            skinDescriptor.fragmentFunction = skinnedSectionFragment
             let skinColor = skinDescriptor.colorAttachments[0]!
             skinColor.pixelFormat = .bgra8Unorm
             skinColor.isBlendingEnabled = true
@@ -264,6 +267,12 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     encoder.setVertexBytes(
                         &screen, length: MemoryLayout<SIMD4<Float>>.stride,
                         index: 4
+                    )
+                    var section = skin.sectionPlane
+                    encoder.setFragmentBytes(
+                        &section,
+                        length: MemoryLayout<SIMD4<Float>>.stride,
+                        index: 0
                     )
                     encoder.drawPrimitives(
                         type: .triangle, vertexStart: 0,
