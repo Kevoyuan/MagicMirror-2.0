@@ -92,6 +92,15 @@ enum MirrorPresentationState: Equatable {
         }
     }
 
+    /// The camera may supply a technical interruption description, but the
+    /// customer-facing copy must be predictable and localizable.
+    var guidanceForUser: String? {
+        if case .unavailable = self {
+            return "Camera temporarily unavailable. Try reopening the app."
+        }
+        return guidance
+    }
+
     var canOpenCameraSettings: Bool {
         if case .permissionDenied = self { return true }
         return false
