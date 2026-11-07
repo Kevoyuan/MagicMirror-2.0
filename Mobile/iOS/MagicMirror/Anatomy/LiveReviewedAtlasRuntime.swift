@@ -117,9 +117,13 @@ struct ReviewedSourceCameraFrame {
     let intrinsics: BodyCameraIntrinsics
     let bodyToCamera: BodyToCameraTransform
     let independentReviewConfirmed: Bool
+    /// Built only by AutomaticReferenceAlignmentGate for an estimated,
+    /// confidence-gated educational reference. NOT physical approval.
+    var estimatedReferenceOnly: Bool = false
 
     func matches(_ frame: PoseSnapshot) -> Bool {
-        guard independentReviewConfirmed,
+        guard (independentReviewConfirmed || estimatedReferenceOnly),
+              !(independentReviewConfirmed && estimatedReferenceOnly),
               timestampMilliseconds == frame.timestampMilliseconds,
               imageSize == frame.imageSize,
               intrinsics.matches(image: frame.imageSize),
@@ -234,7 +238,11 @@ final class LiveReviewedAtlasRuntime {
                 intrinsics: reviewedCamera.intrinsics,
                 extrinsics: reviewedCamera.bodyToCamera,
                 independentCameraReviewConfirmed:
-                    reviewedCamera.independentReviewConfirmed
+                    reviewedCamera.independentReviewConfirmed,
+                estimatedReferenceOnly:
+                    reviewedCamera.estimatedReferenceOnly,
+                maximumP90FractionOfSourceWidth:
+                    reviewedCamera.estimatedReferenceOnly ? 0.012 : 0.03
               )
         else { return nil }
 
