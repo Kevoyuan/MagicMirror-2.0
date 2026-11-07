@@ -30,7 +30,7 @@ struct AnatomyReferenceCapture {
     @discardableResult
     mutating func ingest(_ frame: PoseSnapshot?) -> PoseSnapshot? {
         if let reference { return reference }
-        guard let frame, frame.isUsable,
+        guard let frame, frame.hasTorsoAnchor,
               frame.worldPoints.count == 33,
               [11, 12, 23, 24].allSatisfy({
                   frame.worldPoints[$0].isUsable
@@ -72,7 +72,8 @@ struct AnatomyReferenceCapture {
         reference = PoseSnapshot(
             timestampMilliseconds: last.timestampMilliseconds,
             imageSize: last.imageSize,
-            points: last.points, worldPoints: medianWorld
+            points: last.points, worldPoints: medianWorld,
+            cameraIntrinsics: last.cameraIntrinsics
         )
         window.removeAll(keepingCapacity: true)
         return reference
