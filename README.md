@@ -88,6 +88,7 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ROADMAP.md — M0 through M9, implementation gates
 - Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
 - Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
+- Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md — synthetic quality traces; not real camera FPS
 - Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
 - Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
