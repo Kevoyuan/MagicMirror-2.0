@@ -59,7 +59,8 @@ enum VolumetricBoneMesh {
               opacity > 0 else { return [] }
         let alpha = max(0, min(1, opacity))
         var vertices: [BoneMeshVertex] = []
-        vertices.reserveCapacity(9_000)
+        // Proxy ribs and head arcs add ~8k lightweight vertices at full focus.
+        vertices.reserveCapacity(focus == .full ? 16_000 : 9_000)
 
         func bone(_ a: Int, _ b: Int, radius: Float) {
             guard let start = sourcePoint(
