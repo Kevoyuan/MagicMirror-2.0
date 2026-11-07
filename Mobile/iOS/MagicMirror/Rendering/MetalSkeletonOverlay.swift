@@ -9,6 +9,8 @@ import UIKit
 /// There is no second camera session, cloud upload, or hidden video copy.
 struct MetalSkeletonOverlay: UIViewRepresentable {
     let alignedFrame: AlignedPoseVideoFrame?
+    /// Fixed-length IK reconstruction for reference display only.
+    let proxyPose: PoseSnapshot?
     let opacity: Double
     let focus: AnatomyFocus
     /// Absent until a reviewed atlas and independently calibrated camera
@@ -38,7 +40,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
 
     func updateUIView(_ view: MTKView, context: Context) {
         context.coordinator.update(
-            alignedFrame: alignedFrame,
+            alignedFrame: alignedFrame, proxyPose: proxyPose,
             opacity: Float(opacity), focus: focus,
             calibratedAtlasBatch: calibratedAtlasBatch
         )
@@ -53,6 +55,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var textureCache: CVMetalTextureCache?
 
         private var alignedFrame: AlignedPoseVideoFrame?
+        private var proxyPose: PoseSnapshot?
         private var opacity: Float = 0.65
         private var focus: AnatomyFocus = .full
         private var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
@@ -110,10 +113,12 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
 
         func update(
             alignedFrame: AlignedPoseVideoFrame?,
+            proxyPose: PoseSnapshot?,
             opacity: Float, focus: AnatomyFocus,
             calibratedAtlasBatch: CalibratedAtlasDrawBatch?
         ) {
             self.alignedFrame = alignedFrame
+            self.proxyPose = proxyPose
             self.opacity = max(0, min(1, opacity))
             self.focus = focus
             self.calibratedAtlasBatch = calibratedAtlasBatch
@@ -198,8 +203,21 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                    ) {
                     geometry = batch.vertices
                 } else {
+                    // Use fixed-length live IK only on its matching source
+                    // camera frame. Missing/stale geometry falls back to
+                    // the current confidence-gated procedural proxy.
+                    let referencePose: PoseSnapshot
+                    if let proxyPose,
+                       proxyPose.timestampMilliseconds
+                           == frame.pose.timestampMilliseconds,
+                       proxyPose.imageSize == frame.pose.imageSize,
+                       proxyPose.hasTorsoAnchor {
+                        referencePose = proxyPose
+                    } else {
+                        referencePose = frame.pose
+                    }
                     geometry = VolumetricBoneMesh.make(
-                        snapshot: frame.pose,
+                        snapshot: referencePose,
                         viewport: view.bounds.size,
                         opacity: opacity, focus: focus
                     )
