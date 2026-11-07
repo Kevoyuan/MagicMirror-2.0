@@ -80,6 +80,11 @@ def checked_review(path, system):
     if data.get("anatomicalSystem", "skeleton") != system:
         raise ValueError("Reviewed system identity does not match source FBX")
     weights_reviewed = data.get("reviewedJointWeights") is True
+    if weights_reviewed and data.get("reviewedUSDZHierarchy") is not True:
+        raise ValueError(
+            "Approved skinning weights require a separately reviewed "
+            "USDZ rig hierarchy"
+        )
     if data.get("reviewedForDistribution") is not True:
         raise ValueError("Human redistribution/license review is required")
     if data.get("reviewedJointBindings") is not True:
@@ -336,7 +341,10 @@ def main():
     # Blender export cannot claim success for an inconsistent binary/manifest.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from verify_atlas_package import verify_package
-    verify_package(args.out, system=args.system)
+    verify_package(
+        args.out, system=args.system,
+        require_rig=review.get("reviewedUSDZHierarchy") is True,
+    )
     print(f"Built {count} vertices / {len(parts)} reviewed meshes, sha256={model_sha}")
     print("Asset is developer-produced, NOT a human/device anatomical validation.")
 
