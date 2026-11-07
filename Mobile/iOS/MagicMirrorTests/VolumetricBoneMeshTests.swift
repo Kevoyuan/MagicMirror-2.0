@@ -92,20 +92,58 @@ final class VolumetricBoneMeshTests: XCTestCase {
         XCTAssertLessThan(withoutElbow.count, all.count)
     }
 
-    func testOutOfFrameAndNonfiniteAreRejected() {
+    func testNonfiniteJointHidesOnlyItsSegments() {
         let source = snapshot()
         var points = source.points
         points[11] = PosePoint(
             x: .nan, y: 0.4, visibility: 0.99
         )
-        let bad = PoseSnapshot(
+        let partial = PoseSnapshot(
             timestampMilliseconds: 1010, imageSize: source.imageSize,
             points: points
         )
-        XCTAssertTrue(VolumetricBoneMesh.make(
-            snapshot: bad,
-            viewport: CGSize(width: 390, height: 844), opacity: 0.7
-        ).isEmpty)
+        XCTAssertEqual(partial.coverage, .partial)
+        let size = CGSize(width: 390, height: 844)
+        let partialMesh = VolumetricBoneMesh.make(
+            snapshot: partial, viewport: size, opacity: 0.7
+        )
+        let fullMesh = VolumetricBoneMesh.make(
+            snapshot: source, viewport: size, opacity: 0.7
+        )
+        XCTAssertFalse(partialMesh.isEmpty)
+        XCTAssertLessThan(partialMesh.count, fullMesh.count)
+        XCTAssertNil(VolumetricBoneMesh.sourcePoint(
+            index: 11, snapshot: partial, viewport: size
+        ))
+    }
+
+    func testSingleObservedArmDrawsNoUnseenTorsoOrLegs() {
+        let source = snapshot()
+        var points = source.points.map {
+            PosePoint(x: $0.x, y: $0.y, visibility: 0.1)
+        }
+        for index in [11, 13, 15] {
+            points[index] = source.points[index]
+        }
+        let partial = PoseSnapshot(
+            timestampMilliseconds: 1010, imageSize: source.imageSize,
+            points: points, worldPoints: source.worldPoints
+        )
+        XCTAssertTrue(partial.isUsable)
+        XCTAssertFalse(partial.hasTorsoAnchor)
+        let size = CGSize(width: 390, height: 844)
+        let whole = VolumetricBoneMesh.make(
+            snapshot: partial, viewport: size, opacity: 0.7, focus: .full
+        )
+        let arms = VolumetricBoneMesh.make(
+            snapshot: partial, viewport: size, opacity: 0.7, focus: .arms
+        )
+        let legs = VolumetricBoneMesh.make(
+            snapshot: partial, viewport: size, opacity: 0.7, focus: .legs
+        )
+        XCTAssertGreaterThan(whole.count, 0)
+        XCTAssertEqual(whole.count, arms.count)
+        XCTAssertTrue(legs.isEmpty)
     }
 
     func testFullReferenceShowsRibCageAndPelvisButFocusIsSelective() {
@@ -164,6 +202,45 @@ final class VolumetricBoneMeshTests: XCTestCase {
             $0.color.x.isFinite && $0.color.w > 0 &&
             $0.color.w <= 1
         })
+    }
+
+    @MainActor
+    func testTemporalFilterKeepsPartialPoseAndFreshIntrinsics() {
+        var filter = PoseTemporalFilter()
+        let source = snapshot()
+        var points = source.points.map {
+            PosePoint(x: $0.x, y: $0.y, visibility: 0.1)
+        }
+        for index in [11, 13, 15, 12, 14] {
+            points[index] = source.points[index]
+        }
+        let first = PoseSnapshot(
+            timestampMilliseconds: 1000, imageSize: source.imageSize,
+            points: points
+        )
+        XCTAssertEqual(filter.apply(first)?.coverage, .partial)
+
+        points[13] = PosePoint(
+            x: 0.25, y: 0.45, visibility: 0.1
+        )
+        points[14] = PosePoint(
+            x: 0.8, y: 0.45, visibility: 0.98
+        )
+        let intrinsics = BodyCameraIntrinsics(
+            fx: 700, fy: 700, cx: 360, cy: 640,
+            width: 720, height: 1280
+        )
+        let second = PoseSnapshot(
+            timestampMilliseconds: 1033, imageSize: source.imageSize,
+            points: points, cameraIntrinsics: intrinsics
+        )
+        let filtered = filter.apply(second)
+        XCTAssertEqual(filtered?.coverage, .partial)
+        XCTAssertFalse(filtered!.points[13].isUsable)
+        XCTAssertEqual(filtered?.cameraIntrinsics?.fx, 700)
+        XCTAssertTrue(filtered!.points[14].isUsable)
+        XCTAssertGreaterThan(filtered!.points[14].x, first.points[14].x)
+        XCTAssertLessThan(filtered!.points[14].x, points[14].x)
     }
 
     @MainActor
