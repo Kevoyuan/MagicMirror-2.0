@@ -8,6 +8,8 @@ struct MirrorScreen: View {
     @State private var showLayers = false
     @State private var showOpacity = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -32,11 +34,12 @@ struct MirrorScreen: View {
                 }
             }
             .ignoresSafeArea()
+            .allowsHitTesting(false)
 
             LinearGradient(
                 colors: [
-                    .black.opacity(0.52), .clear,
-                    .clear, .black.opacity(0.66)
+                    .black.opacity(0.48), .clear,
+                    .clear, .black.opacity(0.50)
                 ],
                 startPoint: .top, endPoint: .bottom
             )
@@ -52,13 +55,13 @@ struct MirrorScreen: View {
                 Spacer()
                 if model.snapshot == nil || model.isPaused {
                     guidance
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 8)
                 }
                 controls
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 14)
+            .padding(.top, 2)
+            .padding(.bottom, 5)
         }
         .task { model.start() }
         .onChange(of: scenePhase) { _, phase in
@@ -74,49 +77,57 @@ struct MirrorScreen: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 10) {
+private var header: some View {
+        HStack(spacing: 8) {
             HStack(spacing: 7) {
                 Image(systemName: "book.closed")
-                    .font(.caption)
+                    .font(.system(size: 13, weight: .medium))
                     .accessibilityHidden(true)
                 Text("MAGICMIRROR")
-                    .font(.system(.caption, design: .serif, weight: .bold))
-                    .tracking(1.1)
+                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .tracking(1.0)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
-            .foregroundStyle(Color(red: 0.96, green: 0.92, blue: 0.83))
-            .lineLimit(1)
+            .foregroundStyle(LeonardoPalette.ivory)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 34)
+            .background(LeonardoPalette.cameraScrim.opacity(0.65),
+                        in: Capsule())
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 1)
 
             Button {
                 model.toggleDiagnostics()
             } label: {
                 Image(systemName: "waveform.path.ecg")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(model.showDiagnostics
-                        ? Color(red: 0.74, green: 0.93, blue: 0.83)
-                        : .white)
+                        ? LeonardoPalette.ivory : LeonardoPalette.ivory.opacity(0.88))
                     .frame(width: 44, height: 44)
-                    .background(.black.opacity(0.42), in: Circle())
+                    .background(LeonardoPalette.cameraScrim.opacity(0.7),
+                                in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(model.showDiagnostics
-                ? "Hide local pose delivery diagnostics"
-                : "Show local pose delivery diagnostics")
+                ? "Hide on-device pose diagnostics"
+                : "Show on-device pose diagnostics")
 
-            Text(trackingLabel)
-                .font(.caption2.weight(.bold))
-                .tracking(0.6)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .background(
-                    Color(red: 0.09, green: 0.12, blue: 0.11)
-                        .opacity(0.84), in: Capsule()
-                )
-                .accessibilityAddTraits(.updatesFrequently)
+            Label(trackingLabel, systemImage: statusIcon)
+                .labelStyle(.titleAndIcon)
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.4)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .lineLimit(1)
+                .padding(.horizontal, 10)
+                .frame(minHeight: 34)
+                .background(LeonardoPalette.cameraScrim.opacity(0.86),
+                            in: Capsule())
+                .accessibilityLabel("Pose status: \(trackingLabel)")
         }
+        // The 34-pt manuscript strip is visual only; controls retain
+        // at least 44-pt hit targets and respect the real iPhone safe area.
+        .frame(minHeight: 44)
         .accessibilityElement(children: .contain)
     }
 
@@ -156,45 +167,67 @@ struct MirrorScreen: View {
 
     private var trackingLabel: String {
         if model.isPaused { return "PAUSED" }
-        switch model.snapshot?.coverage ?? .none {
-        case .none: return "SEARCHING"
-        case .partial: return "PARTIAL"
-        case .torsoAnchored: return "TRACKING"
+        switch model.phase {
+        case .idle: return "PREPARING"
+        case .permissionRequested: return "CAMERA ACCESS"
+        case .permissionDenied: return "CAMERA OFF"
+        case .unavailable: return "INTERRUPTED"
+        case .searching, .partialTracking, .tracking:
+            switch model.snapshot?.coverage ?? .none {
+            case .none: return "SEARCHING"
+            case .partial: return "PARTIAL"
+            case .torsoAnchored: return "TRACKING"
+            }
         }
     }
 
-    @ViewBuilder
+    private var statusIcon: String {
+        if model.isPaused { return "pause.circle" }
+        switch model.phase {
+        case .permissionDenied, .unavailable: return "exclamationmark.circle"
+        case .idle, .permissionRequested: return "camera"
+        case .searching, .partialTracking, .tracking:
+            return model.snapshot == nil ? "viewfinder" : "figure.stand"
+        }
+    }
+
+@ViewBuilder
     private var guidance: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "figure.stand")
-                .font(.system(size: 34, weight: .ultraLight))
-                .foregroundStyle(.cyan.opacity(0.92))
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: model.isPaused ? "pause.circle" : "viewfinder")
+                .font(.title3)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .accessibilityHidden(true)
 
             Text(guidanceText)
-                .font(.subheadline.weight(.semibold))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
+                .font(.subheadline.weight(.medium))
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(LeonardoPalette.ivory)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if case .permissionDenied = model.phase {
-                Button("Open Camera Settings") {
+                Button("Settings") {
                     guard let url = URL(string: UIApplication.openSettingsURLString)
                     else { return }
                     UIApplication.shared.open(url)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.cyan)
-                .accessibilityHint("Open system settings to allow camera access")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LeonardoPalette.ivory)
+                .frame(minWidth: 64, minHeight: 44)
+                .background(LeonardoPalette.verdigris, in: Capsule())
+                .accessibilityHint("Open iOS Settings to enable camera permission")
             }
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 18)
-        .frame(maxWidth: .infinity)
-        .background(.black.opacity(0.48), in: RoundedRectangle(cornerRadius: 22))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(LeonardoPalette.cameraScrim.opacity(0.85),
+                    in: RoundedRectangle(cornerRadius: 15))
         .accessibilityElement(children: .contain)
     }
 
     private var guidanceText: String {
-        if model.isPaused { return "Tracking paused" }
+        if model.isPaused { return "Overlay paused · camera still live" }
         switch model.phase {
         case .idle, .permissionRequested:
             return "Allow camera access to begin"
@@ -211,8 +244,20 @@ struct MirrorScreen: View {
         }
     }
 
-    private var controls: some View {
-        VStack(spacing: 10) {
+private var controls: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Text("FOLIO · I")
+                    .font(.system(size: 10, weight: .semibold, design: .serif))
+                    .tracking(1.4)
+                ManuscriptRule()
+                Text("ANATOMIA")
+                    .font(.system(size: 10, weight: .medium, design: .serif))
+                    .tracking(1.1)
+            }
+            .foregroundStyle(LeonardoPalette.mutedInk)
+            .accessibilityHidden(true)
+
             Picker("Body region", selection: $model.focus) {
                 ForEach(AnatomyFocus.allCases) { region in
                     Text(region.rawValue).tag(region)
@@ -221,69 +266,145 @@ struct MirrorScreen: View {
             .pickerStyle(.segmented)
             .accessibilityLabel("Reference skeleton body region")
 
-            HStack(spacing: 8) {
-                Button {
-                    showLayers = true
-                } label: {
-                    Label("Layers", systemImage: "square.3.layers.3d")
-                        .frame(minHeight: 44)
-                        .frame(maxWidth: .infinity)
-                }
-                .accessibilityHint("Shows current proxy and unavailable anatomical layers")
-
-                Button {
-                    showOpacity.toggle()
-                } label: {
-                    Label("Opacity", systemImage: "circle.lefthalf.filled")
-                        .frame(minHeight: 44)
-                        .frame(maxWidth: .infinity)
-                }
-                .accessibilityValue("\(Int(model.opacity * 100)) percent")
-                .accessibilityHint("Expand or collapse skeleton opacity slider")
-
-                Button {
-                    model.togglePause()
-                } label: {
-                    Label(model.isPaused ? "Resume" : "Pause",
-                          systemImage: model.isPaused ? "play.fill" : "pause.fill")
-                        .frame(minHeight: 44)
-                        .frame(maxWidth: .infinity)
-                }
-                .accessibilityLabel(
-                    model.isPaused ? "Resume pose overlay" : "Pause pose overlay"
-                )
-            }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.bordered)
-            .tint(Color(red: 0.22, green: 0.40, blue: 0.36))
+            actionRow
 
             if showOpacity {
-                HStack(spacing: 8) {
-                    Text("Skeleton opacity")
-                        .font(.caption)
+                HStack(spacing: 9) {
+                    Text("Opacity")
+                        .font(.caption.weight(.medium))
                     Slider(value: $model.opacity, in: 0.15...0.90)
-                        .tint(Color(red: 0.22, green: 0.40, blue: 0.36))
+                        .tint(LeonardoPalette.verdigris)
                         .accessibilityLabel("Skeleton opacity")
                     Text("\(Int(model.opacity * 100))%")
                         .font(.caption.monospacedDigit())
+                        .frame(minWidth: 38, alignment: .trailing)
                 }
                 .accessibilityElement(children: .contain)
             }
 
-            Text("ILLUSTRATIVE 3D REFERENCE · NOT YOUR REAL BONES")
-                .font(.system(.caption2, design: .rounded, weight: .semibold))
-                .foregroundStyle(Color(red: 0.28, green: 0.25, blue: 0.22))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel(
-                    "Illustrative 3D reference proxy. Not medical imaging or your real bones."
-                )
+            HStack(alignment: .center, spacing: 7) {
+                Image(systemName: "info.circle")
+                    .accessibilityHidden(true)
+                Text("ILLUSTRATIVE REFERENCE · NOT YOUR REAL BONES")
+                    .font(.system(size: 10, weight: .medium))
+                    .tracking(0.25)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(LeonardoPalette.mutedInk)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(
+                "Illustrative reference proxy. Not your real bones or medical imaging."
+            )
         }
-        .foregroundStyle(Color(red: 0.20, green: 0.18, blue: 0.15))
-        .padding(12)
+        .foregroundStyle(LeonardoPalette.ink)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
         .background(
-            Color(red: 0.953, green: 0.922, blue: 0.867).opacity(0.94),
-            in: RoundedRectangle(cornerRadius: 20)
+            LeonardoPalette.parchment.opacity(0.97),
+            in: RoundedRectangle(cornerRadius: 19)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 19)
+                .strokeBorder(LeonardoPalette.copper.opacity(0.55),
+                              lineWidth: 0.7)
+                .allowsHitTesting(false)
+        }
+        .environment(\.colorScheme, .light)
+    }
+
+    @ViewBuilder
+    private var actionRow: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 7) {
+                layersButton
+                opacityButton
+                pauseButton
+            }
+        } else {
+            HStack(spacing: 7) {
+                layersButton
+                opacityButton
+                pauseButton
+            }
+        }
+    }
+
+    private var layersButton: some View {
+        LeonardoActionButton("Layers", symbol: "square.3.layers.3d") {
+            showLayers = true
+        }
+        .accessibilityHint("Open anatomy catalogue; unverified layers are unavailable")
+    }
+
+    private var opacityButton: some View {
+        LeonardoActionButton(
+            showOpacity ? "Hide slider" : "Opacity",
+            symbol: "circle.lefthalf.filled"
+        ) {
+            if reduceMotion {
+                showOpacity.toggle()
+            } else {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    showOpacity.toggle()
+                }
+            }
+        }
+        .accessibilityValue("\(Int(model.opacity * 100)) percent")
+        .accessibilityHint("Expand or collapse the reference opacity slider")
+    }
+
+    private var pauseButton: some View {
+        LeonardoActionButton(
+            model.isPaused ? "Resume" : "Pause",
+            symbol: model.isPaused ? "play.fill" : "pause.fill",
+            emphasized: true
+        ) {
+            model.togglePause()
+        }
+        .accessibilityLabel(
+            model.isPaused ? "Resume pose overlay" : "Pause pose overlay"
         )
     }
+}
+
+private struct LeonardoActionButton: View {
+    let title: String
+    let symbol: String
+    var emphasized = false
+    let action: () -> Void
+
+    init(
+        _ title: String, symbol: String,
+        emphasized: Bool = false, action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.symbol = symbol
+        self.emphasized = emphasized
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .foregroundStyle(emphasized
+                    ? LeonardoPalette.ivory : LeonardoPalette.ink)
+                .padding(.horizontal, 5)
+                .background(
+                    emphasized
+                        ? LeonardoPalette.verdigris
+                        : LeonardoPalette.agedPaper.opacity(0.60),
+                    in: RoundedRectangle(cornerRadius: 11)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+
 }
