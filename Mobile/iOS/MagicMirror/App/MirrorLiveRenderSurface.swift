@@ -17,6 +17,12 @@ struct MirrorLiveRenderSurface: View {
                     ? nil : model.calibratedAtlasBatch,
                 skinnedAtlasBatch: model.isPaused
                     ? nil : model.skinnedAtlasBatch,
+                reviewedSkinnedFrames: model.isPaused
+                    ? [] : model.reviewedSkinnedFrames,
+                reviewedRigidFrames: model.isPaused
+                    ? [] : model.reviewedRigidFrames,
+                selectedAtlasSystem: model.isPaused
+                    ? nil : model.reviewedPartSelection?.system,
                 selectedAtlasNodePath: model.isPaused
                     ? nil : model.reviewedPartSelection?.sourceHierarchyPath
             )
