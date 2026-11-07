@@ -11,8 +11,8 @@
 | **M1** Tracking hardening | P0 | Tested MediaPipe version, Lite/Full/Heavy selection, confidence configuration, VIDEO baseline, frame identity, optional segmentation, reproducible metrics/scenarios | Same-frame video/landmarks and tracking status are stable and measurable on target devices |
 | **M2** Unity runtime validation | P0 | Editor compile, synthetic scene, TCP, real camera/mirror/alpha, recovery, Win/macOS smoke benchmarks | Real camera + stable point/stand-in skeleton overlay runs without serious Unity errors |
 | **M3** Complete Z-Anatomy | P0 | Fetch pinned ONE `SkeletalSystem100.fbx`; preserve hierarchy; inventory, anchor annotation, license review | Real intact atlas appears in Unity with plausible size/placement |
-| **M4** Anatomical 3D kinematics | P0 | **In progress:** compiled and tested 3D two-link IK plus frozen-calibration atlas-local motion planner; opt-in real-FBX Unity driver source authored with reviewed anchors and no 2D fallback; **pending:** actual Unity Editor run, whole-FBX visual motion, twist constraints and real-person evaluation | Arm raise/elbow bend/walk/squat move main bones while keeping connected joints |
-| **M5** AR registration | P0 | **In progress:** compiled camera-space source intrinsics and atlas mapping, trusted TCP session generation, source P90 sanity gate and opt-in full-FBX Unity overlay source; **pending:** independent physical lens/body-camera calibration, live Unity rendering, person motion/extrinsics update, occlusion and measured reprojection | Main bone regions stay over correct person regions in typical tested poses |
+| **M4** Anatomical 3D kinematics | P0 | **In progress:** compiled/tested IK and full atlas command planner, opt-in Unity source driving reviewed rigid FBX groups; **pending:** Unity actual compilation, moving whole-FBX tests and real-person acceptance | Arm raise/elbow bend/walk/squat move main bones while keeping connected joints |
+| **M5** AR registration | P0 | **In progress:** compiled camera-space intrinsics and atlas mapping, TCP session generation, pose P90 consistency gate and opt-in Unity full-FBX projection source; **pending:** real camera extrinsics, actual Unity Editor/FBX compile, moving-torso registration, occlusion and physical measurements | Main bone regions stay over correct person regions in typical tested poses |
 | **M6** Skeleton MVP (`v0.5`) | Release gate | Real mirror + intact moving atlas, calibration, opacity, focus modes, dropout behavior, illustration warning | Reproducible one-person full-skeleton anatomical mirror demo |
 | **M7** Layers (`v0.7`) | Later | Muscles, organs, layer toggles, highlight/selection, region transparency | Basic reference anatomy layers follow the body plausibly |
 | **M8** Educational UX (`v0.9 Beta`) | Later | Onboarding, guided calibration, labels, structure knowledge, exercises, local settings | External non-developers can learn from and operate the mirror |
@@ -21,7 +21,7 @@
 ## Current M0 implementation checklist
 
 - [x] Document ADR-001: MediaPipe is the only active pose tracker.
-- [x] Preserve OpenPose legacy directory without relying on it.
+- [x] Keep the old OpenPose project in the original historical repository; the standalone 2.0 repo contains only MediaPipe-based active code.
 - [x] Deprecate the independent six-FBX extraction documentation.
 - [x] Define PoseFrame v1 and future breaking-change policy.
 - [x] Unify vision, architecture, roadmap and README navigation.
@@ -31,12 +31,12 @@
 
 ## Next engineering sprint (M1/M2, ordered)
 
-1. Pin one tested Python/MediaPipe pair on target Windows and macOS devices; capture versions in a reproducible environment record.
-2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability.
+1. **Linux CI now smoke-tested all three Lite/Full/Heavy model bundles** in actual MediaPipe 0.10.35 VIDEO mode, with size + SHA-256 locks. Windows/macOS camera validation, actual pose accuracy, end-to-end latency and full OS dependency locks remain pending. See `Docs/M1_ALL_PROFILES_RUNTIME.md`.
+2. Expose Lite, Full and Heavy models + thresholds via explicit configuration; measure per-profile latency/pose stability. Offline deterministic synthetic pose-quality traces are available in `Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md`; these are NOT measured hardware FPS.
 3. Add optional segmentation and, if needed, versioned media/pose association; avoid same-frame mismatches.
 4. Run the actual Unity 6.3 Editor with synthetic TCP demo and full-body schematic; fix compile/runtime issues.
 5. Run one real webcam, test left/right and temporal alignment, disconnect/reconnect, alpha compositing, and report FPS/latency.
-6. Only then fetch/import the pinned **intact** Z-Anatomy FBX and annotate real joints.
+6. Only then fetch/import the pinned **intact** Z-Anatomy FBX and annotate real joints. An offline inventory auditor is available in `Docs/M3_WHOLE_ATLAS_AUDIT.md` but is NOT evidence of actual Unity/FBX import.
 
 ## Cross-cutting acceptance principles
 
