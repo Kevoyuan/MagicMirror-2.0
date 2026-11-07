@@ -18,6 +18,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     var calibratedAtlasBatch: CalibratedAtlasDrawBatch? = nil
     /// Requires audited vertex influences and a verified camera frame.
     var skinnedAtlasBatch: SkinnedAtlasDrawBatch? = nil
+    var selectedAtlasNodePath: String? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
 
@@ -45,7 +46,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             alignedFrame: alignedFrame, proxyPose: proxyPose,
             opacity: Float(opacity), focus: focus,
             calibratedAtlasBatch: calibratedAtlasBatch,
-            skinnedAtlasBatch: skinnedAtlasBatch
+            skinnedAtlasBatch: skinnedAtlasBatch,
+            selectedAtlasNodePath: selectedAtlasNodePath
         )
         view.draw()
     }
@@ -66,6 +68,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var focus: AnatomyFocus = .full
         private var calibratedAtlasBatch: CalibratedAtlasDrawBatch?
         private var skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+        private var selectedAtlasNodePath: String?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -147,7 +150,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             proxyPose: PoseSnapshot?,
             opacity: Float, focus: AnatomyFocus,
             calibratedAtlasBatch: CalibratedAtlasDrawBatch?,
-            skinnedAtlasBatch: SkinnedAtlasDrawBatch?
+            skinnedAtlasBatch: SkinnedAtlasDrawBatch?,
+            selectedAtlasNodePath: String?
         ) {
             self.alignedFrame = alignedFrame
             self.proxyPose = proxyPose
@@ -155,6 +159,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             self.focus = focus
             self.calibratedAtlasBatch = calibratedAtlasBatch
             self.skinnedAtlasBatch = skinnedAtlasBatch
+            self.selectedAtlasNodePath = selectedAtlasNodePath
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -305,6 +310,21 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     encoder.setVertexBytes(
                         &screen, length: MemoryLayout<SIMD4<Float>>.stride,
                         index: 4
+                    )
+                    let selected = skin.renderedParts.first {
+                        $0.sourceHierarchyPath == selectedAtlasNodePath
+                    }
+                    var range = selected.map {
+                        SIMD2<UInt32>(
+                            UInt32($0.vertexStart),
+                            UInt32($0.vertexStart + $0.vertexCount)
+                        )
+                    } ?? SIMD2<UInt32>(
+                        repeating: UInt32.max
+                    )
+                    encoder.setVertexBytes(
+                        &range, length: MemoryLayout<SIMD2<UInt32>>.stride,
+                        index: 5
                     )
                     var section = skin.sectionPlane
                     encoder.setFragmentBytes(
