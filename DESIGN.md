@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.3 — bilingual adaptive Leonardo interface (2026-11-07)  
+**Version:** 1.4 — compact camera and anatomy study folio (2026-11-08)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
@@ -46,9 +46,9 @@ The following is **present in main at the time of authoring**, not an endorsemen
 | Tracking and permission phases | idle, permissionRequested, searching, tracking, permissionDenied, unavailable | Design explicit user-facing messages and recovery. |
 | Research atlas model contract | Anatomy/VerifiedAnatomyAtlas.swift and AnatomyAtlasManifest.swift | Asset-validation machinery exists; approved full anatomy has NOT been shipped or tested. |
 
-The current source uses a dark color scheme, cyan accent, a top status pill, a lower guidance panel, a three-segment focus picker, a visible opacity slider, a pause button, and a nonmedical disclaimer.
+The historical scaffold used dark/cyan chrome, a persistent segmented picker and a large guidance panel. The selected Leonardo source now uses parchment/sepia controls, a slim status header, and a collapsible bottom dock; region selection and Pause remain available while the dock is collapsed.
 
-**Validation boundary:** Arm64 Simulator build-for-testing is documented as passing; real rear camera, true moving-person overlay registration, actual anatomy atlas, iPhone performance/thermal, accessibility and TestFlight remain unverified. An open draft PR may contain further camera-fit experiments; those changes are not treated as merged main.
+**Validation boundary:** Arm64 Simulator build-for-testing has been used for the native target, but no physical iPhone performance/visual/accessibility acceptance is proven here. Recent native commits through #48 introduced conditional multi-system GPU layers, source-frame silhouette occlusion and 3D reference-mesh surface clipping; the normal app bundle still does not include independently reviewed, ready-to-ship Z-Anatomy assets. Availability must be driven by successfully registered real resources, not by the existence of a toggle.
 
 ## 3. Confirmed visual identity — B · Leonardo Anatomy Notebook
 
@@ -517,3 +517,52 @@ and Field Notes on a compact and large iPhone, with VoiceOver and
 accessibility Dynamic Type. Confirm that XcodeGen includes both `.lproj`
 resources. Static source parity and Simulator compilation are necessary
 but not substitutes for a real iPhone localization/contrast inspection.
+
+
+## Camera-first refinement and compact study folio (2026-11-08)
+
+**Durable decision:** In the default iPhone camera state, keep only the
+three essential actions **Body region (native Menu), Layers, and Pause**,
+plus an accessible icon for **Adjustments**. A compact note stating that
+the overlay is reference anatomy stays visible. Detailed controls
+(Whole / Arms / Legs segmented picker and opacity slider) only appear
+after the user expands Adjustments. Respect Dynamic Type by reflowing
+the action row; the open/closed state never changes the camera/MediaPipe
+session or requires backend calls.
+
+**Selected anatomy:** A tap near a current, visible proxy limb or a
+genuinely rendered reviewed triangle shows a one-line transient
+selection strip. The full source-reviewed educational text opens only
+on the user's explicit **Study** action in a native
+`MirrorStudySheet` (folio IV). This avoids putting a paragraph over the
+person's moving body. The study note captures the tapped educational
+text at opening so a subsequent tracking-loss event cannot replace
+its content with a new person's geometry. A proxy limb is explicitly
+a pose guide, not a personally measured human bone. If reviewed source
+material lacks an approved educational note, show only a generic,
+translatable limitation — never invent clinical/functional detail.
+
+**Layers and section clarity:** The current source contains optional
+multi-system live render passes and mesh-surface clipping, but normal
+bundles do not establish independent source rights and camera/mesh
+registration. A requested but unregistered layer is **LOCKED**, never
+**SELECTED**. The reference proxy counts as the visible selected
+fallback when no other actually ready model is active. The layer
+availability/selection rule lives in the pure
+`AnatomyLayerPresentation` mapper and unit tests, separate from
+`AnatomyDisplayLayer` static catalog availability and the
+`MirrorViewModel` runtime gate.
+
+**Localization:** English and Chinese navigation, per-layer
+availability, section-plane guidance, proxy limb names and study
+instructions use localized keys. Decorative Latin manuscript headings
+remain nonfunctional folio marks. Section clipping must be described
+as surface clipping without watertight caps; interface text cannot
+call it diagnostic cross-sectional imaging.
+
+**Quality bar:** Validate collapsed camera occupancy, compact-width
+labels, body-region menu, VoiceOver order, 44pt controls, large Dynamic
+Type, selection dismissal, reference fallback, permission recovery,
+Reduce Motion and bilingual text on real iPhones. A successful Simulator
+build-for-testing only proves compilation, not executed tests or
+real-camera success.
