@@ -272,8 +272,10 @@ def main():
             "reviewedJointWeights": True,
             "vertices": skin_vertices,
         }
+        # Compact JSON keeps the full <=180k-vertex skinning sidecar
+        # below the 32 MB limit of the on-device offline package loader.
         (args.out / f"{base}.skinning.json").write_text(
-            json.dumps(skinning, indent=2, ensure_ascii=False),
+            json.dumps(skinning, separators=(",", ":"), ensure_ascii=False),
             encoding="utf-8"
         )
     (args.out / f"{base}.ATTRIBUTION.txt").write_text(
