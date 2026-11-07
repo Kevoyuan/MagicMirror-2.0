@@ -1,0 +1,107 @@
+name: One-time archive and prune obsolete development branches
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/archive-and-prune-stale-branches-once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archive-prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Preserve exact old SHA as Git tag before deleting an obsolete branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          repo = os.environ["GH_REPOSITORY"]
+          root = "https://api.github.com/repos/" + repo
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "MagicMirror-one-time-stale-branch-archiver",
+          }
+          # The exact heads were inspected; refuse to delete branches advanced since inspection.
+          expected = {
+            "feature/ios-camera-pose-estimator": "bbc5ac6b580a432c6a196348094e0e7b3e106167",
+            "feature/ios-matched-silhouette-compositor": "c56f68abd4ba5912baf67135c4402cd1b3657830",
+            "feature/ios-multi-system-blender-export-pipeline": "88c1fee71804731a4927a4c2279c1eb16d1f1c86",
+            "feature/ios-multi-system-reviewed-atlas-layers": "470d1151b9d99418d66c333dd796b68845598032",
+            "feature/ios-person-silhouette-final": "80bf029b9bc51015e7692467507cd75d4b20375b",
+            "feature/ios-pose-person-silhouette-mask": "2e68e7a8f38c5b9f6a9c42793036e52ab3efb2f8",
+            "feature/ios-provisional-auto-atlas-alignment": "64514fde6cf142be604c288a4626bbf78ffdfc99",
+            "feature/ios-reviewed-mesh-picking": "2b155d00de1246c47e529f826e01e7d54deb9192",
+            "feature/ios-simultaneous-reviewed-anatomy-layers": "86acbf9c6e15f56478dc2f45d9f12c3c75287ab9",
+            "feature/ios-standards-compliant-usdz-packager": "557d670a98b5cf83cf7515a55f950b10954b42f7",
+            "feature/ios-tap-anatomy-reference-inspector": "fc900eabe62d7323fe6aaa15bc6110f119f3d4a9"
+          }
+          def api(path, method="GET", data=None):
+              payload = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(root + path, headers=headers, data=payload, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      raw = response.read()
+                      return json.loads(raw) if raw else None
+              except urllib.error.HTTPError as exc:
+                  detail = exc.read().decode("utf-8", "replace")[:450]
+                  print("HTTP", exc.code, method, path, detail, flush=True)
+                  raise
+
+          def all_open_prs():
+              page, out = 1, []
+              while True:
+                  batch = api(f"/pulls?state=open&per_page=100&page={page}")
+                  out.extend(batch)
+                  if len(batch) < 100:
+                      return out
+                  page += 1
+
+          live_heads = {p["head"]["ref"] for p in all_open_prs()
+                        if p["head"]["repo"] and p["head"]["repo"]["full_name"] == repo}
+          default = api("")["default_branch"]
+          assert default not in expected
+          assert not (set(expected) & live_heads), "An open PR now uses one of the old branches"
+
+          # Preflight all branches before making any changes.
+          for name, sha in expected.items():
+              branch = api("/branches/" + urllib.parse.quote(name, safe=""))
+              assert not branch["protected"], "Protected branch: " + name
+              assert branch["commit"]["sha"] == sha, "Changed branch: " + name
+          print("PREFLIGHT OK: 11 stale, unchanged, unprotected, no open PRs", flush=True)
+
+          # Archive all 11 immutable commit heads as durable lightweight Git tags first.
+          for name, sha in expected.items():
+              tag = "archive/2026-11-08/" + name.replace("/", "--")
+              ref = "refs/tags/" + tag
+              try:
+                  api("/git/refs", "POST", {"ref": ref, "sha": sha})
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 422:
+                      raise
+              verified = api("/git/ref/tags/" + urllib.parse.quote(tag, safe="/"))
+              assert verified["object"]["sha"] == sha, "Archive SHA mismatch: " + name
+              print("ARCHIVED", name, "as", tag, sha, flush=True)
+
+          # No deletion is attempted until all archive refs are verified.
+          deleted = []
+          for name, sha in expected.items():
+              branch = api("/branches/" + urllib.parse.quote(name, safe=""))
+              assert branch["commit"]["sha"] == sha and not branch["protected"], "Branch changed during archive: " + name
+              api("/git/refs/heads/" + urllib.parse.quote(name, safe="/"), "DELETE")
+              deleted.append(name)
+              print("DELETED", name, flush=True)
+          print(f"SUMMARY archived={len(expected)} deleted={len(deleted)}", flush=True)
+          PY
