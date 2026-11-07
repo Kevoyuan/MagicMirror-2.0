@@ -660,3 +660,33 @@ Without that explicit flag it NEVER guesses a rig or fabricates a
 USDZ companion. None of these output files automatically prove legal
 permission, human anatomical correctness, registered camera geometry
 or on-device rendering performance.
+
+## Simultaneous independently reviewed anatomy layers
+
+The native iPhone Anatomy notebook can now **toggle more than one**
+available reviewed anatomical system at once (skeleton, muscles,
+organs, vessels, nerves, joints). Each system has its own verified
+offline MMATLAS1 mesh, USDZ hierarchy and optional reviewed skinning
+weights, plus a distinctive illustrative pigment and independent
+opacity slider. Tap **Reference proxy** to hide all anatomical systems.
+An unavailable or unregistered system remains visibly locked; no other
+system's mesh is substituted for it.
+
+The live camera coordinator produces exact-source-frame geometry for
+every active reviewed system in stable catalog order. The single
+Metal renderer composites all matched GPU-skinned and rigid approved
+batches on the one analyzed BGRA frame; mismatched frames are skipped
+and the clearly labeled procedural proxy is the safe fallback. A
+bounded **48 MiB GPU rest-mesh buffer LRU** retains multiple static
+approved meshes between frames, while each system updates only its
+own small bone palette, projection, opacity and section plane. Section
+controls enable only if **all currently drawn enabled systems have
+valid GPU-skinned geometry**, avoiding unclipped rigid layers.
+
+This completes source-level multi-system toggles, layering, per-layer
+opacity and bounded GPU caching. The repository still ships no legally
+approved muscles/organs/vascular/nerve models, and no independently
+reviewed camera-body extrinsics; a layer cannot display just because
+its switch exists. All tints are educational illustrations, not
+actual measured tissue colors. Physical iPhone thermal/performance
+and visual behavior still require independent acceptance.

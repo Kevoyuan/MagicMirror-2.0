@@ -404,3 +404,20 @@ The native app can load those independent artifacts with no runtime
 Python/network. Approved USDZ hierarchy authoring/packaging, licensing,
 anatomical bindings, full size/performance and live iPhone acceptance
 are still separate gates.
+
+## Native multi-system anatomy compositing (2026-11-07)
+
+Expanded the preexisting single-reviewed-system selector into
+**simultaneous** skeleton/muscles/organs/vessels/nerves/joints reference
+layer controls with independent opacity, source-specific pigment, and
+stable per-frame Metal compositing. Resource loading remains offline,
+separately SHA/rig/weights-reviewed per system; the user can clear all
+reviewed systems and return to the illustrative proxy. The renderer
+retains multiple immutable mesh buffers within a bounded GPU LRU.
+Cross-frame geometry and incorrectly sectioned rigid layers are not
+composited as if verified.
+
+This is shipped *source code* and native UI plumbing, not bundled
+approved Z-Anatomy multi-system assets, verified physical camera
+registration, or a proved medical internal-reconstruction effect.
+Real-device acceptance remains an independent step.

@@ -17,8 +17,14 @@ struct MirrorLiveRenderSurface: View {
                     ? nil : model.calibratedAtlasBatch,
                 skinnedAtlasBatch: model.isPaused
                     ? nil : model.skinnedAtlasBatch,
+                skinnedAtlasBatches: model.isPaused
+                    ? [] : model.skinnedAtlasBatches,
+                calibratedAtlasBatches: model.isPaused
+                    ? [] : model.calibratedAtlasBatches,
                 selectedAtlasNodePath: model.isPaused
-                    ? nil : model.reviewedPartSelection?.sourceHierarchyPath
+                    ? nil : model.reviewedPartSelection?.sourceHierarchyPath,
+                selectedAtlasSystem: model.isPaused
+                    ? nil : model.reviewedPartSelection?.system
             )
             .overlay {
                 AnatomyReferenceHighlight(model: model)

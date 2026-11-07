@@ -130,6 +130,7 @@ struct ReviewedSourceCameraFrame {
 @MainActor
 final class LiveReviewedAtlasRuntime {
     let resources: ReviewedAtlasRuntimeResources
+    let anatomicalSystem: AnatomyDisplayLayer
 
     private var capture = AnatomyReferenceCapture()
     private var registration: BodySimilarityRegistration?
@@ -141,8 +142,12 @@ final class LiveReviewedAtlasRuntime {
     private var lastTimestampMilliseconds = -1
     private var lastImageSize: CGSize?
 
-    init(resources: ReviewedAtlasRuntimeResources) {
+    init(
+        resources: ReviewedAtlasRuntimeResources,
+        anatomicalSystem: AnatomyDisplayLayer = .skeleton
+    ) {
         self.resources = resources
+        self.anatomicalSystem = anatomicalSystem
     }
 
     func reset() {
@@ -248,7 +253,8 @@ final class LiveReviewedAtlasRuntime {
                 opacity: opacity,
                 sectionCut: cut,
                 geometryIdentity: geometryIdentity,
-                preparedVertices: preparedGeometry[focus]
+                preparedVertices: preparedGeometry[focus],
+                anatomicalSystem: anatomicalSystem
             )
             if preparedGeometry[focus] == nil,
                let frame = skinnedFrame {
@@ -263,7 +269,8 @@ final class LiveReviewedAtlasRuntime {
             hierarchy: resources.hierarchy,
             projector: projector,
             viewport: viewport,
-            opacity: opacity, focus: focus
+            opacity: opacity, focus: focus,
+            anatomicalSystem: anatomicalSystem
         )
     }
 }

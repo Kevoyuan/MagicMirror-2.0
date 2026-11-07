@@ -53,6 +53,7 @@ struct SkinnedAtlasDrawBatch {
     let sourceImageSize: CGSize
     let viewportSize: CGSize
     let sourceRevision: String
+    let anatomicalSystem: AnatomyDisplayLayer
     /// Unique to an immutable reviewed runtime resource set; never reused
     /// when a new atlas / approved weight set is installed.
     let geometryIdentity: UUID
@@ -91,9 +92,14 @@ struct SkinnedAtlasDrawBatch {
         opacity: Float,
         sectionCut: AnatomySectionCut? = nil,
         geometryIdentity: UUID = UUID(),
-        preparedVertices: [SkinnedAtlasVertex]? = nil
+        preparedVertices: [SkinnedAtlasVertex]? = nil,
+        anatomicalSystem: AnatomyDisplayLayer = .skeleton
     ) -> SkinnedAtlasDrawBatch? {
-        guard (try? hierarchy.validateForUse()) != nil,
+        guard anatomicalSystem != .referenceProxy,
+              (atlas.manifest.anatomicalSystem == anatomicalSystem.rawValue ||
+               (anatomicalSystem == .skeleton &&
+                atlas.manifest.anatomicalSystem == nil)),
+              (try? hierarchy.validateForUse()) != nil,
               atlas.manifest.reviewedForDistribution,
               atlas.manifest.reviewedJointBindings,
               atlas.manifest.sourceRevision == hierarchy.sourceRevision,
@@ -129,7 +135,7 @@ struct SkinnedAtlasDrawBatch {
         }
         // Static color lives in the cached GPU buffer. Live opacity is
         // sent as a tiny uniform instead of rebuilding all mesh vertices.
-        let color = SIMD4<Float>(0.93, 0.89, 0.78, 1)
+        let color = anatomicalSystem.referencePigment
         var names = Set<String>()
         var renderedParts: [AtlasRenderedPart] = []
         var expectedVertexCount = 0
@@ -208,6 +214,7 @@ struct SkinnedAtlasDrawBatch {
             sourceImageSize: image,
             viewportSize: viewport,
             sourceRevision: atlas.manifest.sourceRevision,
+            anatomicalSystem: anatomicalSystem,
             geometryIdentity: geometryIdentity,
             focus: focus,
             opacity: opacity,

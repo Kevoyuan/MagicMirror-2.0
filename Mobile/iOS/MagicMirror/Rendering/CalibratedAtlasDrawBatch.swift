@@ -56,9 +56,14 @@ struct CalibratedAtlasDrawBatch {
         projector: CoherentAtlasCameraProjection,
         viewport: CGSize,
         opacity: Float,
-        focus: AnatomyFocus
+        focus: AnatomyFocus,
+        anatomicalSystem: AnatomyDisplayLayer = .skeleton
     ) -> CalibratedAtlasDrawBatch? {
-        guard opacity.isFinite, opacity > 0,
+        guard anatomicalSystem != .referenceProxy,
+              (atlas.manifest.anatomicalSystem == anatomicalSystem.rawValue ||
+               (anatomicalSystem == .skeleton &&
+                atlas.manifest.anatomicalSystem == nil)),
+              opacity.isFinite, opacity > 0,
               viewport.width.isFinite, viewport.height.isFinite,
               viewport.width > 0, viewport.height > 0,
               let triangles = CoherentAtlasMeshProjection.project(
@@ -114,7 +119,8 @@ struct CalibratedAtlasDrawBatch {
             // each approved rigid bone instead of using a flat billboard
             // normal. These are reference-mesh normals, never person
             // surface measurements.
-            let color = SIMD4<Float>(0.93, 0.89, 0.78, alpha)
+            var color = anatomicalSystem.referencePigment
+            color.w = alpha
             for index in 0..<3 {
                 let n = triangle.cameraNormals[index]
                 guard n.x.isFinite, n.y.isFinite, n.z.isFinite,
