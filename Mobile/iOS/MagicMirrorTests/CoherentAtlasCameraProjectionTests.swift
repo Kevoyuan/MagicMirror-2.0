@@ -298,6 +298,11 @@ final class CoherentAtlasCameraProjectionTests: XCTestCase {
         XCTAssertEqual(triangles?.count, 1)
         XCTAssertEqual(triangles?.first?.boneId, "left-humerus")
         XCTAssertEqual(triangles?.first?.vertices.count, 3)
+        XCTAssertEqual(triangles?.first?.cameraNormals.count, 3)
+        XCTAssertEqual(
+            triangles?.first?.cameraNormals.first?.z ?? 0,
+            1, accuracy: 0.001
+        )
         XCTAssertEqual(
             triangles?.first?.vertices.first?.displayPosition.x ?? -1,
             165, accuracy: 0.01
@@ -376,6 +381,10 @@ final class CoherentAtlasCameraProjectionTests: XCTestCase {
         )
         XCTAssertNotNil(batch)
         XCTAssertEqual(batch?.vertices.count, 3)
+        XCTAssertTrue(batch!.vertices.allSatisfy {
+            (0...1).contains($0.position.z) &&
+            abs($0.normal.z - 1) < 0.001
+        })
         XCTAssertEqual(batch?.sourceTimestampMilliseconds, 1000)
         XCTAssertEqual(batch?.sourceImageSize, frame.imageSize)
         XCTAssertTrue(batch!.matches(
@@ -430,6 +439,50 @@ final class CoherentAtlasCameraProjectionTests: XCTestCase {
             atlas: meshAtlas(), hierarchy: rigManifest(),
             projector: projector, viewport: viewport,
             opacity: 0, focus: .arms
+        ))
+    }
+
+    func testReviewedSurfaceNormalRotatesWithBoneInCameraSpace() {
+        let frame = snapshot()
+        let registration = registration()
+        let rotation = simd_quatf(
+            angle: .pi / 2, axis: SIMD3<Float>(0, 1, 0)
+        )
+        let reference = rig(frame: frame, transform: registration)
+        let original = reference.bones[0]
+        let turned = AtlasRigBonePose(
+            boneId: original.boneId,
+            parentId: original.parentId,
+            restPivot: original.restPivot,
+            posedPivot: original.posedPivot,
+            restToPosedRotation: rotation,
+            restLength: original.restLength,
+            confidence: original.confidence
+        )
+        let turnedRig = CoherentAtlasRigPose(
+            sourceTimestampMilliseconds: frame.timestampMilliseconds,
+            sourceImageSize: frame.imageSize,
+            bones: [turned]
+        )
+        let projector = CoherentAtlasCameraProjection.prepare(
+            pose: turnedRig, matchingFrame: frame,
+            registration: registration, intrinsics: camera(),
+            extrinsics: extrinsics(),
+            independentCameraReviewConfirmed: true
+        )
+        XCTAssertNotNil(projector)
+        let n = projector?.cameraNormal(
+            boneId: "left-humerus",
+            restNormal: SIMD3<Float>(0, 0, 1)
+        )
+        XCTAssertNotNil(n)
+        XCTAssertEqual(n!.x, 1, accuracy: 0.001)
+        XCTAssertEqual(n!.z, 0, accuracy: 0.001)
+        XCTAssertNil(projector?.cameraNormal(
+            boneId: "unknown", restNormal: SIMD3(0, 0, 1)
+        ))
+        XCTAssertNil(projector?.cameraNormal(
+            boneId: "left-humerus", restNormal: SIMD3(0, 0, 0)
         ))
     }
 }
