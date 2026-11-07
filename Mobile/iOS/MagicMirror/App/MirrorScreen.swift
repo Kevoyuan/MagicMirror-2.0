@@ -405,6 +405,3 @@ private struct LeonardoActionButton: View {
         .buttonStyle(.plain)
     }
 }
-
-
-}
