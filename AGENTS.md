@@ -52,11 +52,12 @@ Read these in order:
    `Docs/ROADMAP.md` are **archived desktop-prototype context**.
    Do not continue their desktop milestones.
 
-Development PRs may be stacked. At the time of this instruction:
-- **PR #11:** accepted mobile-only product direction documentation (Draft,
-  base `main`).
-- **PR #12:** SwiftUI/AVFoundation/MediaPipe first iOS camera + landmark
-  overlay (Draft, based on PR #11's branch).
+**Repository consolidation (2026-11-07):** PRs #1–#12 have all been merged
+into `main`. All older feature branches have zero unmerged commits
+relative to `main`; the refs may still be visible in GitHub.
+The active follow-up is the native iOS frame-association implementation
+(PR #13 when open). Re-check current PRs and CI rather than treating
+these examples as immutable status.
 
 Before editing or opening a PR, inspect the live repository branches,
 PR bases, changed files and current CI. Do **not** assume these statuses
@@ -151,13 +152,15 @@ without a separate explicit cleanup decision.
 7. **Mobile-6 — Android:** Kotlin, on-device MediaPipe and native GPU
    rendering using equivalent pose/rig/math tests. No desktop alternative.
 
-**Current practical blocker:** The first PR #12 macOS Xcode CI attempt
-failed when an x86_64 iOS Simulator link was attempted against arm64-only
-MediaPipe binary artifacts. Inspect the latest CI before acting; use a
-supported arm64 simulator runner or a valid iOS device build/test target.
-Do not hide this by claiming compilation succeeded or by stripping the
-SDK. The next coding priority is a **green real iOS build**, then a
-**physical iPhone camera/landmark smoke test**.
+**Current reality:** PR #12's original x86_64 Simulator linker failure
+was fixed by restricting Xcode's simulator compilation to arm64 while
+retaining the actual MediaPipe XCFramework. Xcode `build-for-testing`
+now passes on macOS, but that only **compiles** app and XCTest targets:
+the tests have not been executed on simulator and no camera/pose has
+been validated on a physical iPhone. Continue Mobile-1's bounded,
+same-source-frame asynchronous pose association (PR #13), then prioritize
+a signed, real iPhone camera/landmark smoke test, explicit alignment
+and end-to-end movement latency measurements.
 
 ## 5. Testing and evidence requirements
 
