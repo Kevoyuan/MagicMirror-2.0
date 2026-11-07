@@ -298,7 +298,15 @@ Use / Privacy / About pages, a simple on-device diagnostics toggle, and a pure
 masquerading as live tracking or blocking camera-permission recovery.
 `MirrorPresentationStateTests.swift` contains deterministic UI-state tests.
 None of these additions requires cloud access, a second camera or a new
-navigation tab. The guide describes current privacy behavior as source-level
+navigation tab.
+
+The live image and Metal overlay now have separate SwiftUI observation
+boundaries: the sole AVFoundation preview stays in the stable root scene,
+while `MirrorLiveRenderSurface` observes frame-rate pose / Metal draw batch
+changes. `MirrorViewModel.currentCoverage` only updates when the
+recognition class changes (none/partial/torso-anchored), so the manuscript
+controls do not need to invalidate on every pose callback. This is a
+source-level performance improvement, **not** measured real-iPhone FPS. The guide describes current privacy behavior as source-level
 claims; App Store and third-party SDK disclosures still require review.
 
 See the [complete iPhone UI journey handoff](../../Docs/IOS_UI_USER_JOURNEYS.md)
