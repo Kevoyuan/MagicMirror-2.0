@@ -72,7 +72,8 @@ struct MirrorScreen: View {
                         )
                         presentedSheet = .study(MirrorStudyNote(
                             title: education?.title ?? part.displayName,
-                            summary: education?.summary ?? part.detail,
+                            summary: education?.summary ??
+                                "Reviewed reference geometry. A camera image cannot measure your internal anatomy.",
                             function: education?.function,
                             authorCredit: education?.authorCredit,
                             isProxy: false
