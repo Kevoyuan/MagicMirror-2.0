@@ -57,6 +57,15 @@ xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
   session that supplies inference frames.
 - `Tracking/PoseGeometry.swift`: typed 33-point observations, confidence
   gates and aspect-fill coordinate mapping.
+- `Anatomy/AnatomyAtlasManifest.swift`: fail-closed reviewed model
+  metadata + local bundled USDZ SHA-256 check (no atlas shipped yet).
+- `Anatomy/AnatomyReferenceCapture.swift`: stable multi-frame median
+  body reference capture for eventual approved 3D rig.
+- `Anatomy/AnatomyMotionPlanner.swift`: relative 3D bone rotation
+  requests from MediaPipe world landmarks; not a camera transform.
+- `MagicMirrorTests/AnatomyAtlasManifestTests.swift` and
+  `AnatomyReferenceCaptureTests.swift`: synthetic manifest, hierarchy,
+  reference stability and motion-contract XCTest source.
 - `Rendering/MetalSkeletonOverlay.swift`: native transparent GPU renderer
   with **no second camera or ARSession**, composited over the preview.
 - `Rendering/VolumetricBoneMesh.swift`: connected tapered 3D bone proxies
@@ -118,6 +127,15 @@ The original Z-Anatomy/BodyParts3D derivatives require CC BY-SA
 attribution and source/model-specific review. Native mesh projection
 is an approximate rigid segment fit, **not** calibrated personal
 bone geometry or verified live device performance.
+
+## Atlas import is deliberately blocked pending legal/anatomical review
+
+See [the native atlas integration contract](../../Docs/IOS_ANATOMY_ATLAS_INTEGRATION.md).
+The runtime model loader requires a separately reviewed USDZ and human-audited
+rig/anchor manifest, and checks the bundled binary SHA-256. A deliberately
+invalid example manifest is included under `Docs/examples/`; it is never
+packaged into the phone app. The asset itself, actual skin/rig mapping and
+camera-space 3D registration are **not complete**.
 
 ## Gaps before actual anatomical AR
 
