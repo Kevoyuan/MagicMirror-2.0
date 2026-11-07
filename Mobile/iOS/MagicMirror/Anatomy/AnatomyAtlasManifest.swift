@@ -2,8 +2,9 @@ import CryptoKit
 import Foundation
 import simd
 
-/// Reviewed skeletal-mesh provenance. This manifest is a gate to connecting
-/// a future, bundled USDZ/glTF-derived native atlas to the phone renderer.
+/// Reviewed skeletal-mesh provenance. This manifest can bind the actual
+/// MMATLAS1 geometry consumed by Metal, or a legacy separately reviewed
+/// USDZ. No duplicate USDZ is needed solely to store rest-anchor metadata.
 /// The original FBX is NOT embedded, fetched or redistributed here.
 ///
 /// A manifest saying "reviewed" is a human approval record, not evidence of
@@ -71,7 +72,8 @@ struct AnatomyAtlasManifest: Codable {
         guard !assetFilename.isEmpty, !assetFilename.contains("/"),
               !assetFilename.contains("\\"),
               !assetFilename.contains(".."),
-              assetFilename.hasSuffix(".usdz") else {
+              (assetFilename.hasSuffix(".usdz") ||
+               assetFilename.hasSuffix(".mmgeom")) else {
             throw ValidationError.unsafeAssetPath
         }
         guard assetSHA256.count == 64,
@@ -150,9 +152,10 @@ enum AnatomyAtlasStore {
             AnatomyAtlasManifest.self, from: raw
         )
         try manifest.validateForUse()
+        let resource = manifest.assetFilename as NSString
         guard let assetURL = bundle.url(
-            forResource: (manifest.assetFilename as NSString).deletingPathExtension,
-            withExtension: "usdz"
+            forResource: resource.deletingPathExtension,
+            withExtension: resource.pathExtension
         ) else { throw LoadingError.assetMissing }
         let binary = try Data(contentsOf: assetURL)
         let digest = SHA256.hash(data: binary)

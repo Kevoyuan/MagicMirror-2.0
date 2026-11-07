@@ -33,6 +33,16 @@ struct ReviewedAtlasRuntimeResources {
         let approved = try AnatomyAtlasStore.loadApproved(
             manifestName: manifestName, bundle: bundle
         )
+        // If the rig manifest names the actual Metal geometry, both
+        // independent reviews must bind to the identical binary bytes.
+        // Legacy USDZ rig references remain accepted for old packages.
+        if approved.manifest.assetFilename.hasSuffix(".mmgeom") {
+            guard approved.manifest.assetFilename == "\(base).mmgeom",
+                  approved.manifest.assetSHA256 ==
+                    mesh.manifest.modelSHA256 else {
+                throw ResourceError.mismatchedOrIncompleteBinding
+            }
+        }
         let influences = try AtlasSkinningPackage.load(
             bundle: bundle, atlas: mesh, hierarchy: approved.manifest,
             resourceBaseName: base
