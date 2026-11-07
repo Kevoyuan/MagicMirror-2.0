@@ -48,6 +48,18 @@ final class AnatomyAtlasManifestTests: XCTestCase {
         XCTAssertNoThrow(try fixture().validateForUse())
     }
 
+    func testReviewedMetalMMATLAS1CanBeTheExactRigAsset() {
+        XCTAssertNoThrow(try fixture(
+            assetFilename: "skeleton_atlas.mmgeom"
+        ).validateForUse())
+        XCTAssertNoThrow(try fixture(
+            assetFilename: "muscles_atlas.mmgeom"
+        ).validateForUse())
+        XCTAssertThrowsError(try fixture(
+            assetFilename: "../unreviewed.mmgeom"
+        ).validateForUse())
+    }
+
     func testRejectsUnreviewedLicenseAndAnatomy() {
         XCTAssertThrowsError(try fixture(
             licenseReviewed: false
