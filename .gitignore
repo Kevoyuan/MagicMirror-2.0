@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 .venv/
+# Locally built engine-independent .NET IK verification outputs
+**/bin/
+**/obj/
 dist/
 m2-editor-validation.log
 *.log

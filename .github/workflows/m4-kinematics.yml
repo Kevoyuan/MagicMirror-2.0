@@ -1,0 +1,42 @@
+name: M4-M5 C# IK, calibration and reprojection
+
+on:
+  push:
+    paths:
+      - 'Unity/Assets/Scripts/Motion/TwoBoneKinematics.cs'
+      - 'Unity/Assets/Scripts/Motion/TwoBoneWorldPoseBridge.cs'
+      - 'Unity/Assets/Scripts/Motion/BodySimilarityCalibration.cs'
+      - 'Unity/Assets/Scripts/Motion/BodyWorldCalibrationBridge.cs'
+      - 'Unity/Assets/Scripts/Motion/BodyWorldPinholeCamera.cs'
+      - 'Unity/Assets/Scripts/Motion/AtlasReprojectionDiagnostics.cs'
+      - 'Unity/Assets/Scripts/Motion/ReferencePoseCaptureWindow.cs'
+      - 'Unity/Assets/Scripts/Tracking/PoseStreamProtocol.cs'
+      - 'Tools/ci/csharp_kinematics/**'
+      - '.github/workflows/m4-kinematics.yml'
+  pull_request:
+    paths:
+      - 'Unity/Assets/Scripts/Motion/TwoBoneKinematics.cs'
+      - 'Unity/Assets/Scripts/Motion/TwoBoneWorldPoseBridge.cs'
+      - 'Unity/Assets/Scripts/Motion/BodySimilarityCalibration.cs'
+      - 'Unity/Assets/Scripts/Motion/BodyWorldCalibrationBridge.cs'
+      - 'Unity/Assets/Scripts/Motion/BodyWorldPinholeCamera.cs'
+      - 'Unity/Assets/Scripts/Motion/AtlasReprojectionDiagnostics.cs'
+      - 'Unity/Assets/Scripts/Motion/ReferencePoseCaptureWindow.cs'
+      - 'Unity/Assets/Scripts/Tracking/PoseStreamProtocol.cs'
+      - 'Tools/ci/csharp_kinematics/**'
+      - '.github/workflows/m4-kinematics.yml'
+
+jobs:
+  compile-and-execute-csharp-kinematics-and-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile exact IK, registration, capture and camera projection C# source
+        run: dotnet build Tools/ci/csharp_kinematics/KinematicsChecks.csproj -c Release --warnaserror
+      - name: Exercise IK, camera reprojection P90 and multi-frame capture on PoseFrame C#
+        run: dotnet run -c Release --no-build --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
+      - name: Distinguish scope from actual Unity runtime
+        run: echo 'PASS confirms compiled IK, calibration, stable capture and reprojection source. NOT Unity Editor, real camera/extrinsics, actual FBX animation or anatomy ground truth.'
