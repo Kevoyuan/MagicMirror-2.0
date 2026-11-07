@@ -21,6 +21,8 @@ from atlas_sources import (
     resource_base,
 )
 
+from atlas_rig_manifest import RigPackageError, verify_rig_companion
+
 MAGIC = b"MMATLAS1"
 BINARY_NAME = "skeleton_atlas.mmgeom"
 MANIFEST_NAME = "skeleton_atlas.manifest.json"
@@ -47,7 +49,7 @@ def finite_vector(value):
     )
 
 
-def verify_package(directory: Path, system: str = "skeleton"):
+def verify_package(directory: Path, system: str = "skeleton", *, require_rig=False):
     directory = Path(directory)
     if system not in SYSTEM_SOURCES:
         raise PackageError("unknown anatomical system")
@@ -185,7 +187,16 @@ def verify_package(directory: Path, system: str = "skeleton"):
                 f"nonfinite vertex: {index}")
         require(nx * nx + ny * ny + nz * nz > 1e-8,
                 f"zero normal: {index}")
-    return {"vertex_count": count, "mesh_count": len(parts), "sha256": actual_hash}
+    try:
+        rig_summary = verify_rig_companion(directory, manifest, system)
+    except RigPackageError as exc:
+        raise PackageError(f"invalid linked rig/skin package: {exc}") from exc
+    if require_rig and rig_summary is None:
+        raise PackageError("a reviewed USDZ/rig companion is required")
+    return {
+        "vertex_count": count, "mesh_count": len(parts),
+        "sha256": actual_hash, "rig": rig_summary,
+    }
 
 
 def main():
@@ -193,9 +204,12 @@ def main():
     parser.add_argument("--package", type=Path, required=True)
     parser.add_argument("--system", choices=sorted(SYSTEM_SOURCES),
                         default="skeleton")
+    parser.add_argument("--require-rig", action="store_true",
+                        help="Fail if the approved USDZ and matching rig are absent")
     args = parser.parse_args()
     try:
-        stats = verify_package(args.package, system=args.system)
+        stats = verify_package(args.package, system=args.system,
+                               require_rig=args.require_rig)
     except (PackageError, OSError) as exc:
         parser.exit(1, f"FAIL: {exc}\n")
     print(f"PASS: {stats['vertex_count']} vertices, "
