@@ -32,6 +32,10 @@ struct MirrorScreen: View {
 
             VStack(spacing: 0) {
                 header
+                if model.showDiagnostics {
+                    poseDiagnostics
+                        .padding(.top, 10)
+                }
                 Spacer()
                 if model.snapshot == nil || model.isPaused {
                     guidance
@@ -66,6 +70,24 @@ struct MirrorScreen: View {
                     .foregroundStyle(.white.opacity(0.7))
             }
             Spacer()
+            Button {
+                model.toggleDiagnostics()
+            } label: {
+                Image(systemName: "waveform.path.ecg")
+                    .font(.system(.subheadline, weight: .semibold))
+                    .frame(width: 38, height: 38)
+                    .foregroundStyle(
+                        model.showDiagnostics ? Color.cyan : Color.white
+                    )
+                    .background(.black.opacity(0.44), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                model.showDiagnostics
+                    ? "Hide local pose delivery diagnostics"
+                    : "Show local pose delivery diagnostics"
+            )
+            .padding(.trailing, 7)
             Label(
                 model.snapshot == nil ? "SEARCHING" : "TRACKING",
                 systemImage: model.snapshot == nil
@@ -79,6 +101,40 @@ struct MirrorScreen: View {
             .padding(.vertical, 9)
             .background(.black.opacity(0.44), in: Capsule())
         }
+        .accessibilityElement(children: .contain)
+    }
+
+    /// On-device callback cadence, not camera or GPU display FPS.
+    /// No camera images, tracking points or diagnostics leave the phone.
+    private var poseDiagnostics: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            if let report = model.deliveryReport {
+                HStack(spacing: 16) {
+                    Text(String(
+                        format: "POSE %.1f fps", report.outputFPS
+                    ))
+                    Text(String(
+                        format: "p95 gap %.0f ms",
+                        report.p95DeliveryGapMilliseconds
+                    ))
+                }
+                .font(.system(.caption, design: .monospaced))
+                .fontWeight(.semibold)
+            } else {
+                Text("Collecting pose callback intervals…")
+                    .font(.caption)
+            }
+            Text("Local delivery estimate · not display FPS or camera latency")
+                .font(.system(.caption2))
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            .black.opacity(0.58),
+            in: RoundedRectangle(cornerRadius: 12)
+        )
         .accessibilityElement(children: .combine)
     }
 
