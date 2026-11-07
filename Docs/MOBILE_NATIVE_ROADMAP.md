@@ -404,3 +404,18 @@ The native app can load those independent artifacts with no runtime
 Python/network. Approved USDZ hierarchy authoring/packaging, licensing,
 anatomical bindings, full size/performance and live iPhone acceptance
 are still separate gates.
+
+## Mobile-4 source-frame silhouette constrained compositing (2026-11-07)
+
+Added MediaPipe one-person segmentation masks to the exact matched
+on-device video/pose callback, copied Task-owned mask data for safe
+asynchronous Metal use, and blended both proxy/approved atlas
+fragments only within the person's confidence silhouette. Camera
+image/pose/mask share the same source stamp and aspect-fill crop.
+Missing masks use prior procedural behavior without borrowing a
+different subject/frame's mask.
+
+This improves foreground boundary hygiene but **does not infer
+internal depth, per-body-part occlusion or true medical anatomy**.
+Real iPhone capture orientation, contour quality and performance
+remain mandatory physical gates.

@@ -119,7 +119,8 @@ final class MirrorViewModel {
                 }
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
-                        pose: $0, pixelBuffer: incoming.pixelBuffer
+                        pose: $0, pixelBuffer: incoming.pixelBuffer,
+                        silhouette: incoming.silhouette
                     )
                 }
                 let now = ProcessInfo.processInfo.systemUptime
