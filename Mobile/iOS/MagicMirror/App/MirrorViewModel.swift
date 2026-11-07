@@ -10,6 +10,8 @@ final class MirrorViewModel {
     var phase: MirrorPhase = .idle
     var snapshot: PoseSnapshot?
     var alignedFrame: AlignedPoseVideoFrame?
+    /// Geometry-only, fixed-length reference pose for this source frame.
+    var proxyRigPose: PoseSnapshot?
     var opacity = 0.64
     var focus: AnatomyFocus = .full
     var isPaused = false
@@ -20,6 +22,7 @@ final class MirrorViewModel {
     private var mostRecentTimestamp = -1
     private var lastPoseReceiptUptime = 0.0
     private var temporalFilter = PoseTemporalFilter()
+    private var proxyRig = LiveProxyRigRetargeter()
     private var deliveryMonitor = PoseDeliveryQualityMonitor()
     private var expiryTask: Task<Void, Never>?
 
@@ -32,6 +35,7 @@ final class MirrorViewModel {
                 self.mostRecentTimestamp = incoming.pose.timestampMilliseconds
                 let smooth = self.temporalFilter.apply(incoming.pose)
                 self.snapshot = smooth
+                self.proxyRigPose = self.proxyRig.update(smooth)
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer
@@ -51,6 +55,8 @@ final class MirrorViewModel {
                 self.deliveryReport = nil
                 self.snapshot = nil
                 self.alignedFrame = nil
+                self.proxyRigPose = nil
+                self.proxyRig.reset()
             }
         }
         pipeline.onPhase = { [weak self] phase in
@@ -67,6 +73,8 @@ final class MirrorViewModel {
         isPaused = false
         mostRecentTimestamp = -1
         temporalFilter.reset()
+        proxyRig.reset()
+        proxyRigPose = nil
         deliveryMonitor.reset()
         deliveryReport = nil
         expiryTask?.cancel()
@@ -79,6 +87,8 @@ final class MirrorViewModel {
                     self.snapshot = nil
                     self.alignedFrame = nil
                     self.temporalFilter.reset()
+                    self.proxyRig.reset()
+                    self.proxyRigPose = nil
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
                     self.phase = .searching
@@ -94,6 +104,8 @@ final class MirrorViewModel {
         expiryTask?.cancel()
         expiryTask = nil
         temporalFilter.reset()
+        proxyRig.reset()
+        proxyRigPose = nil
         deliveryMonitor.reset()
         deliveryReport = nil
         snapshot = nil
@@ -110,6 +122,8 @@ final class MirrorViewModel {
         isPaused.toggle()
         if isPaused {
             temporalFilter.reset()
+            proxyRig.reset()
+            proxyRigPose = nil
             deliveryMonitor.reset()
             deliveryReport = nil
             snapshot = nil
