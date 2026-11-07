@@ -4,6 +4,7 @@ import SwiftUI
 /// Real multi-system toggles and mesh sectioning remain gated until their
 /// independently reviewed 3D resources and native renderer actually exist.
 struct AnatomyLayersSheet: View {
+    @Bindable var model: MirrorViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var page: NotebookPage = .systems
 
@@ -182,12 +183,25 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text("These three anatomical planes are a future educational feature. A moving guide line is not a true 3D cut; sectioning requires a reviewed and correctly registered mesh.")
+            Text(model.canSectionReviewedAtlas
+                ? "3D surface section clipping is available for the reviewed and registered skinned atlas. This shows cut surfaces without generating anatomical cross-section caps."
+                : "3D surface section controls unlock only when a reviewed, registered, GPU-skinned atlas is actually available. A drawn guide line is not a real cut.")
                 .font(.subheadline)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if model.canSectionReviewedAtlas {
+                Button("Show complete reference atlas") {
+                    model.activeSection = nil
+                }
+                .buttonStyle(.bordered)
+                .accessibilityHint("Disable the 3D half-space cut")
+            }
             ForEach(AnatomySectionPlane.allCases) { plane in
+                Button {
+                    guard model.canSectionReviewedAtlas else { return }
+                    model.activeSection = plane
+                } label: {
                 HStack(spacing: 14) {
                     sectionDiagram(plane)
                     VStack(alignment: .leading, spacing: 5) {
@@ -200,10 +214,15 @@ struct AnatomyLayersSheet: View {
                     }
                     Spacer(minLength: 8)
                     VStack(spacing: 4) {
-                        Image(systemName: "lock.fill")
+                        Image(systemName: model.canSectionReviewedAtlas
+                            ? (model.activeSection == plane
+                                ? "checkmark.circle.fill" : "circle")
+                            : "lock.fill")
                             .font(.caption)
                             .accessibilityHidden(true)
-                        Text("PLANNED")
+                        Text(model.canSectionReviewedAtlas
+                            ? (model.activeSection == plane ? "ACTIVE" : "SELECT")
+                            : "LOCKED")
                             .font(.system(.caption2, weight: .semibold))
                     }
                     .foregroundStyle(LeonardoPalette.mutedInk)
@@ -214,9 +233,29 @@ struct AnatomyLayersSheet: View {
                 .background(LeonardoPalette.ivory.opacity(0.48),
                             in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityElement(children: .combine)
+                }
+                .buttonStyle(.plain)
+                .disabled(!model.canSectionReviewedAtlas)
+                .accessibilityHint(model.canSectionReviewedAtlas
+                    ? "Apply the selected half-space clip to the registered atlas"
+                    : "Requires independently reviewed anatomy and camera registration")
             }
 
-            Text("NO CUTTING OR VOLUMETRIC RECONSTRUCTION IS ACTIVE")
+            if model.canSectionReviewedAtlas, model.activeSection != nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Section offset · shoulder-width units")
+                        .font(.caption)
+                    Slider(value: $model.sectionOffset, in: -0.5...0.5)
+                        .accessibilityLabel("Move anatomy section plane")
+                    Text("Only the visible mesh surface is clipped; no watertight cut face or tissue reconstruction")
+                        .font(.caption2)
+                        .foregroundStyle(LeonardoPalette.mutedInk)
+                }
+            }
+
+            Text(model.canSectionReviewedAtlas
+                ? "GPU 3D SURFACE CLIPPING · REFERENCE GEOMETRY ONLY"
+                : "NO REGISTERED ATLAS AVAILABLE FOR CUTTING")
                 .font(.system(size: 10, weight: .semibold))
                 .tracking(0.6)
                 .foregroundStyle(LeonardoPalette.mutedInk)
