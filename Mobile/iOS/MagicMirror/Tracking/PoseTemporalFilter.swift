@@ -31,6 +31,8 @@ struct PoseTemporalFilter {
         let blend = CGFloat(max(0, min(1, weight)))
         let blend3D = Float(blend)
 
+        // Filter each reliable joint independently. An occluded joint uses
+        // its current low-confidence observation, never a stale visible one.
         let points = zip(previous.points, next.points).map { old, current in
             guard old.isUsable && current.isUsable else { return current }
             return PosePoint(
@@ -58,7 +60,8 @@ struct PoseTemporalFilter {
         let result = PoseSnapshot(
             timestampMilliseconds: next.timestampMilliseconds,
             imageSize: next.imageSize,
-            points: points, worldPoints: worldPoints
+            points: points, worldPoints: worldPoints,
+            cameraIntrinsics: next.cameraIntrinsics
         )
         self.previous = result
         return result
