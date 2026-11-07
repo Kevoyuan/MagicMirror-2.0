@@ -69,6 +69,19 @@ There is no account, onboarding wizard, feed, cloud sync, photo gallery, forced 
 
 **Technical validation required before release:** Xcode simulator build, execution of relevant tests, actual iPhone camera and layout checks, VoiceOver and Dynamic Type on device, source-frame association and latency measurements, sustained battery/thermal tests, licensed asset review and TestFlight/privacy compliance.
 
-## 7. Handoff principles
+## 7. Localization and adaptive layout handoff
+
+- **Supported UI languages (source):** English fallback and Simplified Chinese using native XcodeGen-bundled `en.lproj` and `zh-Hans.lproj` resources. No language-selector settings page is needed; follow the user's iOS language selection.
+- **App-wide labels:** Mirror status, body focus, pause/resume, layer catalogue, section explanations, help/privacy pages and error recovery use one pair of localized keys.
+- **Dynamic text from models:** Region raw values, layer metadata and state keys must be passed to SwiftUI as localized keys; raw `Text(String)` on a dynamic English value is not enough.
+- **Header variants:** Regular size = full manuscript wordmark, help, pose pill; compact-width fallback = MM monogram, help, pose pill; accessibility sizes = two-line header with 44 pt help target.
+- **Unobstructed camera:** When partial tracking is active, pose status is carried by the pill without an additional persistent banner. Searching, denied camera and paused overlay still have guidance.
+- **Availability:** Unreviewed layers and section planes remain read-only with a localized Planned state, including VoiceOver.
+- **QA:** On compact and large iPhones, compare English and Chinese in searching, partial, tracking, paused, blocked camera, Layers/Sections, Field Notes. Test VoiceOver reading order, Accessibility XXXL, no clipped text, consistent control destinations and sheet dismissal.
+- **Color:** Copper-ink text is distinct from decorative low-contrast copper rules, with token source in `LeonardoPalette.swift`.
+
+This is a UI/localization contract only. Simulator compilation cannot prove that translations are actually selected on an identified iPhone, and English developer diagnostics remain technical indicators.
+
+## 8. Handoff principles
 
 The design Agent may refine SwiftUI screen composition, copy, accessibility and sheet UX without modifying MediaPipe tracking, Metal shaders or anatomical rig calibration. The coding Agent must not enable unsupported Z-Anatomy layers merely because they appear in the folio. Every future view must describe its user goal, state and failure behavior, underlying capability, accessibility contract and reproducible validation.
