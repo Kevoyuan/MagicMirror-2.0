@@ -32,6 +32,15 @@ struct AtlasSkinInfluence {
     }
 }
 
+/// One directly source-attributed, contiguous triangle range in the
+/// actually selected GPU mesh. No annotation is inferred from joints.
+struct AtlasRenderedPart {
+    let sourceHierarchyPath: String
+    let displayName: String
+    let vertexStart: Int
+    let vertexCount: Int
+}
+
 /// Frame-bound hardware skinning input. The CPU uploads rest vertices and
 /// camera-space bone transforms; blending and perspective projection run
 /// in the Metal vertex shader, with no CPU skinned triangle regeneration.
@@ -50,6 +59,7 @@ struct SkinnedAtlasDrawBatch {
     let focus: AnatomyFocus
     let opacity: Float
     let vertices: [SkinnedAtlasVertex]
+    let renderedParts: [AtlasRenderedPart]
     let cameraMatrices: [simd_float4x4]
     let cameraParameters: SIMD4<Float> // fx, fy, cx, cy
     let viewportParameters: SIMD4<Float> // scale, xCrop, yCrop, depthRange
@@ -121,6 +131,7 @@ struct SkinnedAtlasDrawBatch {
         // sent as a tiny uniform instead of rebuilding all mesh vertices.
         let color = SIMD4<Float>(0.93, 0.89, 0.78, 1)
         var names = Set<String>()
+        var renderedParts: [AtlasRenderedPart] = []
         var expectedVertexCount = 0
         for part in atlas.manifest.parts {
             guard let bone = byPath[part.sourceHierarchyPath],
@@ -141,6 +152,12 @@ struct SkinnedAtlasDrawBatch {
             cursor += part.vertexCount
             if focus == .arms && part.group != "arms" { continue }
             if focus == .legs && part.group != "legs" { continue }
+            renderedParts.append(AtlasRenderedPart(
+                sourceHierarchyPath: part.sourceHierarchyPath,
+                displayName: part.displayName,
+                vertexStart: expectedVertexCount,
+                vertexCount: part.vertexCount
+            ))
             expectedVertexCount += part.vertexCount
             if preparedVertices != nil { continue }
             for index in part.vertexOffset..<cursor {
@@ -195,6 +212,7 @@ struct SkinnedAtlasDrawBatch {
             focus: focus,
             opacity: opacity,
             vertices: included,
+            renderedParts: renderedParts,
             cameraMatrices: matrices,
             cameraParameters: SIMD4(
                 intrinsics.fx, intrinsics.fy, intrinsics.cx, intrinsics.cy
