@@ -22,8 +22,8 @@ There is no account, onboarding wizard, feed, cloud sync, photo gallery, forced 
 1. Launch directly into the live mirror (no extra tap before camera start). Request iOS Camera permission if necessary.
 2. Aim the rear camera at one person. A visible arm or shoulder span can begin partial tracking. Full torso registration requires a reliable shoulder/hip anchor.
 3. Automatically show only confidence-gated visible anatomy segments. If tracking is lost, remove stale proxy geometry and provide concise framing guidance.
-4. Switch Whole, Arms or Legs to change the body region. This is distinct from selecting an anatomy system.
-5. Tap Opacity to reveal the 15–90% slider, or Pause to hide the overlay while leaving the camera preview active.
+4. In the default compact dock, tap the current region (a native menu) to switch Whole / Arms / Legs. Open Adjustments for the expanded segmented control and reference opacity. This is distinct from selecting an anatomy system.
+5. Open Adjustments for the 15–90% opacity slider, or tap Pause in the compact dock to hide the overlay while leaving the camera preview active.
 6. Open Layers for the anatomy catalogue, or Field Notes to learn safe operation, privacy and limitations.
 
 ## 3. Visual design rules
@@ -85,3 +85,32 @@ This is a UI/localization contract only. Simulator compilation cannot prove that
 ## 8. Handoff principles
 
 The design Agent may refine SwiftUI screen composition, copy, accessibility and sheet UX without modifying MediaPipe tracking, Metal shaders or anatomical rig calibration. The coding Agent must not enable unsupported Z-Anatomy layers merely because they appear in the folio. Every future view must describe its user goal, state and failure behavior, underlying capability, accessibility contract and reproducible validation.
+
+## 9. Compact camera and study-detail experience (2026-11-08)
+
+The default live screen shows a single short paper dock: region menu,
+Layers, Pause/Resume and an Adjustments disclosure. The full segmented
+region selector and overall opacity slider appear only on expansion,
+while reference/nonmedical status remains visible in both modes.
+The actual source video is never sepia-filtered or paused by the UI.
+
+When a visible reference segment or approved atlas triangle is selected,
+show **only a one-line title + Study + dismiss** overlay above the dock.
+Study opens Folio IV: a native paper sheet with a stable snapshot of
+the selected source-approved teaching text, provenance when supplied,
+and a persistent nonmedical disclaimer. Do not keep a multiline
+anatomical explanation over the person's head or torso.
+
+The Systems/Sections folio never marks an unregistered system as
+selected. Derive **Selected / Ready / Locked** from actual verified
+runtime readiness, not merely an enabled set. If none of the
+requested systems is truly ready, the reference proxy remains
+the visually selected fallback. Automatic unlocking after resource
+verification is conditional, never inferred from a static design.
+
+**Regression matrix:** collapsed ↔ expanded, region menu, Chinese/English
+labels, lost pose with study sheet open, absent educational note,
+unregistered requested skeleton, multiple ready systems, VoiceOver,
+Reduce Motion, camera denied and simulated/physical iPhone sizes.
+A compiler-only workflow is not evidence that these scenarios were
+executed.
