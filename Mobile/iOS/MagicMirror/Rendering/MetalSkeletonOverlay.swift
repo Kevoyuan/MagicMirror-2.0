@@ -51,6 +51,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var snapshot: PoseSnapshot?
         private var opacity: Float = 0.65
         private var focus: AnatomyFocus = .full
+        private var approvedAtlas: VerifiedAnatomyAtlas?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -76,6 +77,14 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             self.pipeline = try? device.makeRenderPipelineState(
                 descriptor: descriptor
             )
+            // Heavy, optional bundle verification stays off the main thread.
+            // A missing/invalid atlas never breaks the offline proxy path.
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let approved = try? VerifiedAnatomyAtlas.load()
+                DispatchQueue.main.async { [weak self] in
+                    self?.approvedAtlas = approved
+                }
+            }
         }
 
         func update(
@@ -100,10 +109,18 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                   ) else { return }
 
             if let pipeline {
-                let geometry = VolumetricBoneMesh.make(
-                    snapshot: snapshot, viewport: view.bounds.size,
-                    opacity: opacity, focus: focus
-                )
+                let geometry: [BoneMeshVertex]
+                if let approvedAtlas {
+                    geometry = approvedAtlas.makeProjectedMesh(
+                        snapshot: snapshot, viewport: view.bounds.size,
+                        opacity: opacity, focus: focus
+                    )
+                } else {
+                    geometry = VolumetricBoneMesh.make(
+                        snapshot: snapshot, viewport: view.bounds.size,
+                        opacity: opacity, focus: focus
+                    )
+                }
                 if !geometry.isEmpty {
                     let bytes = geometry.withUnsafeBytes { raw -> MTLBuffer? in
                         guard let base = raw.baseAddress else { return nil }

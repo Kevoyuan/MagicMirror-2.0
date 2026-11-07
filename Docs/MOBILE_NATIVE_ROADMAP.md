@@ -29,6 +29,24 @@ Do **not** claim a gate passed because Python unit tests, static C#
 parser, or a browser mock passed. Physical smartphone test recordings and
 measured latency are needed.
 
+## Current source implementation note
+
+- **Mobile-2 (source):** native Metal 3D tapered-bone proxy from MediaPipe
+  image and approximate hip-relative world landmarks, opacity/focus
+  controls and time smoothing, with successful Xcode source compilation.
+  This is **not a reviewed 3D anatomy mesh** or physically measured
+  real-person AR alignment.
+- **Mobile-3 (pipeline source):** an optional, fail-closed reviewed
+  whole-atlas binary/manifest reader, credited licence checks, pinned
+  original-FBX offline Blender export and per-mesh reference anchors.
+  **No full Z-Anatomy asset has been bundled, authored, run or reviewed.**
+- **Mobile-4 (math source):** pure Swift two-link IK and right-handed
+  atlas registration kernels; they do not make the proxy a calibrated
+  anatomically correct real-person rig.
+- **Mobile-5/Android:** release and Android device/platform work remain
+  unimplemented. User has chosen to defer physical validation now,
+  not to waive release acceptance requirements.
+
 ## Architecture work packages
 
 ### Mobile runtime (iOS first; not yet created)

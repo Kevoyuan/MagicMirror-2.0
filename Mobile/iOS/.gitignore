@@ -7,3 +7,8 @@ build/
 # Downloaded/verified model, packaged into app via XcodeGen resources
 Resources/*.task
 .DS_Store
+
+# Reviewed anatomy derivatives are generated and licensed separately
+Resources/*.mmgeom
+Resources/*.manifest.json
+Resources/*.ATTRIBUTION.txt
