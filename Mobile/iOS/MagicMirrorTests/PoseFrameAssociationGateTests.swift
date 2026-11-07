@@ -119,11 +119,11 @@ final class PoseFrameAssociationGateTests: XCTestCase {
         ))
         XCTAssertFalse(gate.register(
             timestampMilliseconds: 2,
-            imageSize: CGSize(width: .nan, height: 720)
+            imageSize: CGSize(width: CGFloat.nan, height: 720)
         ))
         XCTAssertFalse(gate.register(
             timestampMilliseconds: 3,
-            imageSize: CGSize(width: .infinity, height: 720)
+            imageSize: CGSize(width: CGFloat.infinity, height: 720)
         ))
         XCTAssertTrue(gate.register(
             timestampMilliseconds: 4, imageSize: portrait
