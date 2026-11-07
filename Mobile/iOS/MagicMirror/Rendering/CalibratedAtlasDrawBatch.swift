@@ -11,6 +11,8 @@ struct CalibratedAtlasDrawBatch {
     let sourceImageSize: CGSize
     let viewportSize: CGSize
     let sourceRevision: String
+    let focus: AnatomyFocus
+    let opacity: Float
     let vertices: [BoneMeshVertex]
 
     private init(
@@ -18,21 +20,29 @@ struct CalibratedAtlasDrawBatch {
         sourceImageSize: CGSize,
         viewportSize: CGSize,
         sourceRevision: String,
+        focus: AnatomyFocus,
+        opacity: Float,
         vertices: [BoneMeshVertex]
     ) {
         self.sourceTimestampMilliseconds = sourceTimestampMilliseconds
         self.sourceImageSize = sourceImageSize
         self.viewportSize = viewportSize
         self.sourceRevision = sourceRevision
+        self.focus = focus
+        self.opacity = opacity
         self.vertices = vertices
     }
 
     /// Avoid displaying geometry computed for another camera image or
     /// screen layout, even when the two poses look superficially similar.
-    func matches(frame: PoseSnapshot, viewport: CGSize) -> Bool {
+    func matches(
+        frame: PoseSnapshot, viewport: CGSize,
+        focus: AnatomyFocus, opacity: Float
+    ) -> Bool {
         sourceTimestampMilliseconds == frame.timestampMilliseconds &&
         sourceImageSize == frame.imageSize &&
         viewportSize == viewport &&
+        self.focus == focus && self.opacity == opacity &&
         frame.hasTorsoAnchor &&
         !vertices.isEmpty
     }
@@ -115,6 +125,7 @@ struct CalibratedAtlasDrawBatch {
             sourceImageSize: projector.pose.sourceImageSize,
             viewportSize: viewport,
             sourceRevision: atlas.manifest.sourceRevision,
+            focus: focus, opacity: opacity,
             vertices: vertices
         )
     }
