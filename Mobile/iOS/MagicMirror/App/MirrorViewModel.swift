@@ -151,8 +151,6 @@ final class MirrorViewModel {
                     self.skinnedAtlasBatch = nil
                     self.canSectionReviewedAtlas = false
                     self.activeSection = nil
-                self.canSectionReviewedAtlas = false
-                self.activeSection = nil
                     self.resetAutomaticCamera()
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
@@ -281,8 +279,8 @@ final class MirrorViewModel {
             proxyRigPose = nil
             calibratedAtlasBatch = nil
             skinnedAtlasBatch = nil
-        canSectionReviewedAtlas = false
-        activeSection = nil
+            canSectionReviewedAtlas = false
+            activeSection = nil
             reviewedAtlas?.reset()
             deliveryMonitor.reset()
             deliveryReport = nil
