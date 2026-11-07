@@ -51,6 +51,8 @@ enum AnatomySectionPlane: String, CaseIterable, Identifiable {
         }
     }
 
-    /// True clipping/capping of reviewed registered anatomy is not present.
+    /// No reviewed GPU-skinned atlas is bundled. The live section sheet
+    /// uses MirrorViewModel.canSectionReviewedAtlas for runtime unlocking;
+    /// this static product-catalog flag remains disabled by default.
     var isAvailable: Bool { false }
 }
