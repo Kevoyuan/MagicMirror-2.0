@@ -24,7 +24,7 @@ struct MirrorGuideSheet: View {
 
                     Picker("Guide section", selection: $page) {
                         ForEach(GuidePage.allCases) { page in
-                            Text(page.rawValue).tag(page)
+                            Text(LocalizedStringKey(page.rawValue)).tag(page)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -198,7 +198,7 @@ struct MirrorGuideSheet: View {
     private func guideSectionTitle(
         _ title: String, systemImage: String
     ) -> some View {
-        Label(title, systemImage: systemImage)
+        Label(LocalizedStringKey(title), systemImage: systemImage)
             .font(.caption.weight(.semibold))
             .tracking(1.0)
             .foregroundStyle(LeonardoPalette.verdigris)
@@ -239,10 +239,10 @@ struct MirrorGuideSheet: View {
 
     private func noteBody(title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(LeonardoPalette.ink)
-            Text(detail)
+            Text(LocalizedStringKey(detail))
                 .font(.subheadline)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
