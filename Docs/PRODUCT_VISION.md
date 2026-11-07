@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — Product Vision
 
-> **Superseded desktop vision — phone-only decision accepted 2026-11-06.** MagicMirror will ship **exclusively as an offline-native iOS/Android phone app**: open, point camera at one person, automatically show and animate a semitransparent standard reference skeleton. The user needs no desktop computer, Unity, Python service, cloud inference or wearable. The Windows/macOS vision below is archived for historical engineering context, **not an active release target**. Refer to [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [active smartphone roadmap](MOBILE_NATIVE_ROADMAP.md). No native app is yet built.
+> **Superseded desktop vision — phone-only decision accepted 2026-11-06.** MagicMirror is planned **exclusively as an offline-native iPhone/iOS app** (Android canceled 2026-11-07): open, point camera at one person, automatically show and animate a semitransparent standard reference skeleton. The user needs no desktop computer, Unity, Python service, cloud inference or wearable. The Windows/macOS vision below is archived for historical engineering context, **not an active release target**. Refer to [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [active smartphone roadmap](MOBILE_NATIVE_ROADMAP.md). A native iOS source prototype exists, but physical-device and release validation remain pending.
 
 **Version:** 2.1 · **Date:** 2026-11-06 · **Platforms:** Windows and macOS desktops  
 **Core concept:** Anatomical X-Ray Mirror — an interactive, educational **reference** anatomy overlay.
