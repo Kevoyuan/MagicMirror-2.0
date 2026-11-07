@@ -240,3 +240,15 @@ hip-centered estimate, not an iPhone-camera-space reconstruction. Next:
 
 Source parsing or successful simulator compilation **does not** prove
 physical camera behavior or true body-to-anatomy alignment.
+
+## Optional source-frame weak-perspective atlas projection
+
+An independently human-reviewed atlas may use `WeakPerspectiveCameraFit` to
+project body-world mesh triangles into the corresponding captured source
+image and then the displayed aspect-fill viewport. Fit quality must pass the
+P90 reprojection gate and a confident torso anchor is still required. This
+is an on-device approximation, **not** calibrated camera extrinsics, a
+medical observation of internal bones, or a replacement for the reviewed
+coherent hierarchy rig. When projection evidence is missing, atlas geometry
+is hidden; an unapproved atlas is never activated. See
+[the weak-perspective registration note](../../Docs/MOBILE_CAMERA_WEAK_PERSPECTIVE.md).
