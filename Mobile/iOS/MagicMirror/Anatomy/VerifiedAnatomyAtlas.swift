@@ -24,7 +24,7 @@ struct MobileAtlasManifest: Decodable {
     let parts: [MobileAtlasBinding]
     /// Required for additional anatomical systems; legacy skeleton
     /// exports may omit this field while retaining the skeletal source.
-    let anatomicalSystem: String?
+    var anatomicalSystem: String? = nil
 }
 
 struct MobileAtlasBinding: Decodable {
