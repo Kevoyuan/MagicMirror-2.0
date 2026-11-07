@@ -4,18 +4,27 @@ import UIKit
 /// Camera-first native interface. MirrorLiveRenderSurface owns the high-
 /// frequency frame observation; controls read stable phase and focus state.
 struct MirrorScreen: View {
-    private enum MirrorSheet: String, Identifiable {
+    private enum MirrorSheet: Identifiable {
         case anatomy
         case guide
-        var id: String { rawValue }
+        case study(MirrorStudyNote)
+
+        var id: String {
+            switch self {
+            case .anatomy: return "anatomy"
+            case .guide: return "guide"
+            case .study(let note): return "study-\(note.id)"
+            }
+        }
     }
 
     @State private var model = MirrorViewModel()
     @State private var presentedSheet: MirrorSheet?
-    @State private var showOpacity = false
+    @State private var showAdjustments = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
 
     var body: some View {
         ZStack {
@@ -56,11 +65,31 @@ struct MirrorScreen: View {
                 }
                 Spacer()
                 if let part = model.reviewedPartSelection {
-                    atlasPartCard(part)
-                        .padding(.bottom, 8)
+                    selectionPreview(title: part.displayName) {
+                        let education = AnatomyEducationCatalog.installed.note(
+                            for: part,
+                            language: locale.language.languageCode?.identifier ?? "en"
+                        )
+                        presentedSheet = .study(MirrorStudyNote(
+                            title: education?.title ?? part.displayName,
+                            summary: education?.summary ?? part.detail,
+                            function: education?.function,
+                            authorCredit: education?.authorCredit,
+                            isProxy: false
+                        ))
+                    }
+                    .padding(.bottom, 8)
                 } else if let selected = model.referenceSelection {
-                    referenceCard(selected)
-                        .padding(.bottom, 8)
+                    selectionPreview(title: selected.title) {
+                        presentedSheet = .study(MirrorStudyNote(
+                            title: selected.title,
+                            summary: selected.explanation,
+                            function: nil,
+                            authorCredit: nil,
+                            isProxy: true
+                        ))
+                    }
+                    .padding(.bottom, 8)
                 }
                 if presentation.guidanceForUser != nil {
                     guidance
@@ -87,6 +116,8 @@ struct MirrorScreen: View {
                 AnatomyLayersSheet(model: model)
             case .guide:
                 MirrorGuideSheet(showDiagnostics: $model.showDiagnostics)
+            case .study(let note):
+                MirrorStudySheet(note: note)
             }
         }
     }
@@ -277,130 +308,74 @@ struct MirrorScreen: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Source-reviewed mesh detail; never a personal bone diagnosis.
-    private func atlasPartCard(
-        _ selection: ReviewedAnatomySelection
+    /// Selection is a small one-line invitation, never a large camera-blocking
+    /// article. The full educational description lives in the study sheet.
+    private func selectionPreview(
+        title: String, onStudy: @escaping () -> Void
     ) -> some View {
-        let note = AnatomyEducationCatalog.installed.note(
-            for: selection
-        )
-        return HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "square.3.layers.3d")
-                .font(.title3)
+        HStack(spacing: 10) {
+            Image(systemName: "hand.point.up.left")
                 .foregroundStyle(LeonardoPalette.ivory)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(note?.title ?? selection.displayName)
-                    .font(.system(.headline, design: .serif))
-                    .foregroundStyle(LeonardoPalette.ivory)
-                Text(note?.summary ?? selection.detail)
-                    .font(.caption)
-                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
-                if let function = note?.function {
-                    Text(function)
-                        .font(.caption)
-                        .foregroundStyle(LeonardoPalette.ivory.opacity(0.80))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let author = note?.authorCredit {
-                    Text("Educational text: \(author)")
-                        .font(.caption2)
-                        .foregroundStyle(LeonardoPalette.ivory.opacity(0.65))
-                }
-                Text("SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.68))
-            }
-            Spacer(minLength: 0)
+
+            Text(LocalizedStringKey(title))
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(LeonardoPalette.ivory)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button("Study", action: onStudy)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LeonardoPalette.ivory)
+                .frame(minWidth: 58, minHeight: 44)
+                .background(LeonardoPalette.verdigris,
+                            in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityHint("Open the selected anatomy reference note")
+
             Button {
                 model.dismissReferenceSelection()
             } label: {
                 Image(systemName: "xmark")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LeonardoPalette.ivory)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(LeonardoPalette.ivory)
             .accessibilityLabel("Close anatomy detail")
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LeonardoPalette.cameraScrim.opacity(0.90),
-            in: RoundedRectangle(cornerRadius: 15)
-        )
-        .accessibilityElement(children: .contain)
-    }
-
-    private func referenceCard(
-        _ selected: AnatomyReferenceSelection
-    ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "hand.point.up.left")
-                .font(.title3)
-                .foregroundStyle(LeonardoPalette.ivory)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(selected.title)
-                    .font(.system(.headline, design: .serif))
-                    .foregroundStyle(LeonardoPalette.ivory)
-                Text(selected.explanation)
-                    .font(.caption)
-                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Observed pose guide · not your internal bones")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(LeonardoPalette.ivory.opacity(0.68))
-            }
-            Spacer(minLength: 0)
-            Button {
-                model.dismissReferenceSelection()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(LeonardoPalette.ivory)
-            .accessibilityLabel("Close reference detail")
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LeonardoPalette.cameraScrim.opacity(0.90),
-            in: RoundedRectangle(cornerRadius: 15)
-        )
+        .padding(.horizontal, 11)
+        .padding(.vertical, 4)
+        .background(LeonardoPalette.cameraScrim.opacity(0.91),
+                    in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .contain)
     }
 
     private var controls: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                Text("FOLIO · I")
-                    .font(.system(size: 10, weight: .semibold, design: .serif))
-                    .tracking(1.4)
-                ManuscriptRule()
-                Text("ANATOMIA")
-                    .font(.system(size: 10, weight: .medium, design: .serif))
-                    .tracking(1.1)
-            }
-            .foregroundStyle(LeonardoPalette.mutedInk)
-            .accessibilityHidden(true)
-
-            Picker("Body region", selection: $model.focus) {
-                ForEach(AnatomyFocus.allCases) { region in
-                    Text(LocalizedStringKey(region.rawValue)).tag(region)
+            if showAdjustments {
+                HStack(spacing: 8) {
+                    Text("FOLIO · I")
+                        .font(.system(.caption2, design: .serif, weight: .semibold))
+                        .tracking(1)
+                    ManuscriptRule()
+                    Text("ANATOMIA")
+                        .font(.system(.caption2, design: .serif))
                 }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityLabel("Reference skeleton body region")
+                .foregroundStyle(LeonardoPalette.mutedInk)
+                .accessibilityHidden(true)
 
-            actionRow
+                Picker("Body region", selection: $model.focus) {
+                    ForEach(AnatomyFocus.allCases) { region in
+                        Text(LocalizedStringKey(region.rawValue)).tag(region)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel("Reference skeleton body region")
 
-            if showOpacity {
                 HStack(spacing: 9) {
                     Text("Opacity")
-                        .font(.caption.weight(.medium))
+                        .font(.subheadline.weight(.medium))
                     Slider(value: $model.opacity, in: 0.15...0.90)
                         .tint(LeonardoPalette.verdigris)
                         .accessibilityLabel("Skeleton opacity")
@@ -408,15 +383,33 @@ struct MirrorScreen: View {
                         .font(.caption.monospacedDigit())
                         .frame(minWidth: 38, alignment: .trailing)
                 }
-                .accessibilityElement(children: .contain)
+            }
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 7) {
+                    HStack(spacing: 7) {
+                        regionMenu
+                        layersButton
+                    }
+                    HStack(spacing: 7) {
+                        pauseButton
+                        adjustmentsButton
+                    }
+                }
+            } else {
+                HStack(spacing: 7) {
+                    regionMenu
+                    layersButton
+                    pauseButton
+                    adjustmentsButton
+                }
             }
 
             HStack(alignment: .center, spacing: 7) {
                 Image(systemName: "info.circle")
                     .accessibilityHidden(true)
                 Text("ILLUSTRATIVE REFERENCE · NOT YOUR REAL BONES")
-                    .font(.system(size: 10, weight: .medium))
-                    .tracking(0.25)
+                    .font(.caption2.weight(.medium))
                     .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(LeonardoPalette.mutedInk)
@@ -427,37 +420,53 @@ struct MirrorScreen: View {
             )
         }
         .foregroundStyle(LeonardoPalette.ink)
-        .padding(.horizontal, 13)
+        .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity)
         .background(
             LeonardoPalette.parchment.opacity(0.97),
-            in: RoundedRectangle(cornerRadius: 19)
+            in: RoundedRectangle(cornerRadius: 18)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 19)
-                .strokeBorder(LeonardoPalette.copper.opacity(0.55),
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(LeonardoPalette.copper.opacity(0.48),
                               lineWidth: 0.7)
                 .allowsHitTesting(false)
         }
         .environment(\.colorScheme, .light)
     }
 
-    @ViewBuilder
-    private var actionRow: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(spacing: 7) {
-                layersButton
-                opacityButton
-                pauseButton
+    /// Whole / Arms / Legs stay available from the collapsed camera dock.
+    /// The menu is a native, accessible control, not a custom gesture.
+    private var regionMenu: some View {
+        Menu {
+            ForEach(AnatomyFocus.allCases) { region in
+                Button {
+                    model.focus = region
+                } label: {
+                    if model.focus == region {
+                        Label(LocalizedStringKey(region.rawValue),
+                              systemImage: "checkmark")
+                    } else {
+                        Text(LocalizedStringKey(region.rawValue))
+                    }
+                }
             }
-        } else {
-            HStack(spacing: 7) {
-                layersButton
-                opacityButton
-                pauseButton
-            }
+        } label: {
+            Label(LocalizedStringKey(model.focus.rawValue),
+                  systemImage: "figure.stand")
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .foregroundStyle(LeonardoPalette.ink)
+                .padding(.horizontal, 3)
+                .background(LeonardoPalette.agedPaper.opacity(0.60),
+                            in: RoundedRectangle(cornerRadius: 11))
         }
+        .accessibilityLabel("Body region")
+        .accessibilityValue(LocalizedStringKey(model.focus.rawValue))
+        .accessibilityHint("Choose whole body, arms or legs")
     }
 
     private var layersButton: some View {
@@ -465,23 +474,6 @@ struct MirrorScreen: View {
             presentedSheet = .anatomy
         }
         .accessibilityHint("Open anatomy catalogue; unverified layers are unavailable")
-    }
-
-    private var opacityButton: some View {
-        LeonardoActionButton(
-            showOpacity ? "Hide slider" : "Opacity",
-            symbol: "circle.lefthalf.filled"
-        ) {
-            if reduceMotion {
-                showOpacity.toggle()
-            } else {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    showOpacity.toggle()
-                }
-            }
-        }
-        .accessibilityValue(Text(model.opacity, format: .percent))
-        .accessibilityHint("Expand or collapse the reference opacity slider")
     }
 
     private var pauseButton: some View {
@@ -496,6 +488,31 @@ struct MirrorScreen: View {
             model.isPaused ? "Resume pose overlay" : "Pause pose overlay"
         )
     }
+
+    private var adjustmentsButton: some View {
+        Button {
+            if reduceMotion {
+                showAdjustments.toggle()
+            } else {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    showAdjustments.toggle()
+                }
+            }
+        } label: {
+            Image(systemName: showAdjustments
+                  ? "chevron.down" : "slider.horizontal.3")
+                .font(.headline)
+                .foregroundStyle(LeonardoPalette.ink)
+                .frame(width: 44, height: 44)
+                .background(LeonardoPalette.agedPaper.opacity(0.60),
+                            in: RoundedRectangle(cornerRadius: 11))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(showAdjustments
+            ? "Hide mirror adjustments" : "Show mirror adjustments")
+        .accessibilityAddTraits(showAdjustments ? [.isSelected] : [])
+    }
+
 }
 
 private struct LeonardoActionButton: View {
