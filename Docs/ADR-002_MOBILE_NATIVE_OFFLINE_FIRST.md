@@ -1,7 +1,7 @@
 # ADR-002 — Mobile-native, offline-first MagicMirror as the only shipping product
 
-**Status:** Accepted product/platform decision (2026-11-06); native implementation NOT started.
-**Scope:** Smartphone-only product for iOS and Android. No Windows/macOS desktop application, desktop release or desktop feature parity is planned. Historical Unity + Python source may be retained as reference/test evidence, NOT a phone runtime dependency.
+**Status:** Accepted product/platform decision (2026-11-06); amended 2026-11-07 to iOS-only. Native iOS prototype sources exist; physical-device and shipping gates remain open.
+**Scope:** Native offline iPhone/iOS application only. Android development and releases are canceled, not deferred; reopening Android requires an explicit new owner decision. No Windows/macOS desktop application, desktop release or desktop feature parity is planned. Historical Unity + Python source may be retained as reference/test evidence, NOT an iOS runtime dependency.
 **Supersedes for all new product delivery:** Desktop-first assumptions and release gates in PRODUCT_VISION.md, ARCHITECTURE.md and ROADMAP.md. Does NOT supersede ADR-001's MediaPipe-only principle.
 
 ## Product contract — the actual user's request
@@ -28,7 +28,7 @@ capabilities on every handset. No wearer/body-mounted sensor.
 
 ## Architectural decision
 
-The ONLY end-user application is **native to iOS/Android**, not a remote
+The ONLY end-user application is **native to iOS**, not a remote
 desktop screen, WebRTC streamed Unity scene, embedded browser requiring a
 server, nor a Python process. The existing Unity 6.3/Python desktop
 proof-of-concept is NOT included in the mobile binary. No desktop application
@@ -68,17 +68,17 @@ consistently, never changes anatomical left/right identities. Pose/world
 coordinates are *estimates*, NOT camera extrinsics or measured bone
 positions.
 
-### Proposed native adapters (not yet implemented)
+### Native iOS adapter contract (source prototype exists; release unvalidated)
 
-| Layer | iOS first proof | Android follow-up |
-| --- | --- | --- |
-| Camera | AVFoundation AVCaptureVideoDataOutput OR ARKit ARSession capturedImage; one owner, never both simultaneously | CameraX OR ARCore session; one owner |
-| Pose | MediaPipe Tasks Vision Pose Landmarker, LIVE_STREAM and bundled .task model | MediaPipe Tasks Vision Pose Landmarker LIVE_STREAM |
-| GPU skeletal overlay | Metal/MetalKit primary; RealityKit/ARKit optional for device/camera tracking and occlusion | Filament / OpenGL ES or Vulkan; ARCore optional |
-| Confidence mask | MediaPipe pose segmentation, optimized for fitted skeleton clipping; not blanket default person-occlusion | MediaPipe segmentation; optional ARCore Depth when supported |
-| UI | Native SwiftUI plus render view | Native Jetpack Compose plus render view |
-| Storage | bundled weights/approved atlas + on-device settings, no upload by default | same |
-| Shared math | First port relevant M4/M5 formulas and test vectors to a portable, audited library; avoid porting Unity scene or TCP | reuse parity vectors and/or portable core |
+| Layer | iOS implementation direction |
+| --- | --- |
+| Camera | AVFoundation AVCaptureVideoDataOutput or a single ARKit ARSession capturedImage owner; never both simultaneously |
+| Pose | On-device MediaPipe Tasks Vision Pose Landmarker, LIVE_STREAM and bundled `.task` model |
+| GPU skeletal overlay | Metal/MetalKit primary; RealityKit/ARKit optional for device/camera tracking and occlusion |
+| Confidence mask | MediaPipe pose segmentation optimized for fitted skeleton clipping; not blanket person-occlusion |
+| UI | Native SwiftUI with live render view |
+| Storage | Bundled weights/approved atlas and on-device settings, no upload by default |
+| Shared math | Audit and port relevant M4/M5 formulas and test vectors without importing Unity scene or TCP runtime |
 
 MediaPipe on-device availability: https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
 
@@ -86,15 +86,13 @@ iOS ARKit occlusion is capability-gated; its stock person-occlusion can
 hide virtual content BEHIND the person, which is *not* automatically
 appropriate for an intentionally visible anatomy-inside-body overlay.
 Use a custom compositing policy, not a naïve always-on occlusion flag.
-Android ARCore Depth is optional and device-dependent:
-https://developers.google.com/ar/develop/java/depth/developer-guide
 
 ### One-camera rule
 
 Native camera frames are the sole authority for timestamps, image crop,
 lens orientation, source mirror state, and the image shown to the user.
-ARKit/ARCore must NOT open a second independently sampled camera beside
-AVCapture/CameraX. Choose one source per mode and feed the **same frame**
+ARKit must NOT open a second independently sampled camera beside
+AVCapture. Choose one source per mode and feed the **same frame**
 into the pose model, texture upload, and 3D overlay compositor.
 
 ### Asset policy
@@ -157,12 +155,9 @@ be reconstructed from monocular RGB. Use public-facing language like
 - Include camera consent, local-only processing, attribution and a
   permanently accessible "illustrative, nonmedical" explanation.
 
-## Implementation choices not yet decided (do not change mobile-only scope)
+## Implementation choices not yet decided (within iOS-only scope)
 
-- First implementation platform is provisionally **iOS**, since one native
-  device family simplifies camera/GPU integration. **Android is the second
-  smartphone platform**, not a desktop fallback. The user has confirmed
-  phone-only scope, but has not explicitly selected the first OS.
+- The owner selected **iPhone/iOS as the sole planned platform** on 2026-11-07. The previously proposed Android follow-up and associated parity milestone have been canceled.
 - ARKit-first vs AVFoundation+Metal-first camera adapter should be
   benchmarked against frame latency/3D projection rather than guessed.
 - 3D anatomical reference rig complexity and bundle size depend on
@@ -175,7 +170,7 @@ be reconstructed from monocular RGB. Use public-facing language like
 ## Effect on existing work
 
 - `Tools/pose_sidecar/`: useful for historical benchmark/reference data,
-  but **not** shipped in iOS/Android apps.
+  but **not** shipped in the iOS app.
 - `Unity/`: useful as a historical prototype/visual debugger, but **not**
   an app runtime, packaging dependency or hidden mobile engine.
 - `Tools/ci/csharp_kinematics/` and M4/M5 tests: preserve as algorithm
@@ -187,5 +182,4 @@ be reconstructed from monocular RGB. Use public-facing language like
 - All future features, PRs and acceptance gates must advance the standalone
   phone runtime or its offline development/validation pipeline.
 
-**Decision is final for product scope; implementation remains pending.**
-No mobile runtime or actual app is claimed to exist by this ADR.
+**This amended product scope is iOS-only.** The current native iOS code is a prototype; neither physical-device acceptance nor release readiness is claimed by this ADR.
