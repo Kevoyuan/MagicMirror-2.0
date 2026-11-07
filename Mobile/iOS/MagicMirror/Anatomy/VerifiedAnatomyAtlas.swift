@@ -174,41 +174,55 @@ struct VerifiedAnatomyAtlas {
     }
 
     /// Rigid whole-source submesh motion using HUMAN-REVIEWED rest anchors.
-    /// This is an image-projected approximation, not calibrated 3D fitting
-    /// and not valid if the subject rotates out of the expected pose plane.
+    ///
+    /// Source rest mesh -> estimated body-relative world segment -> SAME-FRAME
+    /// weak-perspective projection -> AVCaptureVideoPreviewLayer aspect fill.
+    /// This is not real camera extrinsics, user-specific internal geometry
+    /// or evidence that an anatomical model has been reviewed.
+    ///
+    /// When pose/world confidence or the projection quality gate fails,
+    /// intentionally hide the atlas; never fallback to a misleading 2D
+    /// stretch of anatomical geometry.
     func makeProjectedMesh(
         snapshot: PoseSnapshot?, viewport: CGSize, opacity: Float,
         focus: AnatomyFocus
     ) -> [BoneMeshVertex] {
-        // A reviewed whole-body atlas still requires a stable torso anchor.
-        // Partial observations use local procedural limb proxies instead.
-        guard let snapshot, snapshot.hasTorsoAnchor,
-              viewport.width > 0, viewport.height > 0 else { return [] }
+        guard let snapshot, snapshot.isUsable, snapshot.hasTorsoAnchor,
+              snapshot.worldPoints.count == 33,
+              viewport.width.isFinite, viewport.height.isFinite,
+              viewport.width > 0, viewport.height > 0,
+              opacity.isFinite, opacity > 0,
+              let fit = WeakPerspectiveCameraFit.estimate(
+                  snapshot: snapshot
+              ) else { return [] }
         var output: [BoneMeshVertex] = []
         output.reserveCapacity(vertices.count)
         let alpha = max(0, min(1, opacity))
+        let width = Float(viewport.width)
+        let height = Float(viewport.height)
+
         for part in manifest.parts {
             if focus == .arms && part.group != "arms" { continue }
             if focus == .legs && part.group != "legs" { continue }
-            guard let (restFrom, restTo) = part.restSegment,
-                  let targetFrom = VolumetricBoneMesh.sourcePoint(
-                      index: part.fromLandmark,
-                      snapshot: snapshot, viewport: viewport
-                  ), let targetTo = VolumetricBoneMesh.sourcePoint(
-                      index: part.toLandmark,
-                      snapshot: snapshot, viewport: viewport
-                  ) else { continue }
 
+            let from = snapshot.worldPoints[part.fromLandmark]
+            let to = snapshot.worldPoints[part.toLandmark]
+            guard from.isUsable, to.isUsable,
+                  let (restFrom, restTo) = part.restSegment else {
+                continue
+            }
+            let observedFrom = SIMD3<Float>(from.x, from.y, from.z)
+            let observedTo = SIMD3<Float>(to.x, to.y, to.z)
             let restAxis = restTo - restFrom
-            let targetAxis = targetTo - targetFrom
+            let targetAxis = observedTo - observedFrom
             let restLength = simd_length(restAxis)
             let targetLength = simd_length(targetAxis)
-            guard restLength > 1e-6, targetLength > 2,
-                  targetLength.isFinite else { continue }
+            guard restLength.isFinite, targetLength.isFinite,
+                  restLength > 1e-6, targetLength > 1e-5 else { continue }
+
             let restDirection = restAxis / restLength
             let targetDirection = targetAxis / targetLength
-            // Avoid an undefined antiparallel rotation without a reviewed
-            // reference plane; do not invent mirrored joint geometry.
+            // A 180-degree reversal lacks a uniquely reviewed bend plane.
             guard simd_dot(restDirection, targetDirection) > -0.999 else {
                 continue
             }
@@ -216,25 +230,48 @@ struct VerifiedAnatomyAtlas {
                 from: restDirection, to: targetDirection
             )
             let scale = targetLength / restLength
-            guard scale.isFinite, scale > 0 else { continue }
+            guard scale.isFinite, scale > 0, scale < 1e6 else { continue }
 
+            // Keep the atomic part: never append a partial triangle range if
+            // a vertex cannot project, otherwise adjacent bones tear apart.
+            var partVertices: [BoneMeshVertex] = []
+            partVertices.reserveCapacity(part.vertexCount)
+            var rejected = false
             let start = part.vertexOffset
             let end = start + part.vertexCount
-            for v in vertices[start..<end] {
-                let point = targetFrom +
-                    rotation.act((v.position - restFrom) * scale)
-                let normal = simd_normalize(rotation.act(v.normal))
-                let w = Float(viewport.width)
-                let h = Float(viewport.height)
-                output.append(BoneMeshVertex(
-                    position: SIMD4(
-                        2 * point.x / w - 1,
-                        1 - 2 * point.y / h,
-                        max(-0.8, min(0.8, point.z / h)), 1
+            for vertex in vertices[start..<end] {
+                let world = observedFrom +
+                    rotation.act((vertex.position - restFrom) * scale)
+                guard let imagePoint = fit.screenPixel(
+                    for: world, sourceImageSize: snapshot.imageSize,
+                    viewport: viewport
+                ) else {
+                    rejected = true
+                    break
+                }
+                let normal = simd_normalize(rotation.act(vertex.normal))
+                guard normal.x.isFinite, normal.y.isFinite,
+                      normal.z.isFinite else {
+                    rejected = true
+                    break
+                }
+                partVertices.append(BoneMeshVertex(
+                    position: SIMD4<Float>(
+                        2 * imagePoint.x / width - 1,
+                        1 - 2 * imagePoint.y / height,
+                        max(-0.8, min(0.8, world.z * 110 / height)),
+                        1
                     ),
-                    normal: SIMD4(normal.x, -normal.y, normal.z, 0),
-                    color: SIMD4(0.93, 0.89, 0.78, alpha * 0.58)
+                    normal: SIMD4<Float>(
+                        normal.x, -normal.y, normal.z, 0
+                    ),
+                    color: SIMD4<Float>(
+                        0.93, 0.89, 0.78, alpha * 0.58
+                    )
                 ))
+            }
+            if !rejected {
+                output.append(contentsOf: partVertices)
             }
         }
         return output
