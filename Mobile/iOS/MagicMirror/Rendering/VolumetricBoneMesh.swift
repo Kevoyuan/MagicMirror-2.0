@@ -349,7 +349,10 @@ enum VolumetricBoneMesh {
         let clip = SIMD4<Float>(
             2 * point.x / w - 1,
             1 - 2 * point.y / h,
-            max(-0.8, min(0.8, point.z / h)),
+            // Metal clip Z is [0, 1], not OpenGL's [-1, 1].
+            // Center the illustrative proxy so back-facing arcs are not
+            // silently clipped by the GPU when estimated depth is negative.
+            max(0.01, min(0.99, 0.5 + point.z / h)),
             1
         )
         vertices.append(BoneMeshVertex(
