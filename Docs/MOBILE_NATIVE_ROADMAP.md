@@ -315,3 +315,18 @@ atlas fallback paths remain available.
 This closes the native **shader/palette/runtime plumbing**, not the
 reviewed weights authoring, real source atlas, independent camera
 calibration, physical iPhone rendering or anatomical correctness gates.
+
+## Mobile-4 automatic candidate 6DoF estimation (2026-11-07)
+
+Added an on-device, robust multi-initialization nonlinear camera-pose
+candidate solver using current-frame MediaPipe 2D/3D correspondence and
+real camera intrinsic matrices. A throttled background estimate now
+feeds an explicitly **unreviewed** local diagnostic; underconstrained
+depth/torso geometry or poor reprojection fails closed. The reviewed
+anatomy atlas camera provider remains independent and is not unlocked
+by this estimated result.
+
+This is a substantive camera-pose algorithm and source-runtime
+integration. It still requires real iPhone reprojection statistics,
+motion/facing/outlier tests, latency and independent camera/body
+calibration before attaching approved anatomy.

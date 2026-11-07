@@ -496,3 +496,29 @@ live GPU path is **implemented and compile-tested but not activated on a
 real person**. This does not establish real human bone locations, real
 camera extrinsics or license approval. Full mesh deformation quality,
 transparency and sustained GPU performance need device validation.
+
+## Automatic on-device 6DoF camera pose candidates (Mobile-4)
+
+`Calibration/AutomaticCameraPoseEstimator.swift` now solves a provisional
+body-world-to-camera rigid transform from SAME-FRAME MediaPipe 3D
+landmarks, observed camera-image 2D landmarks and actual AVFoundation
+camera intrinsics. The nonlinear six-parameter robust optimizer tries
+multiple initial yaw guesses, uses damped least-squares refinement,
+validates torso geometry and minimum 3D depth spread, and rejects
+incorrect/nonfinite inputs or excessive global landmark P90 reprojection
+error.
+
+`MirrorViewModel` schedules this on a background utility task at most
+once every 750 ms while a torso and exact camera intrinsics are
+available; it resets on pause, tracking loss or stopping the camera.
+The optional **local diagnostics** display a camera *candidate* and its
+image P90 error. No images, camera frames, 3D coordinates or calibration
+records are saved or uploaded.
+
+**Important:** these are 6DoF candidates from MediaPipe's approximate,
+not surveyed, model-space 3D points. They are not independently reviewed
+physical camera extrinsics, cannot distinguish every facing/mirror
+ambiguity, do not establish actual bone positions, and NEVER automatically
+set `independentCameraReviewConfirmed` or authorize atlas rendering.
+Real device acceptance, occlusion, source identity and licensed anatomical
+assets remain separate gates.
