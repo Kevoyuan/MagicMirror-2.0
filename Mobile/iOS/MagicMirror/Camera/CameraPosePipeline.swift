@@ -176,7 +176,9 @@ final class CameraPosePipeline: NSObject {
         options.minPoseDetectionConfidence = 0.5
         options.minPosePresenceConfidence = 0.5
         options.minTrackingConfidence = 0.5
-        options.shouldOutputSegmentationMasks = false
+        // Optional per-person, per-source-frame float mask for a GPU-only
+        // silhouette alpha clip. This is not depth or internal anatomy.
+        options.shouldOutputSegmentationMasks = true
         options.poseLandmarkerLiveStreamDelegate = self
         return try PoseLandmarker(options: options)
     }
@@ -359,8 +361,29 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
             worldPoints: worldPoints,
             cameraIntrinsics: metadata.intrinsics
         )
+        // The SDK owns Mask.float32Data. Deep-copy here, synchronously in
+        // the result callback, before the task may recycle the storage.
+        // Never reuse a mask from a different pose/frame or session.
+        let silhouette: PersonSilhouetteMask? = {
+            guard snapshot.isUsable,
+                  let mask = result?.segmentationMasks.first,
+                  (1...2048).contains(mask.width),
+                  (1...2048).contains(mask.height),
+                  mask.width <= 4_194_304 / mask.height else { return nil }
+            let values = Array(UnsafeBufferPointer(
+                start: mask.float32Data,
+                count: mask.width * mask.height
+            ))
+            return PersonSilhouetteMask(
+                width: mask.width, height: mask.height,
+                confidence: values, sourceSize: metadata.imageSize
+            )
+        }()
         postAlignedFrame(snapshot.isUsable
-            ? AlignedPoseVideoFrame(pose: snapshot, pixelBuffer: sourceImage)
+            ? AlignedPoseVideoFrame(
+                pose: snapshot, pixelBuffer: sourceImage,
+                silhouette: silhouette
+            )
             : nil)
         postPhase(snapshot.isUsable ? .tracking : .searching)
     }
