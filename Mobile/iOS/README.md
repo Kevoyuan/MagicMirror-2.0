@@ -630,6 +630,12 @@ Any non-finite, unmapped or >4-group vertex fails closed; no bone
 identity guessing. Run `verify_atlas_package.py --system <name>`
 to verify structural consistency.
 
-The exporter does not supply a licensed, audited model on its own;
-reviewed USDZ rig hierarchy, independent legal and anatomical signoff,
-phone-camera registration and live device validation remain necessary.
+The exporter also supports `reviewedUSDZHierarchy: true` after
+explicit human-assigned, coherent `boneId`/`parentBoneId` references
+on every source mesh. Blender then emits a matching USDZ archive and
+hash-verified `anatomy_atlas_manifest.json` (or
+`<system>_atlas_manifest.json`) from those exact reviewed anchors.
+Without that explicit flag it NEVER guesses a rig or fabricates a
+USDZ companion. None of these output files automatically prove legal
+permission, human anatomical correctness, registered camera geometry
+or on-device rendering performance.
