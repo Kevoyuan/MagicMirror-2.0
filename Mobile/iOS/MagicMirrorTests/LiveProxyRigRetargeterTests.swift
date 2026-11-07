@@ -14,13 +14,15 @@ final class LiveProxyRigRetargeterTests: XCTestCase {
         imageSize: CGSize = CGSize(width: 720, height: 1280),
         visibleHips: Bool = true
     ) -> PoseSnapshot {
-        var world = (0..<33).map { i in
-            PoseWorldPoint(
-                x: Float(i % 6) * 0.038 - 0.10,
-                y: Float(i / 6) * 0.055 - 0.12,
-                z: Float(i % 3) * 0.005,
-                visibility: 0.98
-            )
+        var world: [PoseWorldPoint] = []
+        world.reserveCapacity(33)
+        for index in 0..<33 {
+            let x: Float = Float(index % 6) * 0.038 - 0.10
+            let y: Float = Float(index / 6) * 0.055 - 0.12
+            let z: Float = Float(index % 3) * 0.005
+            world.append(PoseWorldPoint(
+                x: x, y: y, z: z, visibility: 0.98
+            ))
         }
         func set(_ i: Int, _ x: Float, _ y: Float, _ z: Float = 0) {
             world[i] = PoseWorldPoint(
@@ -45,15 +47,21 @@ final class LiveProxyRigRetargeterTests: XCTestCase {
         set(7, -0.13, 0.69)
         set(8, 0.13, 0.69)
 
-        let points = world.enumerated().map { index, p in
-            PosePoint(
-                x: CGFloat((Float(imageSize.width) * 0.5 + 300 * p.x)
-                    / Float(imageSize.width)),
-                y: CGFloat((Float(imageSize.height) * 0.5 + 300 * p.y)
-                    / Float(imageSize.height)),
-                visibility: (!visibleHips && (index == 23 || index == 24))
-                    ? 0.1 : 0.98
-            )
+        var points: [PosePoint] = []
+        points.reserveCapacity(33)
+        let width: Float = Float(imageSize.width)
+        let height: Float = Float(imageSize.height)
+        for index in 0..<world.count {
+            let point = world[index]
+            let normalizedX: Float = (width * 0.5 + 300 * point.x) / width
+            let normalizedY: Float = (height * 0.5 + 300 * point.y) / height
+            let obscuredHip = !visibleHips && (index == 23 || index == 24)
+            let visibility: Float = obscuredHip ? 0.1 : 0.98
+            points.append(PosePoint(
+                x: CGFloat(normalizedX),
+                y: CGFloat(normalizedY),
+                visibility: visibility
+            ))
         }
         return PoseSnapshot(
             timestampMilliseconds: timestamp,
