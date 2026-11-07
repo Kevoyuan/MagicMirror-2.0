@@ -1,0 +1,90 @@
+name: One-time cleanup of merged PR branches
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prune-merged-pr-branches-once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete only unchanged branch heads of merged PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          repo = os.environ["GH_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          root = f"https://api.github.com/repos/{repo}"
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "MagicMirror-one-time-branch-pruner",
+          }
+          def api(path, method="GET"):
+              request = urllib.request.Request(root + path, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      payload = response.read()
+                      return json.loads(payload) if payload else None
+              except urllib.error.HTTPError as exc:
+                  print(f"HTTP {exc.code} on {method} {path}: {exc.read().decode('utf-8', 'replace')[:350]}")
+                  raise
+
+          def pages(path):
+              page = 1
+              while True:
+                  batch = api(f"{path}&page={page}")
+                  if not batch:
+                      break
+                  yield from batch
+                  if len(batch) < 100:
+                      break
+                  page += 1
+
+          repository = api("")
+          default = repository["default_branch"]
+          opened = list(pages("/pulls?state=open&per_page=100"))
+          live_heads = {p["head"]["ref"] for p in opened if p["head"]["repo"] and p["head"]["repo"]["full_name"] == repo}
+          candidates = {}
+          for pr in pages("/pulls?state=closed&per_page=100"):
+              head = pr["head"]
+              if pr["merged_at"] and head["repo"] and head["repo"]["full_name"] == repo:
+                  if head["ref"] != default and head["ref"] not in live_heads:
+                      candidates[head["ref"]] = (pr["number"], head["sha"])
+
+          deleted, skipped, failed = [], [], []
+          for name, (number, sha) in sorted(candidates.items()):
+              encoded = urllib.parse.quote(name, safe="")
+              try:
+                  branch = api(f"/branches/{encoded}")
+                  if branch["protected"] or branch["commit"]["sha"] != sha:
+                      skipped.append(name)
+                      print(f"SKIP {name}: protected or changed since merged PR #{number}")
+                      continue
+                  api(f"/git/refs/heads/{urllib.parse.quote(name, safe='/')}", "DELETE")
+                  deleted.append(name)
+                  print(f"DELETED {name}: merged PR #{number}")
+              except urllib.error.HTTPError as exc:
+                  if exc.code == 404:
+                      print(f"ALREADY ABSENT {name}")
+                  else:
+                      failed.append(name)
+          print(f"SUMMARY merged_pr_branches={len(candidates)} deleted={len(deleted)} skipped={len(skipped)} failed={len(failed)}")
+          if failed:
+              raise SystemExit(1)
+          PY
