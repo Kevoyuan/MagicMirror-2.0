@@ -614,3 +614,22 @@ does not need a manual calibration wizard. This repository still
 **does not include any independently approved multi-system models or
 an approved live camera extrinsics provider**, so the additional
 layer controls remain correctly locked in distributed builds.
+
+## Six verified original-source offline Blender exporters
+
+`Mobile/iOS/Scripts/atlas_sources.py` now pins the exact original
+FBX paths, byte lengths and Git blob hashes for skeletal, muscular,
+visceral organ, cardiovascular, nervous and joint atlas systems. Run
+the Blender exporter with `--system skeleton|muscles|organs|vessels|nerves|joints`
+and one individually reviewed whole source FBX; it outputs the
+corresponding MMATLAS1 binary/manifest/attribution. If and only if
+the author sets `reviewedJointWeights: true` and supplies an exact
+`vertexGroupToBoneId` mapping for each source mesh, it exports
+the four-weight LBS sidecar from actual Blender group assignments.
+Any non-finite, unmapped or >4-group vertex fails closed; no bone
+identity guessing. Run `verify_atlas_package.py --system <name>`
+to verify structural consistency.
+
+The exporter does not supply a licensed, audited model on its own;
+reviewed USDZ rig hierarchy, independent legal and anatomical signoff,
+phone-camera registration and live device validation remain necessary.
