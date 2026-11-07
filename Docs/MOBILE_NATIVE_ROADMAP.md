@@ -247,3 +247,23 @@ A human must still perform mesh-level copyright/attribution review,
 complete reviewed bone hierarchy and skinning/attachments, generate the
 actual optimized model, and validate calibration and rendering on an
 identified iPhone. Only iOS work is planned.
+
+## Mobile-2/4 live articulated proxy — runtime integration (2026-11-07)
+
+The native `MirrorViewModel` now captures a stable estimated MediaPipe
+world reference and applies the existing native `TwoBoneIK` kernel to
+eligible observed arm and leg chains on every matched camera callback.
+The resulting **geometry-only** pose is fed through `MirrorScreen`
+into the existing `MetalSkeletonOverlay`, which requires matching
+capture timestamp/image dimensions. Frozen lengths, per-joint confidence,
+pixel displacement and projection-quality gates prevent unconstrained
+joint movement. Camera/pose dropout, pause, stale data or image
+resolution changes reset the reference.
+
+This is an implemented **on-device source/runtime path** for the
+original procedural 3D proxy, not proof of usable iPhone performance,
+validated camera extrinsics, a 3D licensed anatomical atlas, proper
+skinning, hidden-bone reconstruction or passed live XCTest. It does
+not satisfy the Mobile-3 reviewed anatomy model gate or Mobile-4
+real-person calibrated registration exit gate. Future code should
+prioritize those substantive gaps rather than more standalone stubs.
