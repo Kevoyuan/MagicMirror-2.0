@@ -114,12 +114,12 @@ struct MirrorGuideSheet: View {
             instructionRow(
                 number: "04",
                 title: "Explore the paper controls",
-                detail: "Opacity adjusts the reference; Pause hides the overlay but keeps the camera preview live."
+                detail: "Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live."
             )
 
             VStack(alignment: .leading, spacing: 8) {
                 guideSectionTitle("ANATOMY SYSTEMS", systemImage: "square.3.layers.3d")
-                Text("The Layers folio describes planned anatomy systems and section planes. Only the illustrative reference proxy is currently selectable; reviewed multi-system 3D assets are not bundled.")
+                Text("The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available.")
                     .font(.subheadline)
                     .foregroundStyle(LeonardoPalette.mutedInk)
                     .fixedSize(horizontal: false, vertical: true)
