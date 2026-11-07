@@ -92,7 +92,7 @@ measured latency are needed.
 
 ## Architecture work packages
 
-### Mobile runtime (iOS first; not yet created)
+### Mobile runtime (iOS first; implemented native source prototype)
 
 ```text
 Mobile/iOS/MagicMirror/
@@ -107,11 +107,10 @@ Mobile/iOS/MagicMirror/
   Resources/                approved bundled .task + atlas asset
 ```
 
-Do not create fake non-buildable Xcode project files before selecting the
-actual iOS SDK/Xcode toolchain and reproducing the official sample on a
-phone. The project can begin with a verified MediaPipe upstream example,
-but must become a new independent MagicMirror app rather than depending
-on a Python desktop sidecar.
+The native iOS source and XcodeGen project already exist and compile for
+an arm64 Simulator in GitHub Actions. A real iPhone installation and camera
+validation are still required; do not equate compilation with hardware
+acceptance or reintroduce a Python/Unity runtime.
 
 ### Interoperability from existing source
 
@@ -170,18 +169,24 @@ asset audit, but it must be labelled as such and cannot be represented as
 the final verified Z-Anatomy full atlas. The final product acceptance also
 requires reviewed anatomical content and appropriate device benchmarks.
 
-## Next executable task (smartphone only)
+## Next executable tasks (smartphone only)
 
-Start **Mobile-0 + Mobile-1** together: a buildable native iOS camera +
-MediaPipe Tasks 33-point live overlay with frame/latency diagnostics.
-Obtain a physical iPhone and exact Xcode target version; choose between
-AVFoundation and ARKit as the **single camera owner**. Use the official
-on-device Pose Landmarker sample as a tested starting point:
-https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
+**First blocking gate:** install the existing signed native app on a named
+iPhone, validate actual camera permission/foreground/background recovery,
+partial and torso tracking, overlay orientation, frame identity and
+Airplane Mode. Collect real FPS, p95 movement-to-display latency, thermal
+and battery evidence; do not substitute CI builds or callback cadence.
 
-An Android build should follow a shared pose/rig contract, not fork
-different anatomical fitting algorithms. Do not return to any desktop
-shipping milestone after completing a mobile phase.
+**Parallel code work:** keep source-only tests for camera/body projection,
+front/side/turn ambiguity, atlas-hierarchy invariants, and missing joint
+fail-closed behavior. Only connect licensed, human-reviewed 3D atlas assets
+after source identity, rig hierarchy, joint bindings, attribution and true
+camera registration have been independently verified. The Leonardo layers
+sheet must not expose fake anatomy while assets remain blocked.
+
+**After iOS hardware and anatomy gates:** prepare release accessibility,
+privacy, TestFlight and signing; then begin Android-native parity using
+shared semantic frame/rig/geometry fixtures, not the old desktop stack.
 
 ## Mobile-5 UI source update — 2026-11-07
 
