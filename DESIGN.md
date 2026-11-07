@@ -442,3 +442,17 @@ Camera loss, denial, no subject, partial subject, human leaves frame, app backgr
 ---
 
 **Handoff rule:** Follow the owner-selected Leonardo Anatomy Notebook style for new UI; do not revert to the earlier A baseline. Keep **implemented source**, **compiled source**, **HTML-only design interactions**, **physical-device verification**, and **future licensed anatomical systems** distinct.
+## Implementation progress — native camera-first layers (2026-11-07)
+
+A new SwiftUI implementation now follows the selected Leonardo notebook
+composition at **source** level: single-row header with 44-pt diagnostic
+touch target, parchment-inspired compact dock, collapsible opacity,
+separate Whole/Arms/Legs region focus, and a native Layers information
+sheet. Only the procedural reference proxy is currently available. The
+six planned anatomy system categories and three section planes are
+explicitly unavailable; no fake Solo/slicing interaction was added.
+
+The implementation still needs physical-device visual review (small
+screens, safe areas, VoiceOver, Dynamic Type, contrast over camera footage)
+and may be refined after that evidence. This update does **not** approve a
+bundled anatomical model or certify the UI as production-ready.

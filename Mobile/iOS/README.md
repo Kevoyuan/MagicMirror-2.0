@@ -252,3 +252,23 @@ medical observation of internal bones, or a replacement for the reviewed
 coherent hierarchy rig. When projection evidence is missing, atlas geometry
 is hidden; an unapproved atlas is never activated. See
 [the weak-perspective registration note](../../Docs/MOBILE_CAMERA_WEAK_PERSPECTIVE.md).
+
+## Leonardo camera-first screen and honest anatomy layer explorer
+
+The native SwiftUI screen now uses a compact single-row title/status header
+and a smaller parchment control dock. The existing Whole / Arms / Legs
+focus remains separate from a new **Layers** information sheet. The opacity
+slider expands only when requested; the explanatory nonmedical reference
+label remains visible even with the drawer closed. This is a **UI source
+implementation**, not a physical-iPhone visual or accessibility acceptance.
+
+The Layers sheet lists the current **illustrative procedural proxy** as the
+only available display layer. Skeletal atlas, muscle, organ, vessel, nerve,
+and joint/ligament systems remain explicitly labelled **Planned** and are
+not given misleading functional toggles. Axial, sagittal and coronal
+section planes are described as unavailable until actual registered 3D
+clipping exists. This interface does not bundle Z-Anatomy, introduce a
+second camera, or turn off local privacy gates. Synthetic catalog XCTest
+source enforces that all unreviewed categories remain unavailable.
+
+See [DESIGN.md](../../DESIGN.md) for the owner-selected Leonardo direction.

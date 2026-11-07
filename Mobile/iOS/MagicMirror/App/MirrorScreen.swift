@@ -5,6 +5,8 @@ import UIKit
 /// updates; labels/controls read stable phase and opacity independently.
 struct MirrorScreen: View {
     @State private var model = MirrorViewModel()
+    @State private var showLayers = false
+    @State private var showOpacity = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -39,13 +41,13 @@ struct MirrorScreen: View {
                 Spacer()
                 if model.snapshot == nil || model.isPaused {
                     guidance
-                        .padding(.bottom, 22)
+                        .padding(.bottom, 10)
                 }
                 controls
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 20)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
         }
         .task { model.start() }
         .onChange(of: scenePhase) { _, phase in
@@ -56,50 +58,53 @@ struct MirrorScreen: View {
             }
         }
         .onDisappear { model.stop() }
+        .sheet(isPresented: $showLayers) {
+            AnatomyLayersSheet()
+        }
     }
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 5) {
+        HStack(spacing: 10) {
+            HStack(spacing: 7) {
+                Image(systemName: "book.closed")
+                    .font(.caption)
+                    .accessibilityHidden(true)
                 Text("MAGICMIRROR")
-                    .font(.system(.title3, design: .rounded, weight: .bold))
-                    .tracking(2.2)
-                Text("3D PROXY BONES · ON DEVICE")
-                    .font(.system(.caption2, design: .rounded, weight: .medium))
-                    .tracking(0.9)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.system(.caption, design: .serif, weight: .bold))
+                    .tracking(1.1)
             }
-            Spacer()
+            .foregroundStyle(Color(red: 0.96, green: 0.92, blue: 0.83))
+            .lineLimit(1)
+
+            Spacer(minLength: 4)
+
             Button {
                 model.toggleDiagnostics()
             } label: {
                 Image(systemName: "waveform.path.ecg")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .frame(width: 38, height: 38)
-                    .foregroundStyle(
-                        model.showDiagnostics ? Color.cyan : Color.white
-                    )
-                    .background(.black.opacity(0.44), in: Circle())
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(model.showDiagnostics
+                        ? Color(red: 0.74, green: 0.93, blue: 0.83)
+                        : .white)
+                    .frame(width: 44, height: 44)
+                    .background(.black.opacity(0.42), in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(
-                model.showDiagnostics
-                    ? "Hide local pose delivery diagnostics"
-                    : "Show local pose delivery diagnostics"
-            )
-            .padding(.trailing, 7)
-            Label(
-                trackingLabel,
-                systemImage: model.snapshot == nil
-                    ? "viewfinder" : "checkmark.circle.fill"
-            )
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(
-                model.snapshot == nil ? Color.white : Color.cyan
-            )
-            .padding(.horizontal, 11)
-            .padding(.vertical, 9)
-            .background(.black.opacity(0.44), in: Capsule())
+            .accessibilityLabel(model.showDiagnostics
+                ? "Hide local pose delivery diagnostics"
+                : "Show local pose delivery diagnostics")
+
+            Text(trackingLabel)
+                .font(.caption2.weight(.bold))
+                .tracking(0.6)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .frame(height: 36)
+                .background(
+                    Color(red: 0.09, green: 0.12, blue: 0.11)
+                        .opacity(0.84), in: Capsule()
+                )
+                .accessibilityAddTraits(.updatesFrequently)
         }
         .accessibilityElement(children: .contain)
     }
@@ -170,8 +175,8 @@ struct MirrorScreen: View {
                 .accessibilityHint("Open system settings to allow camera access")
             }
         }
-        .padding(.vertical, 24)
-        .padding(.horizontal, 26)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 18)
         .frame(maxWidth: .infinity)
         .background(.black.opacity(0.48), in: RoundedRectangle(cornerRadius: 22))
         .accessibilityElement(children: .contain)
@@ -196,7 +201,7 @@ struct MirrorScreen: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             Picker("Body region", selection: $model.focus) {
                 ForEach(AnatomyFocus.allCases) { region in
                     Text(region.rawValue).tag(region)
@@ -205,50 +210,69 @@ struct MirrorScreen: View {
             .pickerStyle(.segmented)
             .accessibilityLabel("Reference skeleton body region")
 
-            HStack {
-                Image(systemName: "circle.lefthalf.filled")
-                    .foregroundStyle(.cyan)
-                    .accessibilityHidden(true)
-                Text("Skeleton opacity")
-                    .font(.subheadline.weight(.medium))
-                Spacer()
-                Text("\(Int(model.opacity * 100))%")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.78))
-            }
-            Slider(value: $model.opacity, in: 0.15...0.90)
-                .tint(.cyan)
-                .accessibilityLabel("Skeleton opacity")
+            HStack(spacing: 8) {
+                Button {
+                    showLayers = true
+                } label: {
+                    Label("Layers", systemImage: "square.3.layers.3d")
+                        .frame(minHeight: 44)
+                        .frame(maxWidth: .infinity)
+                }
+                .accessibilityHint("Shows current proxy and unavailable anatomical layers")
+
+                Button {
+                    showOpacity.toggle()
+                } label: {
+                    Label("Opacity", systemImage: "circle.lefthalf.filled")
+                        .frame(minHeight: 44)
+                        .frame(maxWidth: .infinity)
+                }
                 .accessibilityValue("\(Int(model.opacity * 100)) percent")
-
-            HStack(spacing: 12) {
-                Text("3D REFERENCE PROXY · NOT YOUR REAL BONES")
-                    .font(.system(.caption2, design: .rounded, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.64))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-
-                Spacer()
+                .accessibilityHint("Expand or collapse skeleton opacity slider")
 
                 Button {
                     model.togglePause()
                 } label: {
-                    Label(
-                        model.isPaused ? "Resume" : "Pause",
-                        systemImage: model.isPaused ? "play.fill" : "pause.fill"
-                    )
-                    .labelStyle(.titleAndIcon)
-                    .font(.subheadline.weight(.semibold))
+                    Label(model.isPaused ? "Resume" : "Pause",
+                          systemImage: model.isPaused ? "play.fill" : "pause.fill")
+                        .frame(minHeight: 44)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.black.opacity(0.78))
-                .foregroundStyle(.white)
                 .accessibilityLabel(
                     model.isPaused ? "Resume pose overlay" : "Pause pose overlay"
                 )
             }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.bordered)
+            .tint(Color(red: 0.22, green: 0.40, blue: 0.36))
+
+            if showOpacity {
+                HStack(spacing: 8) {
+                    Text("Skeleton opacity")
+                        .font(.caption)
+                    Slider(value: $model.opacity, in: 0.15...0.90)
+                        .tint(Color(red: 0.22, green: 0.40, blue: 0.36))
+                        .accessibilityLabel("Skeleton opacity")
+                    Text("\(Int(model.opacity * 100))%")
+                        .font(.caption.monospacedDigit())
+                }
+                .accessibilityElement(children: .contain)
+            }
+
+            Text("ILLUSTRATIVE 3D REFERENCE · NOT YOUR REAL BONES")
+                .font(.system(.caption2, design: .rounded, weight: .semibold))
+                .foregroundStyle(Color(red: 0.28, green: 0.25, blue: 0.22))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(
+                    "Illustrative 3D reference proxy. Not medical imaging or your real bones."
+                )
         }
-        .padding(19)
-        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 24))
+        .foregroundStyle(Color(red: 0.20, green: 0.18, blue: 0.15))
+        .padding(12)
+        .background(
+            Color(red: 0.953, green: 0.922, blue: 0.867).opacity(0.94),
+            in: RoundedRectangle(cornerRadius: 20)
+        )
     }
 }
