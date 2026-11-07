@@ -615,6 +615,27 @@ does not need a manual calibration wizard. This repository still
 an approved live camera extrinsics provider**, so the additional
 layer controls remain correctly locked in distributed builds.
 
+## Source-authored 3D anatomy tap inspection
+
+When a legitimate reviewed, registered GPU-skinned atlas is displayed,
+tapping its actual triangle can now select the human-reviewed
+`sourceHierarchyPath` and `displayName` of the corresponding model
+part. Tap-time CPU picking uses precisely the displayed pose palette,
+four bone influences per vertex, camera intrinsics, aspect-fill
+parameters and active 3D half-space cut; it selects the closest
+intersected mesh surface in perspective (rather than nearest MediaPipe
+joint). The Metal skinned shader highlights the selected source-node
+triangle range using a small uniform, preserving its static GPU vertex
+cache. Leonardo's accessible detail card identifies the source
+reference, not the person's observed internal tissue.
+
+A missing, stale, camera-unmatched or unreviewed 3D source cannot be
+picked as anatomy. While only the procedural proxy exists, taps still
+use the clearly labeled observed pose guide; tracking dropout or
+switching system clears the selection. Actual Z-Anatomy structure
+names are not invented by the app: they come only from separately
+reviewed part manifests that have passed all local checksum checks.
+
 ## Simultaneous independently reviewed anatomy layers
 
 The native iPhone Anatomy notebook can now **toggle more than one**
