@@ -41,7 +41,6 @@ jobs:
             -scheme MagicMirror \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
-            -arch arm64 \
             -derivedDataPath "$RUNNER_TEMP/MagicMirrorDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             ARCHS=arm64 \
