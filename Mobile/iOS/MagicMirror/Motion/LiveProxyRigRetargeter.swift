@@ -13,10 +13,12 @@ import simd
 struct LiveProxyRigRetargeter {
     private var capture = AnatomyReferenceCapture()
     private var lastTimestampMilliseconds = -1
+    private var lastImageSize: CGSize?
 
     mutating func reset() {
         capture.reset()
         lastTimestampMilliseconds = -1
+        lastImageSize = nil
     }
 
     /// Returns a pose for reference geometry on the SAME source frame.
@@ -29,11 +31,13 @@ struct LiveProxyRigRetargeter {
             reset()
             return nil
         }
-        if lastTimestampMilliseconds >= 0 &&
-           frame.timestampMilliseconds - lastTimestampMilliseconds > 350 {
+        if (lastTimestampMilliseconds >= 0 &&
+            frame.timestampMilliseconds - lastTimestampMilliseconds > 350) ||
+           (lastImageSize != nil && lastImageSize != frame.imageSize) {
             capture.reset()
         }
         lastTimestampMilliseconds = frame.timestampMilliseconds
+        lastImageSize = frame.imageSize
         guard let reference = capture.ingest(frame),
               reference.imageSize == frame.imageSize,
               let fit = WeakPerspectiveCameraFit.estimate(
