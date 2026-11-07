@@ -35,6 +35,10 @@ namespace MagicMirror.Anatomy
         [Tooltip("The subject's left and right shoulder reference centers, in source root LOCAL coordinates.")]
         public Vector3 atlasLeftShoulderLocal;
         public Vector3 atlasRightShoulderLocal;
+        [Tooltip("Reviewed midpoint of left/right HIP joint centers, FBX-root-local. Required for 3D reference calibration, never guessed from names.")]
+        public Vector3 atlasMidHipLocal;
+        [Tooltip("True only after the mid-hip anchor's anatomical identity and original source-local position were manually reviewed.")]
+        public bool midHipAnchorReviewed;
         [Tooltip("Euler rotation aligning the source atlas anatomical axes to Unity camera axes.")]
         public Vector3 atlasToCameraEuler;
         [Tooltip("Shoulder centers and source orientation verified against the original full model.")]
@@ -65,12 +69,33 @@ namespace MagicMirror.Anatomy
                 return false;
             }
             if (!schematicDemo && (!referencePoseReviewed ||
-                 !assetLicensesReviewed || string.IsNullOrWhiteSpace(sourceUrl) ||
+                 !midHipAnchorReviewed || !assetLicensesReviewed || string.IsNullOrWhiteSpace(sourceUrl) ||
                  string.IsNullOrWhiteSpace(sourceRevision) ||
                  string.IsNullOrWhiteSpace(attributionAndLicense)))
             {
                 error = "Real atlas source, reference pose and license reviews are incomplete.";
                 return false;
+            }
+
+            if (!schematicDemo)
+            {
+                if (!Finite(atlasLeftShoulderLocal) ||
+                    !Finite(atlasRightShoulderLocal) ||
+                    !Finite(atlasMidHipLocal))
+                {
+                    error = "Real atlas anchor coordinates contain NaN/Infinity.";
+                    return false;
+                }
+                Vector3 shoulderAxis =
+                    atlasRightShoulderLocal - atlasLeftShoulderLocal;
+                Vector3 hipAxis =
+                    atlasMidHipLocal -
+                    (atlasLeftShoulderLocal + atlasRightShoulderLocal) * 0.5f;
+                if (Vector3.Cross(shoulderAxis, hipAxis).sqrMagnitude < 1e-8f)
+                {
+                    error = "Reviewed mid-hip point must not be collinear with the atlas shoulder axis.";
+                    return false;
+                }
             }
 
             if (groups == null || groups.Count == 0)
@@ -131,6 +156,13 @@ namespace MagicMirror.Anatomy
             }
             error = null;
             return true;
+        }
+
+        private static bool Finite(Vector3 point)
+        {
+            return !float.IsNaN(point.x) && !float.IsInfinity(point.x) &&
+                   !float.IsNaN(point.y) && !float.IsInfinity(point.y) &&
+                   !float.IsNaN(point.z) && !float.IsInfinity(point.z);
         }
 
         /// <summary>

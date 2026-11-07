@@ -12,6 +12,22 @@ live webcam image, with future muscle, organ and guided-learning layers.
 > SkeletalSystem100.fbx motion are NOT yet verified.** This is a research
 > prototype, not a clinical scanner or personalized anatomical reconstruction.
 
+## M2 offline integration test
+
+No local Unity installation is needed to test the real Python producer and
+its loopback TCP framing. The test starts the sidecar **as a subprocess**,
+receives multiple ordered PoseFrame v1 packets, disconnects and reconnects,
+and verifies that a new connection starts its own frame sequence:
+
+~~~bash
+python3 -m unittest Tools.pose_sidecar.tests.test_sidecar_integration -v
+~~~
+
+If OpenCV/NumPy are installed, it also receives and validates actual JPEG
+bytes from the `--demo-video` source. GitHub Actions performs both variants.
+It does **not** prove that Unity compiled, that a real camera inferred a pose,
+or that the Z-Anatomy model is aligned.
+
 ## First steps (without Unity or a webcam)
 
 ~~~bash
@@ -29,6 +45,27 @@ MediaPipe model required:
 python3 -m pip install "opencv-python>=4.10,<5" "numpy>=1.26,<3"
 python3 -m Tools.pose_sidecar.main --demo-video --demo-scenario wave
 ~~~
+
+The Lite model can also be smoke-tested **without a camera or Unity**:
+~~~bash
+python3 -m pip install -r Tools/pose_sidecar/requirements.txt
+python3 -m Tools.pose_sidecar.download_model --profile lite
+python3 -m Tools.pose_sidecar.download_model --profile lite --verify-only
+python3 -m Tools.pose_sidecar.smoke_runtime --profile lite --frames 3
+~~~
+This executes real VIDEO inference on blank synthetic frames, not human
+pose accuracy or camera-to-display latency. Linux CI also needs GLES/EGL
+libraries; see Docs/M1_REAL_MEDIAPIPE_SMOKE.md.
+
+The production **C# kinematics, body registration, stable reference capture
+and camera reprojection math** can be compiled and tested without Unity,
+camera or Z-Anatomy assets:
+~~~bash
+dotnet run -c Release --project Tools/ci/csharp_kinematics/KinematicsChecks.csproj
+~~~
+This tests original C# IK/pose-contract/registration/reprojection sources
+with constructed inputs, **not** Unity rendering, anatomy accuracy, true
+camera calibration or measured live-device performance.
 
 Open the **Unity/** directory (not this repo root) in the editor version
 specified by Unity/ProjectSettings/ProjectVersion.txt. See
@@ -49,9 +86,15 @@ checklist. The Unity Editor and real anatomical asset are not included.
 - Docs/ARCHITECTURE.md — active runtime
 - Docs/POSE_FRAME_CONTRACT.md — precise coordinates and timestamps
 - Docs/ROADMAP.md — M0 through M9, implementation gates
-- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and performance metrics
+- Docs/M1_MEDIAPIPE_PROFILES.md — Lite/Full/Heavy and processing metrics
+- Docs/M1_REAL_MEDIAPIPE_SMOKE.md — Lite VIDEO baseline and Linux native dependencies
+- Docs/M1_DETERMINISTIC_TRACE_BENCHMARKS.md — synthetic quality traces; not real camera FPS
+- Docs/M1_ALL_PROFILES_RUNTIME.md — real Lite/Full/Heavy VIDEO model identity and SHA-256 locks (Linux CI)
 - Docs/M2_FRAME_INTEGRITY_AND_DEMO_VIDEO.md — M2 synthetic video checks
-- Docs/M3_WHOLE_ATLAS_AUDIT.md — intact skeletal FBX provenance and motion-binding inventory audit
+- Docs/M4_CONSTRAINED_TWO_BONE_IK.md — compiled pure C# constrained 3D joint solver and safety limits
+- Docs/M5_BODY_ATLAS_REGISTRATION.md — reviewed 3D body-to-atlas reference calibration
+- Docs/M3_WHOLE_ATLAS_AUDIT.md — full atlas hierarchy inventory audit (desktop research, not a license review)
+- Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md — bounded reference capture, explicit camera projection and P90 diagnostics
 - Docs/UNITY_RUNTIME_VALIDATION.md — actual Unity/hardware acceptance
 
 ## Scientific and licensing boundaries

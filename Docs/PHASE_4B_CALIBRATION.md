@@ -47,7 +47,7 @@ The Unity setup window now exports these unambiguous paths. Runtime and profile 
 2. In Unity open **MagicMirror > Phase 4 > Full Atlas Setup** and create a FullBodyAtlasProfile.
 3. Open **MagicMirror > Phase 4 > Calibrate Full Atlas Anchors**.
 4. Assign that profile, then choose **Show Whole Atlas Preview**.
-5. In Scene View, inspect the intact FBX and manually drag the yellow PositionHandle for the currently selected shoulder or region joint center.
+5. In Scene View, inspect the intact FBX and manually drag the yellow PositionHandle for the currently selected shoulder, new M5 **mid-hip**, or region joint center. The mid-hip candidate appears magenta, and moving it clears its independent anatomical review flag. The real source profile now requires an explicitly reviewed non-collinear mid-hip anchor before activation.
 6. Alternatively, select a child node and use **Use Selected Node Pivot as Anchor** if its pivot is confirmed as the correct anatomical center.
 7. For each MotionGroup, select source bone subtrees and use **Add Selected Subtree to Motion Region**. The editor writes indexed hierarchy paths to the profile only.
 8. Select **Validate All Source Hierarchy Paths** to check paths. Anatomical identity and rotation-center review are still required; structural checks alone do not establish medical/anatomical correctness.

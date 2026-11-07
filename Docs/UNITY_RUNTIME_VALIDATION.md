@@ -27,7 +27,7 @@ python Tools/ci/run_unity_m2.py --unity "C:\\Program Files\\Unity\\Hub\\Editor\\
 
 The script launches Unity with `-batchmode -nographics -quit -projectPath ... -executeMethod MagicMirror.Editor.M2BatchValidation.Run`. It requires **both** Unity exit code 0 **and** the explicit `MAGICMIRROR_M2_BATCH_PASS` log marker; stale logs are cleared before invocation. Nonzero exit, an explicit fail marker, or missing success marker fails closed. The default log is `m2-editor-validation.log` in the repository root (do not commit it).
 
-The Editor suite invokes existing checks for pose math, full-body pose, stability/hierarchy and atlas registration/paths. Passing it proves **those synthetic Editor checks were executed** and the Unity project compiled sufficiently to run the entrypoint; it does NOT prove real webcam access, MediaPipe native inference, camera/video synchronization, RenderTexture alpha, imported FBX integrity or complete AR performance.
+The Editor suite invokes seven synthetic suites: pose math, full-body pose, stability/hierarchy, atlas registration/paths, TCP pose-frame ordering, M4 constrained two-bone world-pose bridge, and M5 body-world ↔ atlas reference calibration. The M5 Unity Editor check is authored but not yet executed. Passing it proves **those synthetic Editor checks were executed** and the Unity project compiled sufficiently to run the entrypoint; it does NOT prove real webcam access, MediaPipe native inference, camera/video synchronization, RenderTexture alpha, imported FBX integrity or complete AR performance.
 
 The runner itself is covered by `python3 -m unittest discover -s Tools/ci/tests -v` in CI, which does **not** launch Unity. Record the actual Editor log and hardware details before marking any M2 gate as passed.
 
@@ -45,8 +45,10 @@ In Unity, execute:
 2. `MagicMirror > Validation > Full Body Pose Self Check`
 3. `MagicMirror > Validation > Full Body Stability & Hierarchy Self Check`
 4. `MagicMirror > Validation > Atlas Registration & Path Check`
-5. `MagicMirror > Phase 1 > Create Pose Tracking Scene`; enter Play, verify moving keypoints on black preview.
-6. `MagicMirror > Phase 4 > Create Full Body Schematic Demo`; run `Phase4FullBodyAtlas.unity`.
+5. `MagicMirror > Validation > Pose Frame Integrity Self Check`
+6. `MagicMirror > Validation > Constrained Two-Bone IK Check` (synthetic M4 bridge; no real FBX/pose calibration)
+7. `MagicMirror > Phase 1 > Create Pose Tracking Scene`; enter Play, verify moving keypoints on black preview.
+8. `MagicMirror > Phase 4 > Create Full Body Schematic Demo`; run `Phase4FullBodyAtlas.unity`.
 
 Pass means **no C# compilation exceptions, no crashes, expected skeletal behavior and clean exit**. Record Unity Console logs and screenshots.
 
@@ -84,6 +86,30 @@ Verify:
 
 After provenance review and pinned asset download, import **one** original `SkeletalSystem100.fbx`, export hierarchy inventory, validate anchors/paths, then test calibration. Do not split six independent FBXs as the primary path. Full kinematic accuracy is a later M4/M5 gate.
 
+## Gate D — real M5 camera projection and overlay error (NOT YET EXECUTED)
+
+After completing M2's real Unity build and M3's reviewed *intact* atlas
+import, confirm real camera intrinsics, body-world camera extrinsics,
+left/right/facing axes and display mirroring. Follow
+`Docs/M5_STABLE_CAPTURE_AND_REPROJECTION.md` for the newly-authored
+source-only `ReferencePoseCaptureWindow`, `BodyWorldPinholeCamera`
+and `AtlasReprojectionDiagnostics` API contracts.
+
+Measure actual **same-source-frame** overlay-to-estimated 2D landmarks
+using a reviewed, currently animated atlas prediction for each measured
+joint, not a rest-pose anchor from an unrelated frame. Record source
+frame ID, source resolution, model profile, view angle, visible samples,
+confidence, calibrated intrinsics/extrinsics, failure cases, numeric p90
+and actual visual samples. A separate, consented, independently labelled
+evaluation set is required before discussing pose accuracy or an
+anatomical correctness claim.
+
+**Roadmap target (not current result):** joint reprojection p90 <= 3% of
+source image width for the defined frontal evaluation set. Source-landmark
+consistency is not equivalent to ground-truth internal bone placement.
+Reject missing calibration and invalid/noisy pose input rather than
+hiding large errors or constructing unsupported body geometry.
+
 ## Results template
 
 | Item | OS / hardware | Result (PASS / FAIL / BLOCKED) | Evidence (log, screenshot, recording) | Notes |
@@ -95,5 +121,8 @@ After provenance review and pinned asset download, import **one** original `Skel
 | Stop/reconnect | | BLOCKED | | |
 | Transparent overlay | | BLOCKED | | |
 | Measured FPS + p95 latency | | BLOCKED | | |
+| M5 real camera intrinsics/extrinsics reviewed | | BLOCKED | | |
+| M5 real source-frame reprojection p90 | | BLOCKED | | |
+| M5 full-atlas motion/anatomical reference review | | BLOCKED | | |
 
 Do not mark M2 complete until Gate A and B are recorded on target hardware.
