@@ -15,7 +15,7 @@ struct MirrorScreen: View {
                 .ignoresSafeArea()
 
             MetalSkeletonOverlay(
-                snapshot: model.isPaused ? nil : model.snapshot,
+                alignedFrame: model.isPaused ? nil : model.alignedFrame,
                 opacity: model.opacity, focus: model.focus
             )
             .ignoresSafeArea()
