@@ -107,7 +107,7 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Tap a verified system to display it. Only independently reviewed, camera-registered 3D resources unlock; unavailable systems remain locked.")
+            Text("Tap verified systems to show or hide them together. Each layer uses its own approved source model and camera registration. Unavailable systems stay locked.")
                 .font(.footnote)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -120,7 +120,7 @@ struct AnatomyLayersSheet: View {
 
     private func layerRow(_ layer: AnatomyDisplayLayer) -> some View {
         let available = model.canSelectAnatomyLayer(layer)
-        let selected = model.selectedAnatomyLayer == layer
+        let selected = model.isAnatomyLayerVisible(layer)
         return Button {
             model.selectAnatomyLayer(layer)
         } label: {
@@ -180,7 +180,7 @@ struct AnatomyLayersSheet: View {
         .disabled(!available)
         .accessibilityLabel(layer.title)
         .accessibilityHint(available
-            ? "Select an educational 3D reference system"
+            ? "Show or hide this independently reviewed anatomical system"
             : "Requires independently reviewed and registered anatomy")
     }
 
