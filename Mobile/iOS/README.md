@@ -660,3 +660,17 @@ Without that explicit flag it NEVER guesses a rig or fabricates a
 USDZ companion. None of these output files automatically prove legal
 permission, human anatomical correctness, registered camera geometry
 or on-device rendering performance.
+
+## USDZ packing: no generic ZIP masquerading as anatomy
+
+The offline Blender exporter packages the actual binary `.usdc`
+into a portable 64-byte-aligned, uncompressed USDZ rather than
+relying on ordinary ZIP extension renaming. It re-verifies the local
+ZIP headers and the full USD-stage checksum before issuing an
+approved-rig manifest. The offline preflight also cross-links the
+USDZ SHA, source revision, every bone's full hierarchy path and rest
+anchors, and optional audited per-vertex influences. Use
+`verify_atlas_package.py --system <name> --require-rig` for a complete
+developer-generated package. Refer to
+`Docs/MOBILE_ATLAS_PACKAGE.md` for the limitations and OpenUSD
+reference.
