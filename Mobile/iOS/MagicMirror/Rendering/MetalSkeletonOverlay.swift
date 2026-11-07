@@ -235,6 +235,32 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             return result
         }
 
+        @discardableResult
+        private func encodeBoneGeometry(
+            _ geometry: [BoneMeshVertex],
+            device: MTLDevice,
+            encoder: MTLRenderCommandEncoder,
+            pipeline: MTLRenderPipelineState
+        ) -> Bool {
+            guard !geometry.isEmpty,
+                  let vertices = geometry.withUnsafeBytes({
+                    raw -> MTLBuffer? in
+                    guard let pointer = raw.baseAddress else { return nil }
+                    return device.makeBuffer(
+                        bytes: pointer, length: raw.count,
+                        options: .storageModeShared
+                    )
+                  }) else { return false }
+            encoder.setRenderPipelineState(pipeline)
+            encoder.setCullMode(.none)
+            encoder.setVertexBuffer(vertices, offset: 0, index: 0)
+            encoder.drawPrimitives(
+                type: .triangle, vertexStart: 0,
+                vertexCount: geometry.count
+            )
+            return true
+        }
+
         func draw(in view: MTKView) {
             guard let pass = view.currentRenderPassDescriptor,
                   let drawable = view.currentDrawable,
@@ -283,21 +309,34 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             if canDrawAnatomy,
                let frame = alignedFrame {
                 var drewSkinnedAtlas = false
-                if let skin = skinnedAtlasBatch,
-                   skin.matches(
-                    frame: frame.pose, viewport: view.bounds.size,
-                    focus: focus, opacity: opacity
-                   ),
-                   let skinnedPipeline,
-                   let source = cachedSkinnedMesh(skin, device: device),
-                   let posePalette = skin.cameraMatrices.withUnsafeBytes({
-                    bytes -> MTLBuffer? in
-                    guard let address = bytes.baseAddress else { return nil }
-                    return device.makeBuffer(
-                        bytes: address, length: bytes.count,
-                        options: .storageModeShared
-                    )
-                   }) {
+                let visibleSkins: [ReviewedSkinnedLayerFrame] =
+                    reviewedSkinnedFrames.isEmpty
+                    ? (skinnedAtlasBatch.map {
+                        [ReviewedSkinnedLayerFrame(
+                            layer: selectedAtlasSystem ?? .skeleton,
+                            batch: $0
+                        )]
+                    } ?? [])
+                    : reviewedSkinnedFrames
+                for current in visibleSkins {
+                    let skin = current.batch
+                    guard skin.matches(
+                        frame: frame.pose, viewport: view.bounds.size,
+                        focus: focus, opacity: opacity
+                    ), let skinnedPipeline,
+                    let source = cachedSkinnedMesh(
+                        skin, device: device
+                    ),
+                    let posePalette = skin.cameraMatrices.withUnsafeBytes({
+                        bytes -> MTLBuffer? in
+                        guard let address = bytes.baseAddress else {
+                            return nil
+                        }
+                        return device.makeBuffer(
+                            bytes: address, length: bytes.count,
+                            options: .storageModeShared
+                        )
+                    }) else { continue }
                     encoder.setRenderPipelineState(skinnedPipeline)
                     encoder.setCullMode(.none)
                     encoder.setVertexBuffer(source, offset: 0, index: 0)
@@ -305,7 +344,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     var camera = skin.cameraParameters
                     var crop = skin.viewportParameters
                     var screen = SIMD4<Float>(
-                        Float(view.bounds.width), Float(view.bounds.height),
+                        Float(view.bounds.width),
+                        Float(view.bounds.height),
                         skin.opacity * 0.58, 0
                     )
                     encoder.setVertexBytes(
@@ -320,17 +360,16 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                         &screen, length: MemoryLayout<SIMD4<Float>>.stride,
                         index: 4
                     )
-                    let selected = skin.renderedParts.first {
-                        $0.sourceHierarchyPath == selectedAtlasNodePath
-                    }
+                    let selected = current.layer == selectedAtlasSystem
+                        ? skin.renderedParts.first {
+                            $0.sourceHierarchyPath == selectedAtlasNodePath
+                        } : nil
                     var range = selected.map {
                         SIMD2<UInt32>(
                             UInt32($0.vertexStart),
                             UInt32($0.vertexStart + $0.vertexCount)
                         )
-                    } ?? SIMD2<UInt32>(
-                        repeating: UInt32.max
-                    )
+                    } ?? SIMD2<UInt32>(repeating: UInt32.max)
                     encoder.setVertexBytes(
                         &range, length: MemoryLayout<SIMD2<UInt32>>.stride,
                         index: 5
@@ -348,58 +387,54 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
                     drewSkinnedAtlas = true
                 }
 
-                // Never layer an unaudited rigid copy over approved
-                // skinned geometry. Otherwise keep existing safe paths.
-                if !drewSkinnedAtlas, let bonePipeline {
-                let geometry: [BoneMeshVertex]
-                if let batch = calibratedAtlasBatch,
-                   batch.matches(
-                    frame: frame.pose, viewport: view.bounds.size,
-                    focus: focus, opacity: opacity
-                   ) {
-                    geometry = batch.vertices
-                } else {
-                    // Use fixed-length live IK only on its matching source
-                    // camera frame. Missing/stale geometry falls back to
-                    // the current confidence-gated procedural proxy.
-                    let referencePose: PoseSnapshot
-                    if let proxyPose,
-                       proxyPose.timestampMilliseconds
-                           == frame.pose.timestampMilliseconds,
-                       proxyPose.imageSize == frame.pose.imageSize,
-                       proxyPose.hasTorsoAnchor {
-                        referencePose = proxyPose
-                    } else {
-                        referencePose = frame.pose
+                // Independent rigid source layers can mix with skinned
+                // ones. Only draw the procedural proxy if no verified
+                // source layer has drawn any geometry.
+                var drewRigidAtlas = false
+                if let bonePipeline {
+                    for current in reviewedRigidFrames {
+                        let batch = current.batch
+                        guard batch.matches(
+                            frame: frame.pose, viewport: view.bounds.size,
+                            focus: focus, opacity: opacity
+                        ) else { continue }
+                        if encodeBoneGeometry(
+                            batch.vertices, device: device,
+                            encoder: encoder, pipeline: bonePipeline
+                        ) {
+                            drewRigidAtlas = true
+                        }
                     }
-                    geometry = VolumetricBoneMesh.make(
-                        snapshot: referencePose,
-                        viewport: view.bounds.size,
-                        opacity: opacity, focus: focus
-                    )
-                }
-
-                if !geometry.isEmpty {
-                    let gpuVertices = geometry.withUnsafeBytes {
-                        raw -> MTLBuffer? in
-                        guard let address = raw.baseAddress else { return nil }
-                        return device.makeBuffer(
-                            bytes: address, length: raw.count,
-                            options: .storageModeShared
+                    if !drewSkinnedAtlas && !drewRigidAtlas {
+                        let geometry: [BoneMeshVertex]
+                        if let batch = calibratedAtlasBatch,
+                           batch.matches(
+                            frame: frame.pose, viewport: view.bounds.size,
+                            focus: focus, opacity: opacity
+                           ) {
+                            geometry = batch.vertices
+                        } else {
+                            let referencePose: PoseSnapshot
+                            if let proxyPose,
+                               proxyPose.timestampMilliseconds
+                                   == frame.pose.timestampMilliseconds,
+                               proxyPose.imageSize == frame.pose.imageSize,
+                               proxyPose.hasTorsoAnchor {
+                                referencePose = proxyPose
+                            } else {
+                                referencePose = frame.pose
+                            }
+                            geometry = VolumetricBoneMesh.make(
+                                snapshot: referencePose,
+                                viewport: view.bounds.size,
+                                opacity: opacity, focus: focus
+                            )
+                        }
+                        _ = encodeBoneGeometry(
+                            geometry, device: device, encoder: encoder,
+                            pipeline: bonePipeline
                         )
                     }
-                    if let gpuVertices {
-                        encoder.setRenderPipelineState(bonePipeline)
-                        encoder.setCullMode(.none)
-                        encoder.setVertexBuffer(
-                            gpuVertices, offset: 0, index: 0
-                        )
-                        encoder.drawPrimitives(
-                            type: .triangle, vertexStart: 0,
-                            vertexCount: geometry.count
-                        )
-                    }
-                }
                 }
             }
 
