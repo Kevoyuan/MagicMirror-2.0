@@ -216,3 +216,20 @@ This narrows the **source-level** gap between 3D forward kinematics and
 atlas mesh geometry. It does not install a reviewed anatomy model or
 activate the GPU atlas, and it does not satisfy the real-iPhone
 calibration, licensing, latency or TestFlight exit gates.
+
+## Mobile-3/4 calibrated Metal bridge — source stage (2026-11-07)
+
+Added a fail-closed native `CalibratedAtlasDrawBatch` factory to convert
+validated coherent, source-camera-projected mesh triangles into renderable
+Metal vertex buffers. The Metal overlay consumes such a batch only when
+the source frame timestamp/size, viewport, selected focus and opacity
+match, otherwise it retains the procedural reference proxy. Removed the
+older automatic weak-perspective atlas display branch from the GPU renderer;
+it did not establish independently reviewed physical camera extrinsics.
+
+No runtime producer of calibrated atlas batches exists yet because model
+redistribution, rigging/vertex attachment, independent camera/body pose,
+real iPhone validation and licensed assets remain blocked. New synthetic
+XCTest source checks valid projected geometry and fail-closed behavior,
+but CI `build-for-testing` is not device validation. The iOS-only platform
+scope remains unchanged.
