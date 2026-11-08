@@ -17,7 +17,7 @@ jobs:
         run: |
           python3 -m Tools.anatomy_tools.fetch_atlas --download
           python3 -m Tools.anatomy_tools.fetch_atlas --verify-only
-      - name: Install headless Blender for source mesh hierarchy audit
+      - name: Install headless Blender for source mesh hierarchy audit (native importer)
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq blender python3-numpy

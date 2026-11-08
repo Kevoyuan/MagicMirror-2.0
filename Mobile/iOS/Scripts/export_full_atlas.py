@@ -36,6 +36,7 @@ from atlas_sources import (
     resource_base,
 )
 from atlas_rig_manifest import build_rig_manifest
+from atlas_blender_fbx import import_pinned_fbx
 from atlas_license_evidence import reviewed_bindings_license_evidence
 
 MAX_TRIANGLE_VERTICES = 180000
@@ -159,7 +160,7 @@ def main():
     export_skin = review.get("reviewedJointWeights") is True
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    bpy.ops.import_scene.fbx(filepath=str(args.fbx))
+    import_pinned_fbx(args.fbx)
 
     source_meshes = {
         full_hierarchy_path(obj): obj

@@ -19,6 +19,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from atlas_sources import SOURCE_REPOSITORY, SOURCE_COMMIT, SYSTEM_SOURCES
 from atlas_source_inventory import make_unapproved_review
+from atlas_blender_fbx import import_pinned_fbx
 
 
 def _args():
@@ -50,9 +51,7 @@ def main():
     verify_source(args.fbx, args.system)
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    status = bpy.ops.import_scene.fbx(filepath=str(args.fbx))
-    if "FINISHED" not in status:
-        raise RuntimeError("Blender could not import exact pinned FBX")
+    import_pinned_fbx(args.fbx)
     rows = []
     for obj in bpy.data.objects:
         if obj.type != "MESH":
