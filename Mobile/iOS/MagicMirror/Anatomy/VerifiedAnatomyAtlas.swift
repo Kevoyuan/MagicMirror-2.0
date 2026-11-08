@@ -81,6 +81,9 @@ struct MobileAtlasBinding: Decodable {
     let vertexOffset: Int
     let vertexCount: Int
     var componentLicense: AtlasComponentLicenseEvidence? = nil
+    /// The reviewed set of bone IDs eligible to deform THIS source mesh.
+    /// Required for any GPU skinning sidecar, absent for rigid atlas parts.
+    var approvedSkinBoneIds: [String]? = nil
 
     var restSegment: (SIMD3<Float>, SIMD3<Float>)? {
         guard restFrom.count == 3, restTo.count == 3 else { return nil }

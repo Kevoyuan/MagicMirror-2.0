@@ -121,7 +121,8 @@ final class LiveReviewedAtlasRuntimeTests: XCTestCase {
                 fromLandmark: bone.proximalLandmark,
                 toLandmark: bone.distalLandmark,
                 restFrom: start, restTo: bone.restEnd,
-                vertexOffset: index * 3, vertexCount: 3
+                vertexOffset: index * 3, vertexCount: 3,
+                approvedSkinBoneIds: [bone.id]
             ))
             let guide = SIMD3<Float>(0.04, 0.02, 0)
             for position in [a, b, a + guide] {

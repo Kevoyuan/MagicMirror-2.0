@@ -256,6 +256,7 @@ def main():
             raise ValueError(f"Empty or invalid triangles: {source_path}")
         parts.append({
             "sourceHierarchyPath": source_path,
+            **({"approvedSkinBoneIds": entry["approvedSkinBoneIds"]} if export_skin else {}),
             "componentLicense": licensed_parts[source_path],
             "displayName": entry.get("displayName", obj.name),
             "group": entry["group"],

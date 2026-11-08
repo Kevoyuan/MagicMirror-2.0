@@ -175,6 +175,29 @@ def verify_package(directory: Path, system: str = "skeleton"):
         weights = weight_data.get("vertices")
         require(isinstance(weights, list) and len(weights) == count,
                 "skinning vertex count mismatch")
+        for part in parts:
+            path = part["sourceHierarchyPath"]
+            approved = part.get("approvedSkinBoneIds")
+            require(isinstance(approved, list) and approved
+                    and all(isinstance(x, str) and x.strip() for x in approved)
+                    and len(set(approved)) == len(approved),
+                    f"unreviewed allowed skin bone IDs: {path}")
+            permitted = set(approved)
+            start = part["vertexOffset"]
+            for vertex_index in range(start, start + part["vertexCount"]):
+                entry = weights[vertex_index]
+                require(isinstance(entry, dict),
+                        f"malformed skinning vertex: {vertex_index}")
+                ids = entry.get("boneIds")
+                influences = entry.get("weights")
+                require(isinstance(ids, list) and len(ids) == 4
+                        and isinstance(influences, list) and len(influences) == 4,
+                        f"invalid skinning vertex: {vertex_index}")
+                require(all(
+                    type(weight) in (int, float) and math.isfinite(weight)
+                    and (weight <= 1e-6 or joint in permitted)
+                    for joint, weight in zip(ids, influences)
+                ), f"unapproved cross-mesh bone influence: {path}")
         for index, item in enumerate(weights):
             require(isinstance(item, dict), f"invalid skinning vertex {index}")
             ids, influences = item.get("boneIds"), item.get("weights")

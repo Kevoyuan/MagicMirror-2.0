@@ -212,6 +212,8 @@ class AtlasPackagePreflightTests(unittest.TestCase):
                         "reviewed/a", "reviewed/a"],
             "weights": [0.6, 0.4, 0, 0],
         }
+        self.parts[0]["approvedSkinBoneIds"] = ["reviewed/a", "reviewed/b"]
+        self.rewrite()
         skinning = {
             "schemaVersion": 1,
             "sourceRevision": SOURCE_REVISION,
@@ -226,6 +228,17 @@ class AtlasPackagePreflightTests(unittest.TestCase):
 
         write()
         self.assertEqual(verify_package(self.root)["vertex_count"], 3)
+        # A cryptographically matched sidecar still must not animate a
+        # vertex from a bone outside its original mesh review.
+        skinning["vertices"][0] = {
+            "boneIds": ["unknown/other"] * 4,
+            "weights": [1, 0, 0, 0],
+        }
+        write()
+        with self.assertRaisesRegex(PackageError, "cross-mesh"):
+            verify_package(self.root)
+        skinning["vertices"][0] = influence
+        write()
         for key, wrong in [
             ("reviewedJointWeights", False),
             ("sourceRevision", "wrong-revision"),

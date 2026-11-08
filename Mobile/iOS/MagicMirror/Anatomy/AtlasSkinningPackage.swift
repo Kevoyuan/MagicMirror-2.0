@@ -62,6 +62,34 @@ enum AtlasSkinningPackage {
             guard ids.updateValue(UInt32(index), forKey: bone.id) == nil
             else { throw Failure.malformed }
         }
+        // Per-part reviewed influence scope is NOT inferred from
+        // anatomical name or model-space proximity. Preserve exact
+        // original source-mesh triangle spans and fail closed when any
+        // weighted vertex refers to an unapproved neighboring bone.
+        var cursor = 0
+        for part in atlas.manifest.parts {
+            guard part.vertexOffset == cursor,
+                  part.vertexCount > 0,
+                  part.vertexCount <= file.vertices.count - cursor,
+                  let allowed = part.approvedSkinBoneIds,
+                  !allowed.isEmpty,
+                  Set(allowed).count == allowed.count,
+                  allowed.allSatisfy({ ids[$0] != nil })
+            else { throw Failure.malformed }
+            let accepted = Set(allowed)
+            for i in cursor..<(cursor + part.vertexCount) {
+                let v = file.vertices[i]
+                guard v.boneIds.count == 4,
+                      v.weights.count == 4,
+                      zip(v.boneIds, v.weights).allSatisfy({
+                        ($0.1 <= 1e-6) || accepted.contains($0.0)
+                      })
+                else { throw Failure.malformed }
+            }
+            cursor += part.vertexCount
+        }
+        guard cursor == file.vertices.count else { throw Failure.malformed }
+
         var result: [AtlasSkinInfluence] = []
         result.reserveCapacity(file.vertices.count)
         for vertex in file.vertices {
