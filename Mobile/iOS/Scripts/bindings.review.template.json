@@ -1,13 +1,42 @@
 {
-  "reviewedForDistribution": false,
-  "reviewedJointBindings": false,
-  "modificationNotes": [
-    "Replace with accurate notes for the actual human-reviewed derivative"
-  ],
-  "bindings": [],
   "anatomicalSystem": "skeleton",
+  "reviewedForDistribution": false,
+  "licenseReviewed": false,
+  "reviewedJointBindings": false,
+  "reviewedRigHierarchy": false,
   "reviewedJointWeights": false,
-  "skinningInstructions": "When reviewedJointWeights is true, every mesh binding needs vertexGroupToBoneId mapping authored Blender vertex groups to approved hierarchy bone IDs; otherwise no skinning data is generated.",
   "reviewedUSDZHierarchy": false,
-  "rigInstructions": "Only set reviewedUSDZHierarchy true after explicitly assigning a unique boneId and optional parentBoneId on every binding, reviewing original source/world anchors and legal redistribution. Exporter will produce USDZ + verified hierarchy manifest; original model review remains required."
+  "modificationNotes": [],
+  "componentLicenseReview": {
+    "reviewerName": "",
+    "reviewDate": "",
+    "intendedUse": "commercial-distribution",
+    "reviewNotes": ""
+  },
+  "bindings": [],
+  "_instructions": "Begin with inventory_source_fbx.py on the exact pinned original. It emits every real mesh path. Do NOT mark any rights or rig approval until the actual original component is reviewed.",
+  "_example_unreviewed_mesh": {
+    "sourceHierarchyPath": "REPLACE_WITH_EXACT_IMPORTED_SOURCE_HIERARCHY_PATH",
+    "displayName": "REPLACE_WITH_ACTUAL_SOURCE_MESH_NAME",
+    "group": null,
+    "fromLandmark": null,
+    "toLandmark": null,
+    "restFrom": null,
+    "restTo": null,
+    "boneId": null,
+    "parentBoneId": null,
+    "anchorsReviewed": false,
+    "approvedSkinBoneIds": [],
+    "vertexGroupToBoneId": {},
+    "componentLicense": {
+      "licenseId": "UNRESOLVED",
+      "originalSource": "",
+      "sourceMeshIdentity": "",
+      "attribution": "",
+      "originReviewNotes": "",
+      "evidenceURL": "",
+      "humanReviewed": false,
+      "commercialReuseConfirmed": false
+    }
+  }
 }
