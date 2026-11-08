@@ -22,6 +22,18 @@ struct AnatomyLayerPresentation: Equatable {
         }
     }
 
+    /// Only an independently registered system may become the sole displayed
+    /// anatomy layer. The proxy is a separate explicit clear/reset action.
+    static func soloSelection(
+        for layer: AnatomyDisplayLayer,
+        ready: Set<AnatomyDisplayLayer>
+    ) -> Set<AnatomyDisplayLayer>? {
+        guard layer != .referenceProxy, ready.contains(layer) else {
+            return nil
+        }
+        return [layer]
+    }
+
     var statusKey: String {
         available ? (selected ? "SELECTED" : "READY") : "LOCKED"
     }
