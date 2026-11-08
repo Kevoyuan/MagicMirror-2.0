@@ -33,6 +33,13 @@ jobs:
           bash Mobile/iOS/Scripts/fetch_model.sh
           cd Mobile/iOS
           xcodegen generate --spec project.yml
+      - name: Verify paid Release and actual .app asset gates are generated
+        run: |
+          grep -qF 'Paid App Store rights audit before Release' Mobile/iOS/MagicMirror.xcodeproj/project.pbxproj
+          grep -qF 'Re-audit actual paid iOS .app bundle' Mobile/iOS/MagicMirror.xcodeproj/project.pbxproj
+          grep -qF -- '--mode release' Mobile/iOS/MagicMirror.xcodeproj/project.pbxproj
+          grep -qF -- '--mode bundle' Mobile/iOS/MagicMirror.xcodeproj/project.pbxproj
+          echo 'PASS: XcodeGen retains both commercial Release guards. Debug can still compile.'
       - name: Compile complete SwiftUI app and XCTest (iOS Simulator)
         run: |
           set -o pipefail
