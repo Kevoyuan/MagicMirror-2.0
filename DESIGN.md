@@ -1,6 +1,6 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.4 — compact camera and anatomy study folio (2026-11-08)  
+**Version:** 1.5 — anatomy system controls and section detail (2026-11-08)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
@@ -566,3 +566,46 @@ Type, selection dismissal, reference fallback, permission recovery,
 Reduce Motion and bilingual text on real iPhones. A successful Simulator
 build-for-testing only proves compilation, not executed tests or
 real-camera success.
+
+## Anatomy folio — live system status and Solo (2026-11-08)
+
+The on-demand **Systems** folio is the sole owner of anatomical-system
+visibility controls; **Whole / Arms / Legs** remain independent body-region
+filters on the live camera. When the folio opens, a small status card reports
+whether the fallback reference proxy is visible or registered reviewed
+systems are actually active. A numeric **ready** tally counts only models
+registered for the current live frame, not planned source categories.
+
+**Active layer contract:** selected means `enabled ∩ ready` for a
+non-proxy anatomical system. The proxy is the selected fallback if that
+intersection is empty, including when a user has requested a model that
+is still unavailable. This is a *visual truth policy*, not evidence of
+atlas certification or a clinical scan.
+
+**Controls:** an enabled row toggles that system, while **Solo** shows
+exactly one registered system (not an unavailable model). **Reset** returns
+to the proxy reference. The active row exposes an individual opacity slider
+and a live percentage. Unavailable rows remain locked, disabled and
+descriptive. A registered system's alpha is composited only using the
+existing on-device rendering and licensing gates. The collapsed camera
+dock shows a small count badge only for truly active registered systems.
+
+**Sections:** the separate **Sections** pane explains actual supported
+GPU mesh-surface clipping, NOT a closed internal tissue cross-section.
+If clipping becomes available, selecting axial/sagittal/coronal permits
+an offset slider, a visible signed offset value in shoulder-width units,
+a **Center plane** command resetting to zero, and **Show complete reference
+atlas** to restore the uncut view. These controls are hidden/disabled
+unless the current reviewed geometry supports real clipping.
+
+**Accessibility and localization:** English and Simplified Chinese cover
+all new summary, active/ready, Solo, reset, section positioning, and
+fallback texts. Every action uses a 44 pt or larger activation area.
+Active/locked status must remain understandable from words and VoiceOver,
+not only from pigment, an icon, or a tiny badge. Reflow and scrolling
+take priority over the nominal camera occupancy estimate.
+
+**Release verification:** tests cover Solo permission and proxy fallback;
+GitHub CI performs Xcode build-for-testing, not necessarily executed
+unit tests. Real-world multi-system compositing, device interaction and
+licensed Z-Anatomy asset quality remain a separate hardware/review gate.
