@@ -9,7 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
-from paid_release_gate import (_approval, _json, _nonempty, _require,
+from paid_release_gate import (_approval, _json, _nonempty, require,
                                CommercialReleaseError, CLEARANCE_NAME,
                                DEFAULT_ROOT)
 
@@ -17,11 +17,11 @@ from paid_release_gate import (_approval, _json, _nonempty, _require,
 def notice_from_clearance(clearance):
     _approval(clearance)
     publications = clearance.get("shareAlikePublications")
-    _require(isinstance(publications, list) and publications,
+    require(isinstance(publications, list) and publications,
              "No separate CC BY-SA model publications have been approved")
     result = []
     for pub in publications:
-        _require(isinstance(pub, dict) and
+        require(isinstance(pub, dict) and
                  _nonempty(pub.get("id")) and
                  _nonempty(pub.get("modelFile")) and
                  _nonempty(pub.get("publicURL")) and
