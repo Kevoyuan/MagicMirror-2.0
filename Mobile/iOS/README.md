@@ -713,3 +713,36 @@ does not determine hand-over-rib depth, occluded interior anatomy,
 true tissue locations, LiDAR occlusion or medical X-ray structure.
 Precise segmentation orientation/quality and thermal performance
 still need physical iPhone review before release.
+
+
+## Paid iPhone App Store release: explicitly BLOCKED pending IP clearance
+
+Owner's product direction is a **paid iOS app**. The app's original
+SwiftUI/Metal code is commercially separable from unapproved third-party
+anatomy geometry. The offline paid Release/Archive path now runs a
+fail-closed license gate defined in `project.yml`:
+
+- **Before build:** match every staged ML and 3D asset against the
+  signed-off commercial rights ledger (path, SHA-256, actual license
+  source, App Store/technical-restrictions scope, SDK notices).
+- **After build:** re-scan the **actual built .app**; an extra local
+  `*.usdz`, `*.mmgeom`, `*.task`, model archive or altered
+  PoseLandmarker weight file fails.
+- **Default:** `CommercialRelease/paid-app-clearance.json` has
+  `releaseApproved: false`. This is intentional; do not enable it
+  merely to get a green build. Debug tracking/proxy tests are unaffected.
+
+```bash
+python3 Mobile/iOS/Scripts/paid_release_gate.py --mode source
+python3 Mobile/iOS/Scripts/paid_release_gate.py --mode release
+# Second command FAILS until actual human rights approval.
+```
+
+No Z-Anatomy FBX or derived geometry is cleared for paid shipping;
+the MediaPipe `pose_landmarker_lite.task` model weights require a
+**separate** commercial redistribution review from the Apache-2.0
+MediaPipe SDK. Required third-party notices and possible SDK metrics
+data also need verification.
+
+[Commercial shipping policy](../../Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md)
+and [new original anatomy commissioning brief](CommercialRelease/ORIGINAL_ANATOMY_ASSET_BRIEF.md).

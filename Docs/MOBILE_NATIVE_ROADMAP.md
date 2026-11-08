@@ -433,3 +433,29 @@ GPU-skinned anatomical layers in one render pass. Missing masks
 preserve existing source-matched rendering without fabricating
 foreground silhouettes. This improves reference-geometry background
 clipping but is **not** true internal-tissue depth occlusion.
+
+
+## iOS-only business decision: paid App Store, fail-closed source rights (2026-11-08)
+
+Owner selected a **paid iPhone/iOS MagicMirror**, not an Android port.
+The product's original code can be monetized independently of
+third-party model licensing; no Z-Anatomy/BodyParts3D asset is
+authorized for commercial delivery merely because upstream uses CC
+BY-SA. Some original subassets have NC terms and Apple packaged
+App Store DRM/distribution needs a separate compatibility review.
+
+A new actual XcodeGen **Release pre-build and .app post-build scan**
+enforces a per-asset paid release license ledger, pinned checksums,
+SDK/license notices and explicit named owner/legal review. The
+`paid-app-clearance.json` starts **UNAPPROVED** and automatically
+blocks all Release/Archive builds; Debug remains available for
+research. The preflight includes independent commercial rights for
+the pinned PoseLandmarker **weights** as well as the MediaPipe
+Apache-2.0 SDK. No legal authorization is claimed by CI.
+
+**Preferred Mobile-3 completion:** commission original anatomy mesh,
+human-reviewed coherent rig/weights, suitable written exclusive
+commercial usage rights and actual iPhone measured alignment.
+Then finish Mobile-5 privacy, notices, StoreKit/paid listing, TestFlight
+and required independent legal release approval.
+See `Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`.

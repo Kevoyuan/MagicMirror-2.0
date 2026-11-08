@@ -208,3 +208,37 @@ For changes to iOS code:
 **A feature is done only when the actual relevant platform gate passes.**
 A beautiful 2D stick-figure demo does not complete the 3D anatomy MVP;
 a green static-code check does not complete a usable iPhone app.
+
+
+## 7. Paid iPhone commercial release policy (owner decision 2026-11-08)
+
+**MagicMirror 2.0 is intended to be a paid App Store iPhone product.**
+Original app code, UX and local pose processing remain the active
+business product. A non-medical illustrated anatomy experience is the
+only defensible description until validated physical 3D anatomy exists.
+
+Treat all Z-Anatomy/BodyParts3D/NC or unresolved external model
+derivatives as research-only. **Do not copy, generate from, bundle,
+redistribute, promote or present them as commercially licensed** without
+review of the exact work, original subcomponent rightsholders and
+Apple paid distribution/DRM requirements. Prefer commissioned ORIGINAL
+human-reviewed 3D assets with explicit suitable written commercial
+rights (German Nutzungsrechte where applicable). A developer's
+boolean/license header cannot confer third-party rights.
+
+The MediaPipeTasksVision SDK source (generally Apache-2.0), its
+independently hosted PoseLandmarker `.task` WEIGHTS, third-party
+notices and privacy behavior need separate commercial review.
+
+XcodeGen `Mobile/iOS/project.yml` runs
+`Scripts/paid_release_gate.py` **before and after Release builds**,
+including archive targets. Do not disable, bypass or weaken this
+fail-closed gate; Release is deliberately blocked until independently
+reviewed actual legal evidence, per-asset hash attestations and notices
+are registered. Debug research builds may continue.
+
+Source of truth: `Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`
+and `Mobile/iOS/CommercialRelease/paid-app-clearance.json`.
+Product Monetization/StoreKit implementation is a separate milestone.
+A passing synthetic CI test proves technical validation only, not
+real legal clearance or permission to sell.
