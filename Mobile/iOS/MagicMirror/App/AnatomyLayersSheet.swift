@@ -86,7 +86,7 @@ struct AnatomyLayersSheet: View {
                 .font(.system(.title2, design: .serif, weight: .semibold))
                 .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Explore six separately reviewed anatomical systems as their approved offline resources become available. The illustrative reference proxy remains the fallback.")
+            Text("Explore only the anatomical systems verified for the current camera view.")
                 .font(.subheadline)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -97,17 +97,66 @@ struct AnatomyLayersSheet: View {
     }
 
     private var systemStudies: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let visibleSystems = model.enabledAnatomyLayers
+            .intersection(model.readyAnatomyLayers)
+        let readySystems = model.readyAnatomyLayers.filter {
+            $0 != .referenceProxy
+        }
+        return VStack(alignment: .leading, spacing: 11) {
             HStack(spacing: 8) {
                 Image(systemName: "square.3.layers.3d")
                     .foregroundStyle(LeonardoPalette.verdigris)
                 Text("ANATOMICAL SYSTEMS")
                     .font(.caption.weight(.semibold))
-                    .tracking(1.1)
+                    .tracking(1)
+                Spacer(minLength: 4)
+                Text(readySystems.count, format: .number)
+                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                Text("ready")
+                    .font(.caption)
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text("Enable several reviewed anatomical systems together. Each has its own transparency; the reference proxy clears the selection. Locked systems still require approved local meshes and registration.")
+            HStack(spacing: 10) {
+                Image(systemName: visibleSystems.isEmpty
+                      ? "figure.stand" : "square.stack.3d.up.fill")
+                    .font(.title3)
+                    .foregroundStyle(LeonardoPalette.verdigris)
+                    .frame(width: 32)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(visibleSystems.isEmpty
+                         ? "Reference proxy on camera"
+                         : "Reviewed systems selected")
+                        .font(.subheadline.weight(.semibold))
+                    Text(visibleSystems.isEmpty
+                         ? "Only the pose-driven reference is visible"
+                         : "Only currently registered meshes are counted")
+                        .font(.caption)
+                        .foregroundStyle(LeonardoPalette.mutedInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 4)
+
+                if !visibleSystems.isEmpty {
+                    Button("Reset") {
+                        model.selectAnatomyLayer(.referenceProxy)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LeonardoPalette.verdigris)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .accessibilityHint("Return to the illustrative pose reference")
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(LeonardoPalette.agedPaper.opacity(0.45),
+                        in: RoundedRectangle(cornerRadius: 13))
+            .accessibilityElement(children: .contain)
+
+            Text("Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered.")
                 .font(.footnote)
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -200,23 +249,44 @@ struct AnatomyLayersSheet: View {
             : "Requires independently reviewed and registered anatomy"
         ))
 
-        if selected, layer != .referenceProxy, available {
-            HStack(spacing: 10) {
-                Text("Opacity")
-                    .font(.caption)
-                    .foregroundStyle(LeonardoPalette.mutedInk)
-                Slider(
-                    value: Binding(
-                        get: { model.layerOpacity(layer) },
-                        set: { model.setLayerOpacity(layer, $0) }
-                    ),
-                    in: 0.05...1
-                )
-                .accessibilityLabel("Layer opacity")
-                .accessibilityHint(LocalizedStringKey(layer.title))
+        if available, layer != .referenceProxy {
+            let isAlreadySolo = model.enabledAnatomyLayers
+                .intersection(model.readyAnatomyLayers) == Set([layer])
+
+            HStack(spacing: 9) {
+                if selected {
+                    Text("Opacity")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(LeonardoPalette.mutedInk)
+                    Slider(
+                        value: Binding(
+                            get: { model.layerOpacity(layer) },
+                            set: { model.setLayerOpacity(layer, $0) }
+                        ),
+                        in: 0.05...1
+                    )
+                    .tint(LeonardoPalette.verdigris)
+                    .accessibilityLabel("Layer opacity")
+                    .accessibilityHint(LocalizedStringKey(layer.title))
+                    Text(model.layerOpacity(layer), format: .percent)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(LeonardoPalette.mutedInk)
+                        .frame(minWidth: 40, alignment: .trailing)
+                } else {
+                    Spacer(minLength: 0)
+                }
+
+                Button("Solo") {
+                    model.soloAnatomyLayer(layer)
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LeonardoPalette.verdigris)
+                .frame(minWidth: 44, minHeight: 44)
+                .disabled(isAlreadySolo)
+                .accessibilityHint("Show only this registered anatomy system")
             }
-            .padding(.horizontal, 15)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 5)
         }
         }
     }
@@ -239,9 +309,10 @@ struct AnatomyLayersSheet: View {
                 .foregroundStyle(LeonardoPalette.mutedInk)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if model.canSectionReviewedAtlas {
+            if model.canSectionReviewedAtlas, model.activeSection != nil {
                 Button("Show complete reference atlas") {
                     model.activeSection = nil
+                    model.sectionOffset = 0
                 }
                 .buttonStyle(.bordered)
                 .accessibilityHint("Disable the 3D half-space cut")
@@ -295,10 +366,24 @@ struct AnatomyLayersSheet: View {
 
             if model.canSectionReviewedAtlas, model.activeSection != nil {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Section offset · shoulder-width units")
-                        .font(.caption)
+                    HStack {
+                        Text("Section offset · shoulder-width units")
+                            .font(.caption)
+                        Spacer(minLength: 5)
+                        Text(model.sectionOffset, format: .number.precision(
+                            .fractionLength(2)))
+                            .font(.caption.monospacedDigit())
+                    }
                     Slider(value: $model.sectionOffset, in: -0.5...0.5)
+                        .tint(LeonardoPalette.verdigris)
                         .accessibilityLabel("Move anatomy section plane")
+                    Button("Center plane") {
+                        model.sectionOffset = 0
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .frame(minHeight: 44)
+                    .disabled(abs(model.sectionOffset) < 0.001)
+                    .accessibilityHint("Reset the section plane to its center")
                     Text("Only the visible mesh surface is clipped; no watertight cut face or tissue reconstruction")
                         .font(.caption2)
                         .foregroundStyle(LeonardoPalette.mutedInk)
