@@ -171,3 +171,16 @@
 "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING" = "来源已审核的参考模型 · 并非个人影像";
 "Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live." = "点击“调整”修改参考模型透明度；“暂停”仅隐藏叠加模型，相机预览仍继续。";
 "The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available." = "图层手帐展示解剖系统与剖面。其他系统只有在已审核本地模型和相机配准可用后才能解锁。";
+"Explore only the anatomical systems verified for the current camera view." = "仅显示在当前相机视图中经过验证的解剖系统。";
+"ready" = "可用";
+"Reference proxy on camera" = "当前显示参考骨架";
+"Reviewed systems selected" = "已选中审核通过的系统";
+"Only the pose-driven reference is visible" = "当前仅显示由姿态驱动的参考骨架";
+"Only currently registered meshes are counted" = "仅统计当前已完成配准的模型";
+"Reset" = "重置";
+"Return to the illustrative pose reference" = "返回姿态示意参考骨架";
+"Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered." = "可同时选择多个已配准的系统，或使用“独显”单独查看。锁定模型尚未安装或完成配准。";
+"Solo" = "独显";
+"Show only this registered anatomy system" = "只显示该已配准的解剖系统";
+"Center plane" = "剖面居中";
+"Reset the section plane to its center" = "将剖切平面重置到中心";
