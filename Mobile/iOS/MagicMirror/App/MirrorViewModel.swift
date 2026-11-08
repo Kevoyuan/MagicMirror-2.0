@@ -36,6 +36,8 @@ final class MirrorViewModel {
     var isPaused = false
     var showDiagnostics = false
     var deliveryReport: PoseDeliveryReport?
+    /// Exact-source camera callback receipt to Metal CPU submission only.
+    var sourceSubmissionReport: SourceFrameSubmissionReport?
     /// Diagnostic pose fit only; never an approved atlas calibration.
     var automaticCameraCandidate: AutomaticCameraPoseCandidate?
 
@@ -147,7 +149,8 @@ final class MirrorViewModel {
                 self.alignedFrame = smooth.map {
                     AlignedPoseVideoFrame(
                         pose: $0, pixelBuffer: incoming.pixelBuffer,
-                        silhouette: incoming.silhouette
+                        silhouette: incoming.silhouette,
+                        captureCallbackUptime: incoming.captureCallbackUptime
                     )
                 }
                 let now = ProcessInfo.processInfo.systemUptime
@@ -165,6 +168,7 @@ final class MirrorViewModel {
                 self.temporalFilter.reset()
                 self.deliveryMonitor.reset()
                 self.deliveryReport = nil
+                self.sourceSubmissionReport = nil
                 self.snapshot = nil
                 self.currentCoverage = .none
                 self.alignedFrame = nil
@@ -213,6 +217,7 @@ final class MirrorViewModel {
         readyAnatomyLayers = []
         deliveryMonitor.reset()
         deliveryReport = nil
+        sourceSubmissionReport = nil
         expiryTask?.cancel()
         expiryTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -239,6 +244,7 @@ final class MirrorViewModel {
                     self.resetAutomaticCamera()
                     self.deliveryMonitor.reset()
                     self.deliveryReport = nil
+                    self.sourceSubmissionReport = nil
                     self.phase = .searching
                 }
             }
@@ -295,6 +301,7 @@ final class MirrorViewModel {
         readyAnatomyLayers = []
         deliveryMonitor.reset()
         deliveryReport = nil
+        sourceSubmissionReport = nil
         snapshot = nil
         currentCoverage = .none
         alignedFrame = nil
@@ -455,6 +462,17 @@ final class MirrorViewModel {
         reviewedPartSelection = nil
     }
 
+    /// Renderer reports at most once per second. Ignore delayed reports
+    /// from a paused, stopped or restarted capture session.
+    func acceptSourceSubmissionReport(_ report: SourceFrameSubmissionReport) {
+        guard isActive, !isPaused,
+              alignedFrame != nil,
+              mostRecentTimestamp >= report.latestPoseTimestampMilliseconds else {
+            return
+        }
+        sourceSubmissionReport = report
+    }
+
     func toggleDiagnostics() {
         showDiagnostics.toggle()
     }
@@ -478,6 +496,7 @@ final class MirrorViewModel {
         readyAnatomyLayers = []
             deliveryMonitor.reset()
             deliveryReport = nil
+            sourceSubmissionReport = nil
             snapshot = nil
             currentCoverage = .none
             alignedFrame = nil  // No frozen video or stale tracked bones.
