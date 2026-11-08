@@ -9,6 +9,9 @@ on:
       - 'Mobile/iOS/Scripts/atlas_rig_manifest.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
       - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
+      - 'Mobile/iOS/Scripts/paid_release_gate.py'
+      - 'Mobile/iOS/CommercialRelease/**'
+      - 'Mobile/iOS/project.yml'
       - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
@@ -20,6 +23,9 @@ on:
       - 'Mobile/iOS/Scripts/atlas_rig_manifest.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
       - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
+      - 'Mobile/iOS/Scripts/paid_release_gate.py'
+      - 'Mobile/iOS/CommercialRelease/**'
+      - 'Mobile/iOS/project.yml'
       - 'Mobile/iOS/Scripts/tests/**'
       - 'Assets-Manifest/asset_sources.json'
       - '.github/workflows/anatomy-inventory-tests.yml'
@@ -36,6 +42,8 @@ jobs:
         run: |
           python -m compileall -q Tools/anatomy_tools Mobile/iOS/Scripts/export_full_atlas.py Mobile/iOS/Scripts/atlas_sources.py Mobile/iOS/Scripts/atlas_rig_manifest.py Mobile/iOS/Scripts/verify_atlas_package.py Mobile/iOS/Scripts/tests
           python -m json.tool Assets-Manifest/asset_sources.json > /dev/null
+          python -m json.tool Mobile/iOS/CommercialRelease/paid-app-clearance.json > /dev/null
+          python -m compileall -q Mobile/iOS/Scripts/paid_release_gate.py
       - name: Validate pinned whole-FBX provenance against downloader
         run: |
           python - <<'PY'
@@ -53,6 +61,7 @@ jobs:
           python -m unittest discover -s Mobile/iOS/Scripts/tests -v
           python Mobile/iOS/Scripts/verify_atlas_package.py --help > /dev/null
           python Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py --help > /dev/null
+          python Mobile/iOS/Scripts/paid_release_gate.py --mode source
           python -m Tools.anatomy_tools.audit_unity_inventory --help > /dev/null
       - name: Scope disclaimer
         run: |
