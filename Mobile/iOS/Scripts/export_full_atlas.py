@@ -121,6 +121,27 @@ def checked_review(path, system):
             ):
                 raise ValueError(f"Reviewed skin group mapping required: {path}")
     reviewed_bindings_license_evidence(data, bindings)
+    if weights_reviewed:
+        # Never let arbitrary Blender vertex groups silently map to a
+        # different reviewed anatomical node or a nonexistent joint.
+        bone_ids = [entry.get("boneId") for entry in bindings]
+        if (data.get("reviewedRigHierarchy") is not True or
+            not all(isinstance(i, str) and i.strip() for i in bone_ids) or
+            len(set(bone_ids)) != len(bone_ids) or
+            len(bone_ids) > 256):
+            raise ValueError("Skinning requires <=256 unique reviewed rig bone IDs")
+        allowed_ids = set(bone_ids)
+        for entry in bindings:
+            path = entry["sourceHierarchyPath"]
+            permitted = entry.get("approvedSkinBoneIds")
+            if (not isinstance(permitted, list) or not permitted or
+                len(permitted) != len(set(permitted)) or
+                entry["boneId"] not in permitted or
+                not set(permitted).issubset(allowed_ids) or
+                not set(entry["vertexGroupToBoneId"].values()).issubset(
+                    set(permitted)
+                )):
+                raise ValueError(f"Unapproved skinning bone influences: {path}")
     return data, {entry["sourceHierarchyPath"]: entry for entry in bindings}
 
 
