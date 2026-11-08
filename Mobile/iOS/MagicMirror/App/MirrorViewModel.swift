@@ -53,6 +53,7 @@ final class MirrorViewModel {
     private var cameraEstimateTask: Task<Void, Never>?
     private var cameraEstimateLastStart = 0.0
     private var cameraEstimateEpoch: UInt64 = 0
+    private var cameraCandidateGate = CameraCandidateTemporalGate()
 
     init() {
         pipeline.onAlignedFrame = { [weak self] incoming in
@@ -338,6 +339,7 @@ final class MirrorViewModel {
         cameraEstimateTask?.cancel()
         cameraEstimateTask = nil
         automaticCameraCandidate = nil
+        cameraCandidateGate.reset()
         cameraEstimateLastStart = 0
     }
 
@@ -348,8 +350,12 @@ final class MirrorViewModel {
         from frame: PoseSnapshot, now: Double
     ) {
         guard frame.hasTorsoAnchor,
-              frame.cameraIntrinsics != nil,
-              cameraEstimateTask == nil,
+              frame.cameraIntrinsics != nil else {
+            automaticCameraCandidate = nil
+            cameraCandidateGate.reset()
+            return
+        }
+        guard cameraEstimateTask == nil,
               now - cameraEstimateLastStart >= 0.75
         else { return }
         cameraEstimateLastStart = now
@@ -370,9 +376,14 @@ final class MirrorViewModel {
                       self.mostRecentTimestamp -
                         frame.timestampMilliseconds <= 750 else {
                     self.automaticCameraCandidate = nil
+                    self.cameraCandidateGate.reset()
                     return
                 }
-                self.automaticCameraCandidate = result
+                // A single good PnP fit is not a stable projection.
+                // This only stabilizes the UNREVIEWED diagnostic, never
+                // changes the independent camera/atlas review gate.
+                self.automaticCameraCandidate =
+                    self.cameraCandidateGate.observe(result)
             }
         }
     }
