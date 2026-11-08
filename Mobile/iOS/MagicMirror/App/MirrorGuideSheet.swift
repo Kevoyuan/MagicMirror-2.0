@@ -171,6 +171,46 @@ struct MirrorGuideSheet: View {
                 title: "Reviewed anatomy comes later",
                 detail: "Z-Anatomy-derived muscles, organs, vessels, nerves and bone meshes require source-rights and anatomical review before distribution."
             )
+            if let credits = PublicAtlasCredits.installed {
+                VStack(alignment: .leading, spacing: 12) {
+                    guideSectionTitle(
+                        "OPEN ANATOMY MODEL & CREDITS",
+                        systemImage: "person.3.sequence"
+                    )
+                    ForEach(credits.publicModels) { model in
+                        if let downloadURL = URL(string: model.publicURL) {
+                            VStack(alignment: .leading, spacing: 9) {
+                                Text("Z-Anatomy and BodyParts3D")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(LeonardoPalette.ink)
+                                Text("The reviewed anatomical model is licensed separately under CC BY-SA 4.0. MagicMirror's own app code is not part of the model release.")
+                                    .font(.footnote)
+                                    .foregroundStyle(LeonardoPalette.mutedInk)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Link(
+                                    "Download reusable 3D model and modifications",
+                                    destination: downloadURL
+                                )
+                                .font(.subheadline.weight(.semibold))
+                                .accessibilityHint(
+                                    "Open the public, DRM-free Z-Anatomy derivative model archive"
+                                )
+                                if let licenseURL = URL(
+                                    string: "https://creativecommons.org/licenses/by-sa/4.0/"
+                                ) {
+                                    Link("CC BY-SA 4.0 license", destination: licenseURL)
+                                        .font(.footnote)
+                                }
+                            }
+                            .padding(12)
+                            .background(
+                                LeonardoPalette.agedPaper.opacity(0.48),
+                                in: RoundedRectangle(cornerRadius: 12)
+                            )
+                        }
+                    }
+                }
+            }
             noteRow(
                 icon: "cross.case",
                 title: "Not a medical tool",
@@ -248,4 +288,43 @@ struct MirrorGuideSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
+}
+
+
+/// Available ONLY for an actually bundled, reviewed CC BY-SA anatomy model.
+/// Debug proxy builds have no atlas notice and therefore show no fake link.
+/// Release generation verifies exact URL, public archive SHA-256 and model
+/// bytes against the separate public release and private human signoff.
+private struct PublicAtlasCredits: Decodable {
+    struct PublishedModel: Decodable, Identifiable {
+        let id: String
+        let modelFile: String
+        let licenseId: String
+        let authorCredits: String
+        let publicURL: String
+        let publicArchiveSHA256: String
+    }
+
+    let schemaVersion: Int
+    let publicModels: [PublishedModel]
+
+    static let installed: PublicAtlasCredits? = {
+        guard let url = Bundle.main.url(
+            forResource: "CCModelAttribution", withExtension: "json"
+        ),
+        let data = try? Data(contentsOf: url),
+        let notice = try? JSONDecoder().decode(PublicAtlasCredits.self, from: data),
+        notice.schemaVersion == 1, !notice.publicModels.isEmpty,
+        notice.publicModels.allSatisfy({ entry in
+            let name = entry.modelFile as NSString
+            return entry.licenseId == "CC-BY-SA-4.0" &&
+                entry.publicURL.hasPrefix("https://") &&
+                entry.publicArchiveSHA256.count == 64 &&
+                Bundle.main.url(
+                    forResource: name.deletingPathExtension,
+                    withExtension: name.pathExtension
+                ) != nil
+        }) else { return nil }
+        return notice
+    }()
 }
