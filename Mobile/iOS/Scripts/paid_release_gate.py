@@ -240,7 +240,7 @@ def _asset_gate(manifest):
     return by_path
 
 
-def _published_cc_model_gate(manifest, root, actual, approved):
+def _published_cc_model_gate(manifest, root, actual, approved, bundle_dir):
     """Match each reviewed model to a real locally verified public ZIP.
 
     A public archive does NOT itself answer the Apple DRM question.
@@ -256,6 +256,7 @@ def _published_cc_model_gate(manifest, root, actual, approved):
             "Every CC BY-SA anatomy asset needs exactly one publication")
     used = set()
     handled_paths = set()
+    display_credits = []
     for entry in records:
         require(isinstance(entry, dict), "Invalid public model record")
         rid = entry.get("id")
@@ -324,7 +325,15 @@ def _published_cc_model_gate(manifest, root, actual, approved):
                         skin.get("modelSHA256") ==
                         hashlib.sha256(model_bytes).hexdigest(),
                         "Unreviewed skinning source in paid model")
-            original_audit = cc_assets[model].get("originalMeshRightsAuditSHA256")
+            display_credits.append({
+            "id": rid,
+            "modelFile": model,
+            "licenseId": "CC-BY-SA-4.0",
+            "authorCredits": "Z-Anatomy and BodyParts3D",
+            "publicURL": url,
+            "publicArchiveSHA256": digest,
+        })
+        original_audit = cc_assets[model].get("originalMeshRightsAuditSHA256")
             require(_nonempty(original_audit) and
                     HEX_SHA256.fullmatch(original_audit) is not None,
                     "Missing original mesh audit digest")
@@ -338,6 +347,21 @@ def _published_cc_model_gate(manifest, root, actual, approved):
             ) from exc
     require(handled_paths == set(cc_assets),
             "Some licensed anatomy files are absent from public distribution")
+    display_path = bundle_dir / "CCModelAttribution.json"
+    if not cc_assets:
+        require(not display_path.exists(),
+                "Unexpected public-model attribution without reviewed CC model")
+    else:
+        try:
+            displayed = json.loads(display_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, UnicodeError) as exc:
+            raise CommercialReleaseError(
+                "Bundled CC public model notice is required"
+            ) from exc
+        require(displayed == {
+            "schemaVersion": 1, "publicModels": display_credits
+        }, "Visible in-app public model download metadata does not match"
+           " actual CC BY-SA publication and approved source assets")
 
 
 def _check_present_asset_hashes(actual, approved):
@@ -397,7 +421,7 @@ def run(*, root=DEFAULT_ROOT, mode="source", bundle=None):
     _dependency_gate(manifest, root)
     reviewed = _asset_gate(manifest)
     _check_present_asset_hashes(present, reviewed)
-    _published_cc_model_gate(manifest, root, present, reviewed)
+    _published_cc_model_gate(manifest, root, present, reviewed, scan_dir)
     _notices(scan_dir, manifest)
     return {"mode": mode, "foundAssets": sorted(present),
             "paidReleaseCleared": True}
