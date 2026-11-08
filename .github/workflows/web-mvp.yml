@@ -46,6 +46,11 @@ jobs:
           npm test
       - name: Compile Web frontend sources (NOT a deployable release)
         run: npm run build:code
+      - name: Stage and verify real developer model and local WASM
+        run: |
+          npm run stage:assets
+          npm run check:assets
+          echo 'These model bytes are for CI developer testing; not distributed as a public release.'
       - name: Verify public release remains locked pending model privacy/licensing
         run: |
           if npm run check:release; then
