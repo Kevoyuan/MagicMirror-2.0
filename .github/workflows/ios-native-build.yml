@@ -11,6 +11,12 @@ on:
       - '.github/workflows/ios-native-build.yml'
   workflow_dispatch:
 
+# A push and the matching PR event must not each consume a long
+# macOS build. Only the newest head for that source branch matters.
+concurrency:
+  group: ios-native-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
