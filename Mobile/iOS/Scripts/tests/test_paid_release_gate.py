@@ -21,6 +21,12 @@ class PaidReleaseGateTests(unittest.TestCase):
         self.resources = self.root / "Resources"
         self.resources.mkdir()
         (self.root / "CommercialRelease").mkdir()
+        (self.root / "project.yml").write_text(
+            "packages:\\n  MediaPipeTasks:\\n"
+            "    url: https://github.com/google-ai-edge/mediapipe\\n"
+            f"    revision: {gate.PINNED_MEDIAPIPE_REVISION}\\n",
+            encoding="utf-8"
+        )
         self.fake_model = b"FAKE NOT GOOGLE MEDIA PIPE POSE"
         self.model_digest = hashlib.sha256(self.fake_model).hexdigest()
         self.addCleanup(lambda: None)
@@ -114,6 +120,18 @@ class PaidReleaseGateTests(unittest.TestCase):
         ):
             self.pass_release()
 
+    def test_swiftpm_dependency_revision_must_match_reviewed_dependency(self):
+        (self.root / "project.yml").write_text(
+            "packages:\\n  MediaPipeTasks:\\n"
+            "    url: https://github.com/google-ai-edge/mediapipe\\n"
+            "    revision: " + "a" * 40 + "\\n",
+            encoding="utf-8"
+        )
+        with self.assertRaisesRegex(
+            gate.CommercialReleaseError, "source revision differs"
+        ):
+            self.pass_release()
+
     def test_unapproved_3d_geometry_bypasses_gitignore_but_not_gate(self):
         (self.resources / "unreviewed_z_anatomy.usdz").write_bytes(b"FAKE MESH")
         with self.assertRaisesRegex(
@@ -124,6 +142,22 @@ class PaidReleaseGateTests(unittest.TestCase):
             gate.CommercialReleaseError, "Unreviewed 3D/ML"
         ):
             gate.run(root=self.root, mode="source")
+
+    def test_model_package_directory_and_zip_do_not_escape_audit(self):
+        package = self.resources / "unapproved.mlmodelc"
+        package.mkdir()
+        (package / "metadata.json").write_text("{}", encoding="utf-8")
+        with self.assertRaisesRegex(
+            gate.CommercialReleaseError, "model package directory"
+        ):
+            self.pass_release()
+        (package / "metadata.json").unlink()
+        package.rmdir()
+        (self.resources / "atlas.zip").write_bytes(b"FAKE ARCHIVE")
+        with self.assertRaisesRegex(
+            gate.CommercialReleaseError, "unapproved="
+        ):
+            self.pass_release()
 
     def test_sidecar_and_alternate_model_are_not_accidentally_copied(self):
         for extra in (
