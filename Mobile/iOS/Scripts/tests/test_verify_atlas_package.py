@@ -1,5 +1,6 @@
 """Synthetic, license-free corruption tests for the offline atlas preflight."""
 import copy
+from datetime import date
 import hashlib
 import json
 from pathlib import Path
@@ -12,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from verify_atlas_package import (  # noqa: E402
     BINARY_NAME, MANIFEST_NAME, PackageError, SOURCE_PATH,
     SOURCE_REPO, SOURCE_REVISION, verify_package,
+)
+from atlas_license_evidence import (
+    LicenseEvidenceError, verify_component_license_manifest,
 )
 from atlas_sources import SYSTEM_SOURCES, resource_base  # noqa: E402
 
@@ -37,7 +41,22 @@ class AtlasPackagePreflightTests(unittest.TestCase):
             "vertexOffset": 0,
             "vertexCount": 3
         }]
+        self.parts[0]["componentLicense"] = {
+            "licenseId": "CC-BY-SA-4.0",
+            "originalSource": "Synthetic independent triangle",
+            "sourceMeshIdentity": "synthetic/test",
+            "attribution": "Synthetic test triangle",
+            "originReviewNotes": "Test fixture only; not anatomical geometry",
+            "evidenceURL": "https://example.org/fixture",
+            "humanReviewed": True, "commercialReuseConfirmed": True,
+        }
         self.manifest = {
+            "componentLicenseReview": {
+                "reviewerName": "Synthetic Fixture Reviewer",
+                "reviewDate": date.today().isoformat(),
+                "intendedUse": "commercial-distribution",
+                "reviewNotes": "Test fixture, not a legal release approval",
+            },
             "schemaVersion": 1,
             "sourceRepository": SOURCE_REPO,
             "sourceRevision": SOURCE_REVISION,
@@ -94,6 +113,16 @@ class AtlasPackagePreflightTests(unittest.TestCase):
                 with self.assertRaises(PackageError):
                     verify_package(self.root)
                 self.manifest[key] = old
+
+    def test_rejects_nc_or_missing_component_license(self):
+        self.parts[0]["componentLicense"]["licenseId"] = "CC-BY-NC-SA-4.0"
+        self.rewrite()
+        with self.assertRaisesRegex(PackageError, "Component license"):
+            verify_package(self.root)
+        self.parts[0]["componentLicense"].pop("licenseId")
+        self.rewrite()
+        with self.assertRaises(PackageError):
+            verify_package(self.root)
 
     def test_detects_tampered_model_hash(self):
         self.vertices[1] = (2., 0., 0., 0., 0., 1.)

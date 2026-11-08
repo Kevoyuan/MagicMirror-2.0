@@ -1,5 +1,6 @@
 """Entirely synthetic unit fixtures; never an actual Z-Anatomy review."""
 import copy
+from datetime import date
 import hashlib
 import json
 from pathlib import Path
@@ -54,7 +55,29 @@ class AssembleReviewedAtlasRigTests(unittest.TestCase):
                 "boneId": bone_id, "parentBoneId": None,
                 "anchorsReviewed": True
             })
+        component_license = {
+            "licenseId": "CC-BY-SA-4.0",
+            "originalSource": "Synthetic test triangles only",
+            "sourceMeshIdentity": "synthetic fixture path",
+            "attribution": "Synthetic fixture, not a real Z-Anatomy mesh",
+            "originReviewNotes": "Synthetic independently authored test mesh",
+            "evidenceURL": "https://example.org/license",
+            "humanReviewed": True,
+            "commercialReuseConfirmed": True,
+        }
+        for part, binding in zip(self.parts, self.bindings):
+            license_row = copy.deepcopy(component_license)
+            license_row["sourceMeshIdentity"] = part["sourceHierarchyPath"]
+            part["componentLicense"] = copy.deepcopy(license_row)
+            binding["componentLicense"] = copy.deepcopy(license_row)
+        license_header = {
+            "reviewerName": "Synthetic Fixture Reviewer",
+            "reviewDate": date.today().isoformat(),
+            "intendedUse": "commercial-distribution",
+            "reviewNotes": "Synthetic test only, no third-party model is approved",
+        }
         self.review = {
+            "componentLicenseReview": license_header,
             "reviewedForDistribution": True,
             "reviewedJointBindings": True,
             "reviewedRigHierarchy": True,
@@ -62,6 +85,7 @@ class AssembleReviewedAtlasRigTests(unittest.TestCase):
             "bindings": self.bindings
         }
         self.meta = {
+            "componentLicenseReview": license_header,
             "schemaVersion": 1,
             "sourceRepository": "https://github.com/example/synthetic",
             "sourceRevision": "a" * 40,
@@ -179,6 +203,15 @@ class AssembleReviewedAtlasRigTests(unittest.TestCase):
         (self.root / "skeleton_atlas.mmgeom").write_bytes(b"corrupt")
         with self.assertRaises(AssemblyError):
             self.build()
+
+    def test_rejects_license_drift_and_nc_component_on_rig_assembly(self):
+        self.meta["parts"][0]["componentLicense"]["licenseId"] = "CC-BY-NC-4.0"
+        self.write()
+        with self.assertRaisesRegex(AssemblyError, "rights ledger"):
+            self.build()
+        self.assertFalse(
+            (self.root / "anatomy_atlas_manifest.json").exists()
+        )
 
     def test_no_orphan_rig_written_on_failed_review(self):
         self.review["reviewedRigHierarchy"] = False

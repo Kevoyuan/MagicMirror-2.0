@@ -14,6 +14,9 @@ import math
 from pathlib import Path
 import struct
 
+from atlas_license_evidence import (
+    LicenseEvidenceError, verify_component_license_manifest,
+)
 from atlas_sources import (
     SOURCE_REPOSITORY as SOURCE_REPO,
     SOURCE_COMMIT as SOURCE_REVISION,
@@ -144,6 +147,13 @@ def verify_package(directory: Path, system: str = "skeleton"):
                 f"invalid triangle span: {path}")
         cursor += length
     require(cursor == count, "parts do not cover the complete binary")
+
+    # A general CC BY-SA header is not proof that each included mesh
+    # excludes the known NC third-party material; validate each part.
+    try:
+        verify_component_license_manifest(manifest)
+    except LicenseEvidenceError as exc:
+        raise PackageError(f"Component license evidence: {exc}") from exc
 
     # An optional GPU skinning sidecar is independently checked against
     # the exact exported source geometry and reviewed bone ID structure.

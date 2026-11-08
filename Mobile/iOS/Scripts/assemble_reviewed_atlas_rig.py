@@ -32,6 +32,10 @@ from pathlib import Path
 import re
 import struct
 
+from atlas_license_evidence import (
+    LicenseEvidenceError, compare_private_review_to_manifest,
+)
+
 SYSTEM_BASES = {
     "skeleton": "skeleton_atlas",
     "muscles": "muscles_atlas",
@@ -73,6 +77,10 @@ def assemble(package: Path, review_file: Path, system: str = "skeleton"):
     review = _read_json(Path(review_file))
     require(isinstance(meta, dict), "MMATLAS1 manifest must be an object")
     require(isinstance(review, dict), "Review must be an object")
+    try:
+        compare_private_review_to_manifest(review, meta)
+    except LicenseEvidenceError as exc:
+        raise AssemblyError(f"Component rights ledger failed: {exc}") from exc
     for flag in ("reviewedForDistribution", "reviewedJointBindings",
                  "reviewedRigHierarchy", "licenseReviewed"):
         require(review.get(flag) is True, f"Missing human review: {flag}")
@@ -150,6 +158,8 @@ def assemble(package: Path, review_file: Path, system: str = "skeleton"):
         require(isinstance(path, str) and path in records,
                 "Unmapped source mesh in anatomy model")
         bind = records[path]
+        require(entry.get("componentLicense") == bind.get("componentLicense"),
+                f"Source component rights changed after review: {path}")
         bone_id = bind["boneId"]
         require(bone_id not in ids, "Duplicate reviewed bone ID")
         ids.add(bone_id)

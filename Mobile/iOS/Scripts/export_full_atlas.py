@@ -36,6 +36,7 @@ from atlas_sources import (
     resource_base,
 )
 from atlas_rig_manifest import build_rig_manifest
+from atlas_license_evidence import reviewed_bindings_license_evidence
 
 MAX_TRIANGLE_VERTICES = 180000
 
@@ -119,6 +120,7 @@ def checked_review(path, system):
                 for k, v in mapping.items()
             ):
                 raise ValueError(f"Reviewed skin group mapping required: {path}")
+    reviewed_bindings_license_evidence(data, bindings)
     return data, {entry["sourceHierarchyPath"]: entry for entry in bindings}
 
 
@@ -126,6 +128,9 @@ def main():
     args = parse_args()
     verify_source(args.fbx, args.system)
     review, bindings = checked_review(args.review, args.system)
+    license_header, licensed_parts = reviewed_bindings_license_evidence(
+        review, review["bindings"]
+    )
     source_fbx_path, _, _ = SYSTEM_SOURCES[args.system]
     base = resource_base(args.system)
     model_file = f"{base}.mmgeom"
@@ -229,6 +234,7 @@ def main():
             raise ValueError(f"Empty or invalid triangles: {source_path}")
         parts.append({
             "sourceHierarchyPath": source_path,
+            "componentLicense": licensed_parts[source_path],
             "displayName": entry.get("displayName", obj.name),
             "group": entry["group"],
             "fromLandmark": entry["fromLandmark"],
@@ -263,6 +269,7 @@ def main():
         "modificationNotes": modification_notes,
         "reviewedForDistribution": True,
         "reviewedJointBindings": True,
+        "componentLicenseReview": license_header,
         "parts": parts,
     }
     (args.out / manifest_file).write_text(
