@@ -27,6 +27,7 @@ RESOURCE_MODEL_SUFFIXES = frozenset({
     ".pt", ".pth", ".ckpt", ".safetensors", ".weights", ".pb",
     ".fbx", ".obj", ".usdz", ".usd", ".usdc", ".usda", ".gltf", ".glb",
     ".dae", ".stl", ".ply", ".blend", ".mmgeom",
+    ".zip", ".7z", ".rar", ".tar", ".bin", ".safetensors",
 })
 MODEL_METADATA_SUFFIXES = (
     ".skinning.json", ".manifest.json", "_atlas_manifest.json",
@@ -82,6 +83,14 @@ def _assets_under(directory):
     binaries = {}
     for path in directory.rglob("*"):
         relative = path.relative_to(directory).as_posix()
+        if path.is_dir() and path.suffix.lower() in (
+            ".mlmodelc", ".mlpackage"
+        ):
+            # ML model packages are DIRECTORY assets and cannot be
+            # SHA-256 audited as a single file by this manifest format.
+            raise CommercialReleaseError(
+                f"Unreviewed model package directory: {relative}"
+            )
         if path.is_symlink():
             # Symlinks to frameworks may be present in an iOS .app;
             # their contents are not anatomy assets. Reject links that
@@ -128,7 +137,17 @@ def _approval(manifest):
     return record
 
 
-def _dependency_gate(manifest):
+def _dependency_gate(manifest, root):
+    project_file = root / "project.yml"
+    require(project_file.is_file(), "Pinned project.yml required")
+    project_text = project_file.read_text(encoding="utf-8")
+    pinned = re.search(
+        r"MediaPipeTasks:\\s*\\n\\s+url:\\s*https://github\\.com/google-ai-edge/mediapipe\\s*\\n\\s+revision:\\s*([0-9a-f]{40})",
+        project_text
+    )
+    require(pinned is not None and
+            pinned.group(1) == PINNED_MEDIAPIPE_REVISION,
+            "Actual SwiftPM MediaPipe source revision differs from clearance")
     records = manifest.get("runtimeDependencies")
     require(isinstance(records, list), "Third-party runtime dependency ledger required")
     seen = set()
@@ -257,7 +276,7 @@ def run(*, root=DEFAULT_ROOT, mode="source", bundle=None):
 
     manifest = _json(root / CLEARANCE_NAME)
     _approval(manifest)
-    _dependency_gate(manifest)
+    _dependency_gate(manifest, root)
     reviewed = _asset_gate(manifest)
     _check_present_asset_hashes(present, reviewed)
     _notices(scan_dir, manifest)
