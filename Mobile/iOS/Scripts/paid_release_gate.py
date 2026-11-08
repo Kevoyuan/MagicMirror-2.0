@@ -283,7 +283,7 @@ def _published_cc_model_gate(manifest, root, actual, approved):
         archive_name = entry.get("publicArchiveFile")
         digest = entry.get("publicArchiveSHA256")
         require(_nonempty(archive_name) and
-                re.fullmatch(r"[a-zA-Z0-9_.-]+\\.zip", archive_name) is not None,
+                re.fullmatch(r"[a-zA-Z0-9_.-]+\.zip", archive_name) is not None,
                 "Public archive must have a safe local basename")
         require(isinstance(digest, str) and
                 HEX_SHA256.fullmatch(digest) is not None,
