@@ -19,3 +19,14 @@ do not infer that all referenced anatomy assets share a single license.
 
 No source-code license is granted or inferred by this NOTICE. Choose an
 explicit license for the new codebase before public redistribution.
+
+## 2026-11-08 Web-first source boundary
+
+Newly authored source under `Web/` is MIT-licensed per
+`Web/LICENSE`, **without** changing the rights to old iOS/Unity/
+Python sources or third-party content. The public repo contains no
+Z-Anatomy bones/assets for the Web MVP. Google MediaPipe SDK is
+an independent Apache-2.0 package; Google-hosted
+`pose_landmarker_lite.task` weights are acquired locally only
+during developer staging, not committed in Git; their commercial
+web redistribution terms must be reviewed independently.

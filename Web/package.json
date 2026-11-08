@@ -11,8 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:code": "tsc --noEmit && vite build",
-    "build": "node scripts/check-assets.mjs && tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "build": "npm run check:assets && npm run check:release && tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "check:release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.2",

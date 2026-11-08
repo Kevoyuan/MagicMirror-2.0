@@ -1,125 +1,99 @@
 # MagicMirror 2.0
 
-**An offline-first, native anatomical AR mirror for iPhone (iOS).**
+**Open-source Web Anatomy Mirror · Leonardo's anatomical field notebook**
 
-Point your phone camera at one person and explore a translucent, educational **reference skeleton** that follows observed movement. MagicMirror aims to make human anatomy intuitive through motion—not simulate an X-ray, scan anyone's actual bones, or diagnose a medical condition.
+**New direction (November 8, 2026): Web first, open-source.** The native
+SwiftUI/Metal iOS project remains preserved but paused; Android
+development is canceled. Browser-based camera tracking and live 3D
+educational visualizations are now the active MVP.
 
-> **Development status · November 2026:** The active product is an **iPhone/iOS prototype**, not a released app. Source builds and XCTest targets compile in GitHub Actions for arm64 iOS Simulator. A physical iPhone camera experience, measured latency, a licensed and reviewed full anatomy atlas, and production distribution **have not yet been validated**. **Android development has been canceled and is not part of the product roadmap.**
+Open the page → allow the camera → point at one person → see a
+semi-transparent **Three.js 3D illustrative reference skeleton** follow
+confidently observed body parts. This is an educational demonstration,
+**not an X-ray, actual view of internal bones, calibrated bone scan or
+clinical diagnosis**.
 
-[Native iOS guide](Mobile/iOS/README.md) · [Product design](DESIGN.md) · [Active roadmap](Docs/MOBILE_NATIVE_ROADMAP.md) · [Architecture decision](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md)
+[Web MVP instructions](Web/README.md) ·
+[Active roadmap](Docs/WEB_MVP_ROADMAP.md) ·
+[Web architecture](Docs/WEB_ARCHITECTURE.md) ·
+[Platform decision](Docs/ADR-003_WEB_OPEN_SOURCE_FIRST.md) ·
+[Leonardo design](DESIGN.md)
 
-## Why MagicMirror?
+## Start the Web MVP locally
 
-Instead of a character-replacement social filter, MagicMirror is designed as an **interactive anatomy learning tool**. The camera remains the main canvas while a transparent anatomical reference follows body motion. Planned educational layers can let you inspect skeletal regions, then eventually muscles and organs—only after verified assets and layer alignment exist.
+Requires Node.js 22+, a webcam, WebGL and a browser served from
+`localhost` (public deployments require HTTPS).
 
-The intended experience is **open app → allow camera → point at a person → see a reference overlay → explore**, with no account, external camera, desktop companion, Python server, Unity runtime, wearable sensor, or cloud inference.
+```bash
+cd Web
+npm install
+npm run stage:assets
+npm run dev
+# Open http://127.0.0.1:5173/
+```
 
-## What's implemented today (iOS source)
+`npm run stage:assets` copies the pinned MediaPipe WASM files and
+retrieves a **SHA256-verified** developer-time PoseLandmarker task model.
+Third-party binaries are intentionally excluded from Git. This
+developer workflow is not proof that hosting those weights publicly
+is permitted: see [rights & privacy](Docs/WEB_LICENSE_AND_PRIVACY.md).
 
-| Area | Current implementation | Important limitation |
+**Available in Web source W0:** camera start/stop/flip, local
+single-person pose inference, partial arms/legs confidence gates,
+translucent Three.js GPU 3D procedural proxy, video crop and front
+mirror projection, Whole/Arms/Legs controls, opacity, overlay-only
+pause, Leonardo paper dock, permission/recovery/layer/help states,
+and synthetic geometry tests.
+
+**Not yet completed/verified:** real-browser webcam testing on
+multiple devices, Web Worker inference, exact camera↔overlay frame
+lock, medically reviewed anatomical skeleton, genuine Z-Anatomy
+assets/rights, articulated skinning/rig, physical 3D registration,
+section layers, hosted public release or independent Google model
+weight redistribution clearance.
+
+### Web CI versus a public release
+
+```bash
+cd Web
+npm run typecheck
+npm test
+npm run build:code  # CI source compile only; assets may be absent
+npm run build       # intentionally BLOCKED until model/privacy rights clear
+```
+
+The default `Web/release-clearance.json` remains explicitly
+unapproved. Do **not** deploy an incomplete `build:code` artifact as
+a functioning site. Public release must confirm third-party binary
+distribution rights, SDK metrics/privacy disclosure, and HTTPS camera
+behavior first.
+
+## Repository and platform boundaries
+
+| Source | Current status | Licensing |
 | --- | --- | --- |
-| Camera and tracking | SwiftUI, AVFoundation rear camera, on-device MediaPipe Tasks Pose Landmarker and 33 estimated landmarks | Single-person prototype; physical device accuracy unverified |
-| Partial-body detection | Confidence-gated arm/leg segments can appear without an entire body in view; separate partial vs torso-anchored tracking | Missing joints are **not** hallucinated; atlas registration needs reliable shoulder/hip anchors |
-| Live overlay | Native Metal translucent **3D procedural proxy** for limbs, plus stylized ribs, pelvis, and cranium where anchors allow | Illustrative shapes, **not** measured internal anatomy |
-| Frame association | Pose results matched to their exact capture timestamps and bounded source-video buffers for camera/Metal compositing | Timestamp consistency alone does not prove low camera-to-display latency |
-| Display controls | One-screen camera view, Whole / Arms / Legs focus, opacity, pause overlay, context guidance | Expanded anatomy-layer interface remains a **design proposal** |
-| Local diagnostics | Optional POSE FPS and p95 callback-gap HUD, hidden by default | Not camera FPS, display FPS, or motion-to-photon latency |
-| Atlas groundwork | Local asset manifests and hash/license gates, reference capture, coherent parent-child 3D rig planning, reviewed camera projection contract, weak-perspective same-frame research fit | No approved Z-Anatomy atlas bundled, no proven skinned/animated full anatomy on an iPhone |
+| `Web/` | **Active open-source product/MVP** | New Web source: MIT (`Web/LICENSE`) |
+| `Mobile/iOS/` | Frozen; preserve existing code and Draft PRs #49–#53 | Historical rights retained; not auto-relicensed |
+| `Unity/`, `Tools/` | Archived algorithm/rig/testing research | Historical rights retained |
+| Z-Anatomy/BodyParts3D models | **Not bundled in Web W0** | Mesh-specific attribution/CC terms and NC exclusions still apply |
+| Google MediaPipe Tasks + pose task | SDK used by Web; weights developer-staged locally | SDK and weight-license checks separate |
 
-The app processes camera and pose data on device. Model/package downloads are **development-time** steps; the installed prototype is designed not to upload camera frames.
+The core challenge remains: making a **genuinely reviewed, articulated
+3D anatomical model** move with human body observations. Replacing
+iOS with Web simplifies access and contribution, not the legal,
+kinematic or camera-registration science.
 
-## Architecture
+### History (preserved, not active)
 
-```text
-                         iPhone rear camera (AVFoundation)
-                                      |
-                         timestamped source frame
-                                      |
-                         MediaPipe Pose Landmarker
-                        (on-device, 33 estimated points)
-                                      |
-                      visibility / confidence / time gates
-                                      |
-                      +---------------+---------------+
-                      |                               |
-              Partial observed pose             Torso-anchored pose
-                      |                               |
-              Procedural limb proxy          Proxy + optional reviewed
-                      |                       atlas research pipeline
-                      +---------------+---------------+
-                                      |
-                    matched camera frame + Metal overlay
-                                      |
-                       SwiftUI camera / focus / opacity
-                           + optional local diagnostics
-```
+Earlier iOS milestones established a native AVFoundation, MediaPipe
+and Metal prototype; iOS arm64 Simulator code builds were previously
+recorded, but real iPhone camera behavior and a reviewed Z-Anatomy
+full skeleton were never signed off. Those sources remain available
+for future deliberate reactivation:
+[iOS archive](Mobile/iOS/README.md) ·
+[Paused mobile roadmap](Docs/MOBILE_NATIVE_ROADMAP.md) ·
+[Archived iOS decision](Docs/ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md).
 
-**Atlas research paths are intentionally distinct:** the reviewed hierarchy / bone-length-preserving rig and camera-projection contracts are not equivalent to the optional weak-perspective fitting experiment. Their source components do **not** mean a complete skinned Z-Anatomy character is currently running in the app. Invalid or insufficient calibration must fail closed rather than display confident-looking but unsupported anatomy.
-
-See the [iOS implementation guide](Mobile/iOS/README.md), [hierarchical rig contract](Docs/IOS_HIERARCHICAL_ATLAS_RIG.md), [weak-perspective research note](Docs/MOBILE_CAMERA_WEAK_PERSPECTIVE.md), and [local diagnostics specification](Docs/IOS_LOCAL_POSE_DIAGNOSTICS.md).
-
-## Build the iOS prototype
-
-**Developer requirements:** macOS, Xcode 16+, XcodeGen (`brew install xcodegen`), and an iPhone with iOS 17+ plus Apple signing for on-device installation.
-
-From the repository root:
-
-```bash
-bash Mobile/iOS/Scripts/fetch_model.sh
-cd Mobile/iOS
-xcodegen generate --spec project.yml
-open MagicMirror.xcodeproj
-```
-
-In Xcode, select the **MagicMirror** scheme, configure your Signing Team, choose your iPhone and run. Grant camera access. Point the **rear camera** toward one person: a confident observed limb can enable partial tracking; shoulders and hips provide the stronger torso anchor for complete-reference work.
-
-To **compile** the app and XCTest target for a Simulator (without a real camera):
-
-```bash
-xcodebuild -project MagicMirror.xcodeproj -scheme MagicMirror \
-  -configuration Debug -destination 'generic/platform=iOS Simulator' \
-  CODE_SIGNING_ALLOWED=NO build-for-testing
-```
-
-A successful `build-for-testing` compiles tests; it does **not** mean that XCTest ran on a device or that the overlay is visually aligned in live capture. The pinned MediaPipe package and pose model are acquired during developer setup, not by the installed app.
-
-## Visual direction: Leonardo's anatomical notebook
-
-[DESIGN.md](DESIGN.md) records the selected **Leonardo / anatomical field journal** direction: restrained parchment and sepia details, verdigris accents, a **small top status strip** and a compact bottom dock so the live camera occupies most of the display. A layered Z-Anatomy explorer (bone / muscle / organ / section views) is a **future UI concept**, not a shipped capability.
-
-The initial focus modes are **Whole / Arms / Legs**. Do not confuse these working controls with fully implemented anatomical layers.
-
-## Next release blockers
-
-1. **Physical iPhone validation:** actual rear-camera tracking, occlusion and turning, overlay placement, sustained FPS, power, thermal behavior and end-to-end latency.
-2. **Atlas review and integration:** source-model distribution rights, attribution, reviewed bone anchors, hierarchy/skinning, and real mesh-to-renderer integration. No model should appear as a verified human bone atlas before this review.
-3. **Camera/body registration:** independently measured or validated camera geometry and a reliable pose-to-image alignment quality gate; handle facing direction and incomplete pose safely.
-4. **Shipping readiness:** accessibility and on-device UX QA, signing, privacy review, TestFlight and release acceptance. There is no planned Android release.
-
-Follow [MOBILE_NATIVE_ROADMAP.md](Docs/MOBILE_NATIVE_ROADMAP.md) for the authoritative active plan. Historical desktop milestones are **not** the mobile release checklist.
-
-## Previous Unity / Python research (archived)
-
-The repository retains prior desktop experiments: a Python MediaPipe pose sidecar, timestamped pose/video contracts, Unity visualization, and C# anatomy-registration / kinematics tests. They are **research and regression references only**. They are **not dependencies** of the native mobile app, and no Windows/macOS product is planned.
-
-- [Archived architecture](Docs/ARCHITECTURE.md) · [desktop research roadmap](Docs/ROADMAP.md)
-- [Desktop Unity validation notes](Docs/UNITY_RUNTIME_VALIDATION.md)
-- [Python pose sidecar tests](Tools/pose_sidecar/tests) · [C# kinematics checks](Tools/ci/csharp_kinematics)
-- [Assets and licensing](Docs/ASSETS_AND_LICENSES.md) · [Notices](NOTICE.md)
-
-## Scientific and licensing disclaimer
-
-MagicMirror visualizes a **standard educational reference**, not an individual's internal anatomy. A single RGB camera cannot see actual bones or organs. The procedural proxy and estimated MediaPipe world points are not medical measurements, calibrated depth, X-ray, CT, MRI, or clinical diagnostics.
-
-**No reviewed Z-Anatomy / BodyParts3D anatomical asset is distributed with the iOS prototype.** Verify source-specific licenses and attribution before packaging derivatives. Do not assume the repository's *code* has an open-source license unless the owner adds an explicit LICENSE.
-
-## Live IK reference proxy (native iOS source)
-
-The iPhone camera-to-Metal source path now integrates stable
-on-device body-world reference capture with fixed-length, two-bone IK
-for confidently observed arms and legs. The renderer uses the resulting
-per-frame, geometry-only reference pose only when it matches the
-actual source video timestamp and dimensions; otherwise it keeps the
-existing partial-body procedural fallback. This does **not** unlock
-licensed Z-Anatomy, calibrate camera extrinsics or prove performance
-on a real iPhone. See the [iOS guide](Mobile/iOS/README.md).
+**Contributions:** start with `Web/`, respect the exact source and
+license boundaries, and never commit unreviewed Z-Anatomy meshes,
+unknown model weights, camera frames or personal data.

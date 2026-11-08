@@ -1,5 +1,17 @@
 # MagicMirror 2.0 — DESIGN.md
 
+> **Historical iOS-only design handoff — NOT the active platform.**
+> Owner decision **2026-11-08** switched MagicMirror to
+> **Web open source first**, preserving the native iOS project on hold.
+> The **Leonardo notebook visual language, compact header, spacious
+> camera and small parchment dock remain active across Web**.
+> Web implementation is under `Web/src/style.css` and `Web/src/main.ts`.
+> iOS-specific SwiftUI/safe-area details below remain useful design
+> research but do not establish current delivery requirements.
+> See `Docs/ADR-003_WEB_OPEN_SOURCE_FIRST.md` and
+> `Docs/WEB_MVP_ROADMAP.md`.
+
+
 **Version:** 1.3 — bilingual adaptive Leonardo interface (2026-11-07)  
 **Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  

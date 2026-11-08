@@ -1,3 +1,10 @@
+> **Archived Unity/Python architecture (2026-11-08).** The owner selected **Web open source first**.
+> The only active plan is [Web roadmap](WEB_MVP_ROADMAP.md) and
+> [Web architecture](WEB_ARCHITECTURE.md), governed by
+> [ADR-003](ADR-003_WEB_OPEN_SOURCE_FIRST.md). Preserve this file and
+> all historical source, but **do not resume native iOS/desktop
+> development or Android** without a new explicit decision.
+
 # MagicMirror 2.0 — Active Architecture (MediaPipe only)
 
 > **ARCHIVED desktop-only architecture.** The accepted product is **phone-only**: native iPhone/iOS camera → on-device MediaPipe → Metal skeleton rendering, with no Unity/Python runtime or Windows/macOS shipping plan. See [ADR-002](ADR-002_MOBILE_NATIVE_OFFLINE_FIRST.md) and the [active mobile roadmap](MOBILE_NATIVE_ROADMAP.md). The Python TCP → Unity pipeline documented below remains usable solely as research/algorithm reference. A native iOS source prototype exists, but physical-device validation remains pending.
