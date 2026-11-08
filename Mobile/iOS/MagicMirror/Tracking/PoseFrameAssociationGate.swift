@@ -4,6 +4,9 @@ import Foundation
 struct PoseFrameMetadata: Sendable {
     let imageSize: CGSize
     let intrinsics: BodyCameraIntrinsics?
+    /// Monotonic instant when AVFoundation delivered this exact buffer.
+    /// Never compare the video PTS against process uptime directly.
+    let captureCallbackUptime: Double?
 }
 
 /// Binds a MediaPipe asynchronous result to the exact *capture metadata*
@@ -48,7 +51,8 @@ final class PoseFrameAssociationGate {
     @discardableResult
     func register(
         timestampMilliseconds: Int, imageSize: CGSize,
-        intrinsics: BodyCameraIntrinsics? = nil
+        intrinsics: BodyCameraIntrinsics? = nil,
+        captureCallbackUptime: Double? = nil
     ) -> Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -63,7 +67,10 @@ final class PoseFrameAssociationGate {
         frameMetadata[timestampMilliseconds] = PoseFrameMetadata(
             imageSize: imageSize,
             intrinsics: intrinsics?.matches(image: imageSize) == true
-                ? intrinsics : nil
+                ? intrinsics : nil,
+            captureCallbackUptime: captureCallbackUptime.map {
+                $0.isFinite && $0 >= 0 ? $0 : nil
+            } ?? nil
         )
         pendingOrder.append(timestampMilliseconds)
 
