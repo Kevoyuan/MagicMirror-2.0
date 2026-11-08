@@ -50,7 +50,9 @@ def main():
     verify_source(args.fbx, args.system)
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    bpy.ops.import_scene.fbx(filepath=str(args.fbx))
+    status = bpy.ops.import_scene.fbx(filepath=str(args.fbx))
+    if "FINISHED" not in status:
+        raise RuntimeError("Blender could not import exact pinned FBX")
     rows = []
     for obj in bpy.data.objects:
         if obj.type != "MESH":
