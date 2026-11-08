@@ -469,3 +469,22 @@ See `Docs/IOS_ATLAS_SOURCE_RIGHTS_AND_REGISTRATION.md`. These advances
 are code-level engineering gates with synthetic tests, not authorized
 third-party model distribution, a shipped full anatomical rig, a measured
 iPhone overlay or the Mobile-3/4/5 physical exit gates.
+
+
+### Verified upstream skeletal FBX reality (2026-11-08)
+
+A **real** headless Blender 5 import of the exact pinned FBX succeeded
+[here](https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42474861536):
+**1,952 source meshes, 828,711 original vertices, 1,093,544 polygons,
+zero existing vertex-group-bearing mesh objects, and four geometrically
+problematic objects**. A text-only (all-unapproved) audit draft is
+available on that run for seven days. No original/derived 3D binary
+was redistributed by the workflow.
+
+The actual source data exposes an architecture gap: existing
+`AnatomyAtlasManifest` assumes one unique bone per mesh but the Metal
+skinning palette supports at most 256 bones. A human-reviewed
+many-mesh-to-one-joint binding redesign, authored armature/weights,
+documented model simplification and independently calibrated phone
+camera remain **required** before the entire model can run live.
+See `Docs/IOS_ACTUAL_ZANATOMY_SKELETON_AUDIT_2026-11-08.md`.
