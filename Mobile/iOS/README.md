@@ -742,3 +742,29 @@ source code alone is not proof that real atlas resources ship.
 
 Primary references: [DESIGN.md](../../DESIGN.md) and
 [UI user journeys](../../Docs/IOS_UI_USER_JOURNEYS.md).
+
+## Leonardo anatomy folio controls — runtime-gated UX
+
+The Systems sheet now reports the real fallback/registered model state:
+a small ready count, a textual live-state summary, **Solo** for a single
+currently available reviewed layer, **Reset** to the pose proxy, and
+per-visible-layer opacity with a percentage. Active/ready/locked state
+is derived from the actual current registration gate rather than the
+static source catalog or a previously requested toggle. The collapsed
+camera Layers control shows a small numeric marker only when registered
+systems actually participate in the composition.
+
+The Sections sheet provides a signed, dimensionless offset in units
+relative to shoulder width and an explicit **Center plane** action only
+if the native GPU 3D mesh surface clipping gate is open. It never claims
+a closed biological section or an observed internal tissue scan. All
+new actions and status copy have paired English and Simplified Chinese
+strings and accessible labels.
+
+`AnatomyLayerPresentation.soloSelection` enforces the reviewed
+registration gate in a testable pure function, used by
+`MirrorViewModel.soloAnatomyLayer`. Tests in
+`AnatomyLayerPresentationTests.swift` cover rejected unavailable
+layers and valid solo selection. The iOS build CI **compiles** the test
+target; physical camera, accessibility and actual live model selection
+must still be checked on a signed physical iPhone.
