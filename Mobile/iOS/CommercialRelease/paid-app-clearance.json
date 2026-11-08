@@ -25,8 +25,10 @@
   "blockers": [
     "Review actual licensing and distribution rights of the pinned pose_landmarker_lite.task WEIGHTS, distinct from the Apache-2.0 MediaPipe SDK.",
     "Review actual paid App Store redistribution/technical protection rights, SDK transitive dependencies and third-party notices.",
-    "Do not ship Z-Anatomy, BodyParts3D or CC BY-SA/NC mesh derivatives without an alternative written grant covering the exact works and Apple distribution.",
-    "Independently verify camera/privacy disclosures, on-device functionality, genuine educational claims and App Store submission rights."
+    "Do not ship Z-Anatomy/BodyParts3D geometry until every original mesh source is individually reviewed and either a separate written commercial grant OR the compliant CC BY-SA model-publication path with actual DRM/App Store review has cleared.",
+    "Independently verify camera/privacy disclosures, on-device functionality, genuine educational claims and App Store submission rights.",
+    "If using CC BY-SA without contacting original authors, publish exact reviewed derivative model bytes + usable OBJ + attribution/modifications in a freely accessible, no-login/no-DRM separate ZIP; independently review App Store compatibility; do NOT assume the separate archive cures App Store restrictions."
   ],
-  "_templateComment": "An approval bool is NOT legal permission. Preserve actual evidence privately, record its reference here, and only approve after an independent human review. No third-party anatomy is authorized by this file."
+  "_templateComment": "No real asset is authorized. CC BY-SA model-only distribution is a conditional legal pathway, not a self-granted license or a bypass of the original per-mesh source/DRM review. Release remains locked.",
+  "shareAlikePublications": []
 }

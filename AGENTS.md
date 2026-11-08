@@ -242,3 +242,25 @@ and `Mobile/iOS/CommercialRelease/paid-app-clearance.json`.
 Product Monetization/StoreKit implementation is a separate milestone.
 A passing synthetic CI test proves technical validation only, not
 real legal clearance or permission to sell.
+
+## 8. Owner-selected conditional CC BY-SA anatomy distribution (2026-11-08)
+
+The owner prefers **paid closed-source iPhone app + separate public
+CC BY-SA licensed model derivative** *without seeking an individual
+commercial grant*, **only if** all original incorporated skeletal
+meshes are lawfully CC-commercial and Apple distribution can satisfy
+the license. Do not imply that a separate DRM-free ZIP alone solves
+Apple's effective-technological-measures restrictions; independent
+IP legal signoff remains mandatory. Never bundle NC/ND/unknown
+components or infer all 1,952 real mesh objects are cleared.
+
+In the CC path, `Mobile/iOS/Scripts/sharealike_publication.py`
+emits model-only ZIP, readable OBJ, per-mesh provenance, credits,
+modification notes and exact hashes. `paid_release_gate.py` must
+verify the **real bundled model** equals the public model, and
+`CCModelAttribution.json` must provide the **same approved public URL
+and digest** via native Field Notes; keep paid Release blocked until
+actual source review, verified public accessibility, independent
+Apple DRM review and PoseLandmarker weights rights have cleared.
+Do not mark hypothetical test fixtures or metadata flags as
+real authorization. Scope is iOS only.

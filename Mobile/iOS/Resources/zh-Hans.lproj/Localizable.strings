@@ -112,3 +112,9 @@
 "MagicMirror is for educational exploration. Do not use it to assess injuries, diagnose conditions or measure actual skeletal geometry." = "MagicMirror 仅用于解剖学习，不应用于伤情评估、诊断或测量真实骨骼位置。";
 "Show local tracking diagnostics" = "显示本地追踪诊断";
 "Displays pose callback cadence and delivery gaps, not verified camera FPS, total latency or anatomical accuracy." = "仅显示姿态回调速率与间隔，不代表真实相机帧率、总延迟或解剖精度。";
+"OPEN ANATOMY MODEL & CREDITS" = "开放解剖模型与版权信息";
+"Z-Anatomy and BodyParts3D" = "Z-Anatomy 与 BodyParts3D";
+"The reviewed anatomical model is licensed separately under CC BY-SA 4.0. MagicMirror's own app code is not part of the model release." = "已审核的三维解剖模型单独按 CC BY-SA 4.0 授权开放；MagicMirror 应用本身的代码不包含在模型开放范围内。";
+"Download reusable 3D model and modifications" = "下载可复用的三维模型及修改记录";
+"Open the public, DRM-free Z-Anatomy derivative model archive" = "打开公开且无 DRM 限制的 Z-Anatomy 衍生模型包";
+"CC BY-SA 4.0 license" = "CC BY-SA 4.0 许可证";

@@ -472,3 +472,19 @@ a paid protected App Store binary. Avoid unapproved conversions or
 misattributed derivatives. Compare a lawfully cleared direct OBJ
 pipeline against commissioning independently authored iOS rigged
 geometry. See `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.
+
+## Selected CC BY-SA commercial asset route (2026-11-08)
+
+Implement separate, publicly downloadable **model geometry** and
+human-reviewed author/rights evidence, while preserving independent
+closed-source paid iOS app code. A new synthetic-tested
+`sharealike_publication.py` produces exact-model CC BY-SA ZIP +
+readable OBJ, complete per-mesh provenance, credits, modification
+record and SHA ledger. `paid_release_gate.py` verifies that the actual
+app atlas is byte-for-byte the same geometry as the public model;
+the Field Notes screen conditionally shows the exact public download
+URL only when a reviewed atlas is bundled and the release notice is
+present. This is conditional **legal/engineering preparation**, not
+permission to ship. Public CC license terms do not override third-party
+NC nor eliminate Apple DRM incompatibility; independent review is
+still required. See `Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`.

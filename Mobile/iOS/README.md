@@ -753,3 +753,22 @@ BodyParts3D release 4.0 is now marked CC BY 4.0; it is **not** the
 same byte-level or derivative-rights source as Z-Anatomy's original
 FBX. App Store technical restrictions still require review.
 See `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.
+
+## No-extra-permission CC BY-SA anatomy publication workflow
+
+For properly licensed Z-Anatomy **skeleton** meshes only, a conditional
+alternative to separate author permission now exists:
+a separately published CC BY-SA 4.0 geometry ZIP with a reusable OBJ,
+full original source/mesh/author credits and modification history.
+It does not include or license app source code, camera frames or ML
+weights. The app's optional Field Notes panel automatically shows
+actual model authors, license and an unprotected model download URL
+when a matching `CCModelAttribution.json` is present.
+
+The standard Xcode Release gate refuses an unreviewed atlas, altered
+published pack, missing in-app download, unknown/NC source part, or a
+missing independent Apple effective-DRM review. **The public archive
+itself does not prove App Store compliance.** No real Z-Anatomy model
+has cleared the gate, no valid archive/link is published and this
+does not enable skeletal atlas rendering. See
+[paid distribution policy](../../Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md).

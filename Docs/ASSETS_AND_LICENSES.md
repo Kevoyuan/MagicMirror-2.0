@@ -52,3 +52,16 @@ asset/NOTICE check against the actual app bundle. The current
 `Mobile/iOS/CommercialRelease/paid-app-clearance.json` is **BLOCKED**.
 This is the correct default. Research source is not App Store release.
 See `Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`.
+
+## Conditional no-individual-permission commercial model path
+
+An already granted **CC BY-SA 4.0** license can permit monetized
+redistribution of properly licensed model geometry without a new
+individual grant. The MagicMirror paid Release gate supports
+`cc-by-sa-public-license` as a narrowly scoped reviewed alternative,
+with a verified public model-only CC BY-SA ZIP and usable OBJ. However,
+the full per-mesh rights chain must be confirmed; upstream NC elements
+remain excluded and Apple App Store effective technical measures may
+still be incompatible. Making a parallel free download is **not
+automatically** a legal DRM solution. See
+`Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`.

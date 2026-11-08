@@ -15,3 +15,7 @@ Resources/anatomy_atlas_manifest.json
 Resources/*.mmgeom
 Resources/*.manifest.json
 Resources/*.ATTRIBUTION.txt
+
+# Local model-only CC BY-SA public release bytes and staged app notice.
+CommercialRelease/PublishedPacks/
+Resources/CCModelAttribution.json

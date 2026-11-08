@@ -112,3 +112,9 @@
 "MagicMirror is for educational exploration. Do not use it to assess injuries, diagnose conditions or measure actual skeletal geometry." = "MagicMirror is for educational exploration. Do not use it to assess injuries, diagnose conditions or measure actual skeletal geometry.";
 "Show local tracking diagnostics" = "Show local tracking diagnostics";
 "Displays pose callback cadence and delivery gaps, not verified camera FPS, total latency or anatomical accuracy." = "Displays pose callback cadence and delivery gaps, not verified camera FPS, total latency or anatomical accuracy.";
+"OPEN ANATOMY MODEL & CREDITS" = "OPEN ANATOMY MODEL & CREDITS";
+"Z-Anatomy and BodyParts3D" = "Z-Anatomy and BodyParts3D";
+"The reviewed anatomical model is licensed separately under CC BY-SA 4.0. MagicMirror's own app code is not part of the model release." = "The reviewed anatomical model is licensed separately under CC BY-SA 4.0. MagicMirror's own app code is not part of the model release.";
+"Download reusable 3D model and modifications" = "Download reusable 3D model and modifications";
+"Open the public, DRM-free Z-Anatomy derivative model archive" = "Open the public, DRM-free Z-Anatomy derivative model archive";
+"CC BY-SA 4.0 license" = "CC BY-SA 4.0 license";

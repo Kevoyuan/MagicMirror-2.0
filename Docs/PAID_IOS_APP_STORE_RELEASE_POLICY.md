@@ -192,3 +192,80 @@ and mobile pipeline; no actual OBJ has yet been imported or granted
 release clearance.
 
 Compare the choices: `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.
+
+## Alternative: PAID closed-source app + separately published CC BY-SA anatomy
+
+**Owner-selected plan (2026-11-08):** if the *exact included* skeletal
+parts are genuinely CC BY-SA 4.0 or compatible (and have no additional
+NC/ND/unknown rights), a separate individual copyright grant from
+Z-Anatomy authors may not be required. A CC public license already
+permits commercial use; payment for the **app** and independent
+licensing of adapted **model geometry** are different questions.
+Whether the combination is legally separable and App Store DRM
+compliant remains a matter for competent independent IP review.
+
+This path is **an alternative, not a replacement**, for the original
+written commercial grant path. The release gate now accepts
+`rightsBasis: "cc-by-sa-public-license"` **only for named, reviewed
+anatomy model + manifest + (where relevant) skinning files**.
+Every original source mesh must carry a human-reviewed origin, real
+HTTPS license evidence, attribution, original identity and confirmed
+commercial reuse. NC/NC-SA/ND/unknown components cannot be converted
+to BY-SA merely by exporting or relabelling files.
+
+**Actionable process:**
+
+1. Obtain the pinned *source* skeletal FBX for research; run the
+   actual source inventory from Draft PR #51. Independently inspect
+   **all actual incorporated original mesh sources**, including
+   inherited third-party works. The base FBX has 1,952 source meshes,
+   no existing skin weights, and is not yet a mobile rig.
+2. Complete genuine rights-chain and human anatomical/rig audits.
+   Keep the source review file and evidence; the source review per
+   mesh will be embedded into the actual exported atlas manifest.
+3. Prepare exact authored `skeleton_atlas.mmgeom`, matching
+   `skeleton_atlas.manifest.json`, and reviewed skinning sidecar
+   (if shipped), plus detailed credits and human modification log.
+4. Generate a model-only, distributable ZIP and usable OBJ that anyone
+   may reuse under CC BY-SA 4.0:
+   ```bash
+   python3 Mobile/iOS/Scripts/sharealike_publication.py \
+     --model /private/reviewed/skeleton_atlas.mmgeom \
+     --manifest /private/reviewed/skeleton_atlas.manifest.json \
+     --skinning /private/reviewed/skeleton_atlas.skinning.json \
+     --attribution /private/reviewed/ATTRIBUTION.md \
+     --modifications /private/reviewed/MODIFICATIONS.md \
+     --output Mobile/iOS/CommercialRelease/PublishedPacks/skeleton-open-v1.zip
+   ```
+   Omit `--skinning` only if the shipped model has no skinning
+   sidecar. No original FBX, proprietary app source code or third-party
+   PoseLandmarker weights are included in this model-only ZIP.
+5. Publish the **exact generated ZIP** at a persistent public HTTPS
+   direct download, usable without login, payment, DRM or app purchase.
+   This is a **necessary** practical step, NOT sufficient proof that
+   Apple imposes no prohibited effective technical measures on the
+   app-bundled model.
+6. Obtain independent legal review of the full original mesh rights
+   chain and **actual** Apple App Store/DRM distribution conditions.
+   Record source evidence and verified availability/date/URL/ZIP
+   digest in `CommercialRelease/paid-app-clearance.json`;
+   use the same `shareAlikePublicationId` for each model,
+   manifest and skinning asset ledger row.
+7. After signed real review, stage source citations and the public
+   download link into the app's Field Notes:
+   ```bash
+   python3 Mobile/iOS/Scripts/stage_cc_model_attribution.py
+   ```
+   It writes `Resources/CCModelAttribution.json`, which is required
+   to **exactly** match the human-approved public URL and ZIP SHA.
+8. Run paid Release build and inspect the exact exported `.app` /
+   signed archive. The existing gate checks original model SHA-256,
+   per-mesh review, public archive exact bytes, readable OBJ,
+   license/credits/modifications, SDK weights rights, and in-app
+   public link identity. All are still subject to real human review.
+
+**Today**: `releaseApproved: false`, no reviewed public model package,
+no model download URL, no independent DRM clearance; Release remains
+**intentionally blocked**. Debug research, original UI and procedural
+proxy continue. This route does not by itself finish bone rigging,
+registration, hardware testing or a lawful App Store launch.
