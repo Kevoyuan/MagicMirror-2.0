@@ -171,3 +171,16 @@
 "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING" = "SOURCE-REVIEWED REFERENCE · NOT PERSONAL IMAGING";
 "Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live." = "Open Adjust to change reference opacity; Pause hides the overlay but keeps the camera preview live.";
 "The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available." = "The Layers folio shows anatomy systems and section planes. Additional systems unlock only when approved local models and camera registration are available.";
+"Explore only the anatomical systems verified for the current camera view." = "Explore only the anatomical systems verified for the current camera view.";
+"ready" = "ready";
+"Reference proxy on camera" = "Reference proxy on camera";
+"Reviewed systems selected" = "Reviewed systems selected";
+"Only the pose-driven reference is visible" = "Only the pose-driven reference is visible";
+"Only currently registered meshes are counted" = "Only currently registered meshes are counted";
+"Reset" = "Reset";
+"Return to the illustrative pose reference" = "Return to the illustrative pose reference";
+"Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered." = "Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered.";
+"Solo" = "Solo";
+"Show only this registered anatomy system" = "Show only this registered anatomy system";
+"Center plane" = "Center plane";
+"Reset the section plane to its center" = "Reset the section plane to its center";
