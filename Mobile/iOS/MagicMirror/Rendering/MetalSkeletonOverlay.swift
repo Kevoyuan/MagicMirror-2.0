@@ -22,6 +22,7 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
     var calibratedAtlasBatches: [CalibratedAtlasDrawBatch] = []
     var selectedAtlasNodePath: String? = nil
     var selectedAtlasSystem: AnatomyDisplayLayer? = nil
+    var onSourceSubmissionReport: ((SourceFrameSubmissionReport) -> Void)? = nil
 
     func makeCoordinator() -> Renderer { Renderer() }
 
@@ -53,7 +54,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             skinnedAtlasBatches: skinnedAtlasBatches,
             calibratedAtlasBatches: calibratedAtlasBatches,
             selectedAtlasNodePath: selectedAtlasNodePath,
-            selectedAtlasSystem: selectedAtlasSystem
+            selectedAtlasSystem: selectedAtlasSystem,
+            onSourceSubmissionReport: onSourceSubmissionReport
         )
         view.draw()
     }
@@ -82,6 +84,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
         private var calibratedAtlasBatches: [CalibratedAtlasDrawBatch] = []
         private var selectedAtlasNodePath: String?
         private var selectedAtlasSystem: AnatomyDisplayLayer?
+        private var submissionMonitor = SourceFrameSubmissionMonitor()
+        private var onSourceSubmissionReport: ((SourceFrameSubmissionReport) -> Void)?
 
         func prepare(device: MTLDevice?) {
             guard let device else { return }
@@ -183,7 +187,8 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             skinnedAtlasBatches: [SkinnedAtlasDrawBatch],
             calibratedAtlasBatches: [CalibratedAtlasDrawBatch],
             selectedAtlasNodePath: String?,
-            selectedAtlasSystem: AnatomyDisplayLayer?
+            selectedAtlasSystem: AnatomyDisplayLayer?,
+            onSourceSubmissionReport: ((SourceFrameSubmissionReport) -> Void)?
         ) {
             self.alignedFrame = alignedFrame
             self.proxyPose = proxyPose
@@ -195,6 +200,10 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             self.calibratedAtlasBatches = calibratedAtlasBatches
             self.selectedAtlasNodePath = selectedAtlasNodePath
             self.selectedAtlasSystem = selectedAtlasSystem
+            self.onSourceSubmissionReport = onSourceSubmissionReport
+            if alignedFrame == nil {
+                submissionMonitor.reset()
+            }
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -554,6 +563,16 @@ struct MetalSkeletonOverlay: UIViewRepresentable {
             encoder.endEncoding()
             buffer.present(drawable)
             buffer.commit()
+            // This is CPU submission, NOT GPU completion or screen light.
+            // A repeated SwiftUI redraw of one image is never re-sampled.
+            if canDrawAnatomy, let frame = alignedFrame,
+               let report = submissionMonitor.observe(
+                timestampMilliseconds: frame.pose.timestampMilliseconds,
+                captureCallbackUptime: frame.captureCallbackUptime,
+                submittedUptime: ProcessInfo.processInfo.systemUptime
+               ) {
+                onSourceSubmissionReport?(report)
+            }
         }
     }
 }
