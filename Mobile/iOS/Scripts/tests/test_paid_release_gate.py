@@ -110,7 +110,7 @@ class PaidReleaseGateTests(unittest.TestCase):
         self.manifest["authorizedAssets"] = [self.model_record]
         self.manifest["runtimeDependencies"][0]["redistributionReviewed"] = False
         with self.assertRaisesRegex(
-            gate.CommercialReleaseError, "SDK dependency"
+            gate.CommercialReleaseError, "commercial dependency"
         ):
             self.pass_release()
 
