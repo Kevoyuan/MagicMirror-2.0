@@ -139,7 +139,7 @@ class PaidReleaseGateTests(unittest.TestCase):
         ):
             self.pass_release()
         with self.assertRaisesRegex(
-            gate.CommercialReleaseError, "Unreviewed 3D/ML"
+            gate.CommercialReleaseError, "unapproved="
         ):
             gate.run(root=self.root, mode="source")
 
