@@ -433,3 +433,21 @@ GPU-skinned anatomical layers in one render pass. Missing masks
 preserve existing source-matched rendering without fabricating
 foreground silhouettes. This improves reference-geometry background
 clipping but is **not** true internal-tissue depth occlusion.
+
+
+## Mobile-5 exact-frame source-to-GPU-submission timing (source update, 2026-11-08)
+
+Added a device-local, strictly source-frame-associated **capture callback
+receipt → Metal command queue submission** p50/p95 measurement window.
+The capture callback attaches monotonic uptime to the same sample buffer
+later consumed by MediaPipe and Metal. Repeated drawable submissions
+of the same source timestamp do not inflate sample counts; bad timing,
+pauses, source loss and capture restarts reset or reject samples. The
+existing pose-callback delivery metric remains separate. A small
+opt-in HUD reports submission-age p95 rather than claiming display FPS.
+
+The measurement is a **CPU-side pipeline age surrogate only**. It omits
+sensor exposure, human movement onset, GPU completion and visible screen
+illumination. This is not physical-device validation, the >=30 displayed
+FPS or <=150ms motion-to-display acceptance result, or proof of a
+licensed, registered Z-Anatomy reference model. No Android work planned.

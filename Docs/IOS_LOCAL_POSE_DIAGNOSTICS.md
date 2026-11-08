@@ -35,10 +35,36 @@ Metrics are published at most once every 1 second to avoid invalidating
 the whole SwiftUI screen at camera frame rate. Long callback gaps >=2 s,
 tracking loss and session interruption reset the sample window.
 
+## Camera callback → Metal submission (source-only diagnostic)
+
+The exact AVFoundation frame metadata now records
+`ProcessInfo.processInfo.systemUptime` when its capture callback is
+received. This monotonic stamp survives the same-result MediaPipe frame
+association and the SwiftUI pose filter, and reaches the Metal renderer
+alongside that same `CVPixelBuffer`. The renderer reads the *same*
+process uptime clock immediately after `MTLCommandBuffer.commit()`.
+
+The separate **CAM callback → GPU submit p95** indicator reports the
+nearest-rank 95th percentile of elapsed times, once per second, across
+at most 120 unique eligible source frames; repeated `MTKView.draw()`
+calls for the same captured frame never inflate this count. Unmatched
+frames, nonfinite timestamps, callbacks from another capture session
+and ages over one second are not counted. Tracking loss, pause and
+session interruption reset the reported window. These are anonymous
+bounded timing samples, not recorded frames or person attributes.
+
+**Interpretation:** This is a lower-bound, CPU-side pipeline-age
+*surrogate*. It begins at AVFoundation sample callback delivery,
+not sensor exposure or human movement onset; it ends at a CPU Metal
+command submission, not GPU completion, scanout or photons. It
+cannot by itself establish the roadmap's 150 ms movement-to-display
+acceptance gate, but helps diagnose processing stalls on a real iPhone.
+
 ## Scope of the user-visible diagnostic
 
-The indicator intentionally says "Local delivery estimate — not display
-FPS or camera latency." This avoids overstating sample-only performance.
+The UI explicitly separates pose callback cadence from source callback
+→ Metal queue submission age. Neither indicator is display FPS,
+exposure-to-photon delay or motion-to-photon latency.
 It is not a scientific acceptance result until run with a named physical
 iPhone and a reproducible motion sequence.
 

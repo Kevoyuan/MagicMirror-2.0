@@ -713,3 +713,21 @@ does not determine hand-over-rib depth, occluded interior anatomy,
 true tissue locations, LiDAR occlusion or medical X-ray structure.
 Precise segmentation orientation/quality and thermal performance
 still need physical iPhone review before release.
+
+
+## Source-frame delivery to Metal submission diagnostics (Mobile-5)
+
+The optional on-device diagnostics now report both **pose callback
+cadence** and a distinct **p95 camera callback → Metal submission age**
+for the *exact* source BGRA frame. A monotonic capture-callback uptime
+travels with frame-gated metadata through MediaPipe, the filtered
+snapshot and the Metal video pass; elapsed time is sampled just after
+`MTLCommandBuffer.commit()`. A repeated UI redraw of the same frame
+is not another sample. The bounded, local window is reset across camera
+loss, pause and session restarts, without retaining photos or landmarks.
+
+This is an engineering timing surrogate, **not** display FPS, sensor
+exposure latency, GPU-completion time, motion-to-photon p95, or proof
+that the 30 FPS/150 ms on-device exit gates have passed. Validate on a
+physical iPhone with recorded capture/visual evidence. Detailed
+semantics and edge cases: `Docs/IOS_LOCAL_POSE_DIAGNOSTICS.md`.

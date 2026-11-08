@@ -206,6 +206,17 @@ struct MirrorScreen: View {
                 Text("Collecting pose callback intervals…")
                     .font(.caption)
             }
+            if let report = model.sourceSubmissionReport {
+                Text(String(
+                    format: "CAM callback → GPU submit p95 %.0f ms (%d frames)",
+                    report.p95CallbackToSubmitMilliseconds,
+                    report.submittedFrames
+                ))
+                .font(.system(.caption2, design: .monospaced))
+            } else {
+                Text("Collecting camera → Metal submit intervals…")
+                    .font(.caption2)
+            }
             if let candidate = model.automaticCameraCandidate {
                 Text(String(
                     format: "AUTO CAMERA candidate · %d joints · p90 %.1f%%",
@@ -220,7 +231,7 @@ struct MirrorScreen: View {
             Text("Unreviewed pose hypothesis · never anatomical calibration")
                 .font(.system(.caption2))
                 .foregroundStyle(.white.opacity(0.7))
-            Text("Local delivery estimate · not display FPS or camera latency")
+            Text("Callback → Metal queue, not exposure, GPU finish or screen photons")
                 .font(.system(.caption2))
                 .foregroundStyle(.white.opacity(0.7))
         }

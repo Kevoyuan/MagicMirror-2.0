@@ -68,9 +68,9 @@ final class PoseFrameAssociationGate {
             imageSize: imageSize,
             intrinsics: intrinsics?.matches(image: imageSize) == true
                 ? intrinsics : nil,
-            captureCallbackUptime: captureCallbackUptime.map {
+            captureCallbackUptime: captureCallbackUptime.flatMap {
                 $0.isFinite && $0 >= 0 ? $0 : nil
-            } ?? nil
+            }
         )
         pendingOrder.append(timestampMilliseconds)
 

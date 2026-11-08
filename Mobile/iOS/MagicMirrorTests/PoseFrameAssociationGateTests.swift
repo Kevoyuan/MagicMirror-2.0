@@ -111,6 +111,34 @@ final class PoseFrameAssociationGateTests: XCTestCase {
         XCTAssertNotNil(gate.consume(timestampMilliseconds: 1100))
     }
 
+    func testSourceCallbackUptimeBelongsToSameMatchedFrame() {
+        let gate = PoseFrameAssociationGate()
+        gate.reset(active: true)
+        XCTAssertTrue(gate.register(
+            timestampMilliseconds: 1000, imageSize: portrait,
+            captureCallbackUptime: 10.11
+        ))
+        XCTAssertTrue(gate.register(
+            timestampMilliseconds: 1033, imageSize: portrait,
+            captureCallbackUptime: 10.15
+        ))
+        let first = gate.consumeMetadata(timestampMilliseconds: 1000)
+        XCTAssertEqual(first?.captureCallbackUptime ?? -1, 10.11,
+                       accuracy: 0.00001)
+        let second = gate.consumeMetadata(timestampMilliseconds: 1033)
+        XCTAssertEqual(second?.captureCallbackUptime ?? -1, 10.15,
+                       accuracy: 0.00001)
+        XCTAssertNil(gate.consumeMetadata(timestampMilliseconds: 1000))
+
+        XCTAssertTrue(gate.register(
+            timestampMilliseconds: 1066, imageSize: portrait,
+            captureCallbackUptime: .nan
+        ))
+        XCTAssertNil(gate.consumeMetadata(
+            timestampMilliseconds: 1066
+        )?.captureCallbackUptime)
+    }
+
     func testRejectsNonfiniteAndZeroDimensions() {
         let gate = PoseFrameAssociationGate()
         gate.reset(active: true)
