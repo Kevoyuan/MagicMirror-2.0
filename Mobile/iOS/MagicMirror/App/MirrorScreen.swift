@@ -471,10 +471,35 @@ struct MirrorScreen: View {
     }
 
     private var layersButton: some View {
-        LeonardoActionButton("Layers", symbol: "square.3.layers.3d") {
+        let activeCount = model.enabledAnatomyLayers
+            .intersection(model.readyAnatomyLayers).count
+        return LeonardoActionButton(
+            "Layers", symbol: "square.3.layers.3d"
+        ) {
             presentedSheet = .anatomy
         }
-        .accessibilityHint("Open anatomy catalogue; unverified layers are unavailable")
+        .overlay(alignment: .topTrailing) {
+            if activeCount > 0 {
+                Text(activeCount, format: .number)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(LeonardoPalette.ivory)
+                    .padding(.horizontal, 5)
+                    .frame(minHeight: 17)
+                    .background(LeonardoPalette.verdigris,
+                                in: Capsule())
+                    .offset(x: 3, y: -5)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+            }
+        }
+        .accessibilityValue(LocalizedStringKey(
+            activeCount > 0
+                ? "Reviewed anatomy visible"
+                : "Reference proxy visible"
+        ))
+        .accessibilityHint(
+            "Open anatomy catalogue; unverified layers are unavailable"
+        )
     }
 
     private var pauseButton: some View {
