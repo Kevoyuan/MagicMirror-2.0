@@ -21,6 +21,10 @@ import json
 from pathlib import Path
 import re
 import sys
+import zipfile
+from urllib.parse import urlparse
+
+from sharealike_publication import review_atlas_manifest, verify_pack_bytes, ShareAlikeError
 
 RESOURCE_MODEL_SUFFIXES = frozenset({
     ".task", ".tflite", ".onnx", ".mlmodel", ".mlpackage", ".mlmodelc",
@@ -38,7 +42,8 @@ PINNED_POSE_SHA256 = (
 )
 PINNED_MEDIAPIPE_REVISION = "2df17d66d380f74884c1505a7e7ac677020c3980"
 RIGHTS_BASES = frozenset({
-    "original-owned", "written-copyright-assignment", "written-commercial-grant"
+    "original-owned", "written-copyright-assignment", "written-commercial-grant",
+    "cc-by-sa-public-license"
 })
 THIRD_PARTY_DEPENDENCIES = frozenset({"MediaPipeTasksVision"})
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
@@ -202,11 +207,24 @@ def _asset_gate(manifest):
             s in upstream for s in ("z-anatomy", "bodyparts3d", "cc-by-sa", "cc-by-nc")
         )
         if third_party_anatomy:
-            require(item["rightsBasis"] == "written-commercial-grant" and
-                    item.get("underlyingSourceRightsReviewed") is True and
-                    _nonempty(item.get("alternativeWrittenGrantReference")),
-                    f"Z-Anatomy/BodyParts3D/CC-licensed material requires"
-                    f" separately reviewed alternate written grant: {path}")
+            if item["rightsBasis"] == "cc-by-sa-public-license":
+                require(path.endswith((".mmgeom", ".manifest.json",
+                                       ".skinning.json")) and
+                        item.get("licenseIdentifier") == "CC-BY-SA-4.0" and
+                        item.get("underlyingSourceRightsReviewed") is True and
+                        _nonempty(item.get("underlyingSourceRightsEvidenceReference")) and
+                        _nonempty(item.get("shareAlikePublicationId")),
+                        f"Unverified CC BY-SA anatomical source rights: {path}")
+            else:
+                require(item["rightsBasis"] == "written-commercial-grant" and
+                        item.get("underlyingSourceRightsReviewed") is True and
+                        _nonempty(item.get("alternativeWrittenGrantReference")),
+                        f"Z-Anatomy/BodyParts3D/CC-licensed material requires"
+                        f" separately reviewed alternate written grant or"
+                        f" verified public CC BY-SA model distribution: {path}")
+        else:
+            require(item["rightsBasis"] != "cc-by-sa-public-license",
+                    f"Cannot use CC BY-SA anatomy path for unrelated asset: {path}")
         if path.endswith((".mmgeom", ".usdz", ".glb", ".gltf", ".fbx")):
             require(item.get("anatomyAndRigReviewed") is True and
                     _nonempty(item.get("originalMeshRightsAuditSHA256")) and
@@ -220,6 +238,106 @@ def _asset_gate(manifest):
     require(by_path["pose_landmarker_lite.task"]["sha256"] == PINNED_POSE_SHA256,
             "Pinned MediaPipe task model digest changed")
     return by_path
+
+
+def _published_cc_model_gate(manifest, root, actual, approved):
+    """Match each reviewed model to a real locally verified public ZIP.
+
+    A public archive does NOT itself answer the Apple DRM question.
+    A documented independent App Store legal review remains mandatory.
+    """
+    records = manifest.get("shareAlikePublications", [])
+    require(isinstance(records, list), "Invalid public share-alike records")
+    cc_assets = {
+        k: v for k, v in approved.items()
+        if v.get("rightsBasis") == "cc-by-sa-public-license"
+    }
+    require(bool(records) == bool(cc_assets),
+            "Every CC BY-SA anatomy asset needs exactly one publication")
+    used = set()
+    handled_paths = set()
+    for entry in records:
+        require(isinstance(entry, dict), "Invalid public model record")
+        rid = entry.get("id")
+        require(_nonempty(rid) and rid not in used, "Duplicate/blank release ID")
+        used.add(rid)
+        model = entry.get("modelFile")
+        rights = entry.get("manifestFile")
+        skinning = entry.get("skinningFile")
+        names = {model, rights}
+        if skinning is not None:
+            names.add(skinning)
+        require(all(_nonempty(name) and "/" not in name and
+                    "\\" not in name for name in names) and
+                len(names) == (3 if skinning else 2) and
+                _nonempty(model) and model.endswith(".mmgeom") and
+                rights == model[:-7] + ".manifest.json" and
+                (skinning is None or
+                 skinning == model[:-7] + ".skinning.json"),
+                "Public anatomy needs matching model/manifest/rig sidecars")
+        require(all(name in cc_assets and
+                    cc_assets[name].get("shareAlikePublicationId") == rid
+                    for name in names),
+                "Public model rights ledger and actual geometry do not align")
+        handled_paths.update(names)
+        archive_name = entry.get("publicArchiveFile")
+        digest = entry.get("publicArchiveSHA256")
+        require(_nonempty(archive_name) and
+                re.fullmatch(r"[a-zA-Z0-9_.-]+\\.zip", archive_name) is not None,
+                "Public archive must have a safe local basename")
+        require(isinstance(digest, str) and
+                HEX_SHA256.fullmatch(digest) is not None,
+                "Actual public model ZIP SHA-256 is required")
+        url = entry.get("publicURL")
+        parsed = urlparse(url) if _nonempty(url) else None
+        require(parsed is not None and parsed.scheme == "https" and
+                bool(parsed.netloc) and not parsed.username and
+                not parsed.password and not parsed.fragment,
+                "Public model must have a verified direct HTTPS download URL")
+        require(entry.get("publicNoLoginNoDRMVerified") is True and
+                entry.get("verifiedPublicAvailability") is True and
+                _valid_date(entry.get("publicationVerifiedDate")) and
+                _nonempty(entry.get("publicationVerifiedBy")) and
+                _nonempty(entry.get("rightsChainEvidenceReference")) and
+                _nonempty(entry.get("appleDistributionCompatibilityReviewReference")),
+                "Legal review, actual public accessibility, no DRM and"
+                " all original mesh provenance must be independently documented")
+        archive_path = root / "CommercialRelease" / "PublishedPacks" / archive_name
+        require(archive_path.is_file(), f"Actual published archive missing: {archive_name}")
+        raw = archive_path.read_bytes()
+        require(hashlib.sha256(raw).hexdigest() == digest,
+                "Verified public URL pack SHA-256 does not match locally published archive")
+        try:
+            model_bytes = actual[model].read_bytes()
+            manifest_bytes = actual[rights].read_bytes()
+            verify_pack_bytes(
+                raw, model, model_bytes, rights, manifest_bytes, skinning
+            )
+            verified_model = json.loads(manifest_bytes)
+            review_atlas_manifest(verified_model, model_bytes)
+            if skinning:
+                skin = json.loads(actual[skinning].read_bytes())
+                with zipfile.ZipFile(archive_path) as z:
+                    require(z.read(skinning) == actual[skinning].read_bytes(),
+                            "Skinning sidecar differs between paid and open pack")
+                require(skin.get("reviewedJointWeights") is True and
+                        skin.get("modelSHA256") ==
+                        hashlib.sha256(model_bytes).hexdigest(),
+                        "Unreviewed skinning source in paid model")
+            original_audit = cc_assets[model].get("originalMeshRightsAuditSHA256")
+            require(_nonempty(original_audit) and
+                    HEX_SHA256.fullmatch(original_audit) is not None,
+                    "Missing original mesh audit digest")
+            for name in names:
+                require(cc_assets[name].get("originalMeshRightsAuditSHA256") ==
+                        original_audit,
+                        "Conflicting original mesh audit evidence across package")
+        except (ShareAlikeError, ValueError, KeyError, zipfile.BadZipFile) as exc:
+            raise CommercialReleaseError(
+                f"Published CC BY-SA model pack invalid: {exc}"
+            ) from exc
+    require(handled_paths == set(cc_assets),
+            "Some licensed anatomy files are absent from public distribution")
 
 
 def _check_present_asset_hashes(actual, approved):
@@ -279,6 +397,7 @@ def run(*, root=DEFAULT_ROOT, mode="source", bundle=None):
     _dependency_gate(manifest, root)
     reviewed = _asset_gate(manifest)
     _check_present_asset_hashes(present, reviewed)
+    _published_cc_model_gate(manifest, root, present, reviewed)
     _notices(scan_dir, manifest)
     return {"mode": mode, "foundAssets": sorted(present),
             "paidReleaseCleared": True}
