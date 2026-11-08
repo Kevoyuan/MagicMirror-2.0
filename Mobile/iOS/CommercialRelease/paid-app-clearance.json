@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "distributionChannel": "paid-ios-app-store",
+  "releaseApproved": false,
+  "approval": {
+    "reviewerName": "",
+    "reviewDate": "",
+    "legalEvidenceReference": "",
+    "actualDocumentsIndependentlyReviewed": false,
+    "appleDRMAndRedistributionReviewed": false,
+    "distributionNotes": ""
+  },
+  "runtimeDependencies": [
+    {
+      "name": "MediaPipeTasksVision",
+      "sourceRevision": "2df17d66d380f74884c1505a7e7ac677020c3980",
+      "licenseIdentifier": "Apache-2.0",
+      "redistributionReviewed": false,
+      "requiredNoticesIncluded": false,
+      "evidenceReference": ""
+    }
+  ],
+  "authorizedAssets": [],
+  "noticesSHA256": null,
+  "blockers": [
+    "Review actual licensing and distribution rights of the pinned pose_landmarker_lite.task WEIGHTS, distinct from the Apache-2.0 MediaPipe SDK.",
+    "Review actual paid App Store redistribution/technical protection rights, SDK transitive dependencies and third-party notices.",
+    "Do not ship Z-Anatomy, BodyParts3D or CC BY-SA/NC mesh derivatives without an alternative written grant covering the exact works and Apple distribution.",
+    "Independently verify camera/privacy disclosures, on-device functionality, genuine educational claims and App Store submission rights."
+  ],
+  "_templateComment": "An approval bool is NOT legal permission. Preserve actual evidence privately, record its reference here, and only approve after an independent human review. No third-party anatomy is authorized by this file."
+}
