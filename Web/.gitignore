@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.vite/
+public/wasm/
+public/models/*.task
+!public/models/.gitkeep
+*.log
+.DS_Store
