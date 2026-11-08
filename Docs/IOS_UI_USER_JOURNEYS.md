@@ -114,3 +114,29 @@ unregistered requested skeleton, multiple ready systems, VoiceOver,
 Reduce Motion, camera denied and simulated/physical iPhone sizes.
 A compiler-only workflow is not evidence that these scenarios were
 executed.
+
+## 10. Registered anatomy systems, Solo and surface section UX
+
+The Systems folio summarizes **what is actually visible**, independently
+of the user's last requested layer: zero registered active systems means
+the procedural pose proxy remains the displayed fallback. A live-ready
+count can change as registered model geometry becomes available or
+pose tracking is lost. This is not a count of planned Z-Anatomy objects.
+
+User can toggle multiple ready systems, press **Solo** to make exactly
+one ready/registered system visible, or **Reset** to return to the pose
+reference. A selected real system shows its own opacity and percentage.
+Locked systems show a textual locked state and cannot be selected.
+The collapsed live camera Layers control displays a tiny active-system
+count only when at least one registered real system is visible.
+
+When an approved, camera-registered GPU-skinned atlas can actually be
+clipped, the Sections folio exposes the appropriate orientation,
+a signed shoulder-width-relative offset, **Center plane**, and
+**Show complete reference atlas**. These are **surface cuts**, not
+watertight internal slices, scans or medically observed anatomy.
+
+QA: test zero assets, requested-but-unavailable system, multiple
+ready systems, Solo, Reset, individual opacity, active badge changes
+on tracking loss, section centering, bilingual VoiceOver and large
+Dynamic Type. These tests are independently required beyond compilation.
