@@ -1,5 +1,5 @@
 import {
-  AmbientLight, Color, CylinderGeometry, DirectionalLight, Group,
+  AmbientLight, Color, CylinderGeometry, DirectionalLight,
   Mesh, MeshStandardMaterial, OrthographicCamera, Scene, SphereGeometry,
   Vector3, WebGLRenderer,
 } from "three";
