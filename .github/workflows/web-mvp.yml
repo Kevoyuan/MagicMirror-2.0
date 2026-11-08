@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: Web/package-lock.json
+          cache-dependency-path: Web/package.json
       - name: Install Web dependencies
         run: npm install --no-audit --no-fund
       - name: Verify script syntax
