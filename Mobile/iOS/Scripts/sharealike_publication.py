@@ -131,6 +131,35 @@ def review_atlas_manifest(manifest, binary):
             "vertices": n}
 
 
+def _component_credits(manifest):
+    """Human-readable exact per-part origin and retained license trail."""
+    rows = [
+        "# Original mesh sources, creators and licenses",
+        "",
+        "These records were transcribed from the reviewed original-part "
+        "atlas manifest; CC BY-SA 4.0 does not override a different "
+        "original rightsholder's license.",
+        "",
+    ]
+    for part in manifest["parts"]:
+        credit = part["componentLicense"]
+
+        def plain(value):
+            return str(value).replace("\n", " ").replace("\r", " ").strip()
+
+        rows.extend([
+            "- Source mesh: " + plain(part["sourceHierarchyPath"]),
+            "  - Original component: " + plain(credit["sourceMeshIdentity"]),
+            "  - Source: " + plain(credit["originalSource"]),
+            "  - License: " + plain(credit["licenseId"]),
+            "  - Authors / attribution: " + plain(credit["attribution"]),
+            "  - License evidence: " + plain(credit["evidenceURL"]),
+            "  - Original origin review: " + plain(credit["originReviewNotes"]),
+            "",
+        ])
+    return ("\n".join(rows) + "\n").encode("utf-8")
+
+
 def _obj(binary, parts):
     """Readable unindexed OBJ is supplied so CC-model reuse is practical."""
     lines = ["# MagicMirror geometry-only derivative; CC BY-SA 4.0",
@@ -213,6 +242,7 @@ def build_pack(*, model_file, manifest_file, attribution_file,
         model_file.name: binary,
         manifest_file.name: manifest_bytes,
         f"{base}.obj": _obj(binary, manifest["parts"]),
+        "COMPONENT_CREDITS.md": _component_credits(manifest),
         "ATTRIBUTION.md": attribution,
         "MODIFICATIONS.md": modifications,
         "LICENSE.txt": (
@@ -271,7 +301,7 @@ def verify_pack_bytes(raw_zip, model_name, binary, manifest_name, manifest_bytes
         required = {
             model_name, manifest_name, model_name[:-7] + ".obj",
             "LICENSE.txt", "README.md", "ATTRIBUTION.md",
-            "MODIFICATIONS.md", "SHA256SUMS.txt"
+            "COMPONENT_CREDITS.md", "MODIFICATIONS.md", "SHA256SUMS.txt"
         }
         if skinning_name:
             required.add(skinning_name)
@@ -298,6 +328,9 @@ def verify_pack_bytes(raw_zip, model_name, binary, manifest_name, manifest_bytes
                  "Published SHA256SUMS did not match all public files")
         actual_manifest = json.loads(manifest_bytes)
         review_atlas_manifest(actual_manifest, binary)
+        _require(archive.read("COMPONENT_CREDITS.md") ==
+                 _component_credits(actual_manifest),
+                 "Missing or modified per-mesh human-readable authorship")
         _require(actual_manifest.get("modelFile") == model_name,
                  "Public provenance manifest names an unrelated model")
         _require(archive.read(model_name[:-7] + ".obj") ==
