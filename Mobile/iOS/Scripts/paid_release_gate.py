@@ -326,14 +326,14 @@ def _published_cc_model_gate(manifest, root, actual, approved, bundle_dir):
                         hashlib.sha256(model_bytes).hexdigest(),
                         "Unreviewed skinning source in paid model")
             display_credits.append({
-            "id": rid,
-            "modelFile": model,
-            "licenseId": "CC-BY-SA-4.0",
-            "authorCredits": "Z-Anatomy and BodyParts3D",
-            "publicURL": url,
-            "publicArchiveSHA256": digest,
-        })
-        original_audit = cc_assets[model].get("originalMeshRightsAuditSHA256")
+                "id": rid,
+                "modelFile": model,
+                "licenseId": "CC-BY-SA-4.0",
+                "authorCredits": "Z-Anatomy and BodyParts3D",
+                "publicURL": url,
+                "publicArchiveSHA256": digest,
+            })
+            original_audit = cc_assets[model].get("originalMeshRightsAuditSHA256")
             require(_nonempty(original_audit) and
                     HEX_SHA256.fullmatch(original_audit) is not None,
                     "Missing original mesh audit digest")
