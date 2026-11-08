@@ -41,14 +41,15 @@ jobs:
           verts = sum(x["sourceInspection"]["vertexCount"] for x in rows)
           polygons = sum(x["sourceInspection"]["polygonCount"] for x in rows)
           grouped = sum(bool(x["sourceInspection"]["vertexGroups"]) for x in rows)
-          print(f"REAL UPSTREAM: meshes={len(rows)} source_vertices={verts} polygons={polygons} objects_with_groups={grouped}")
+          unusable = sum(x["sourceInspection"]["requiresHumanGeometryReview"] for x in rows)
+          print(f"REAL UPSTREAM: meshes={len(rows)} source_vertices={verts} polygons={polygons} objects_with_groups={grouped} nontriangular={unusable}")
           summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
           summary.write_text(
               "# Pinned original Z-Anatomy FBX inspection\n\n"
               "Exact source verified by length and Git blob SHA1. "
               f"Imported **{len(rows)}** actual mesh objects, {verts} "
               f"source vertices and {polygons} polygons; "
-              f"{grouped} objects contain vertex groups.\n\n"
+              f"{grouped} objects contain vertex groups; {unusable} require geometry remediation.\n\n"
               "All rights, skinning and landmark fields stay **UNREVIEWED**; "
               "no binary model is uploaded or approved.\n",
               encoding="utf-8"
