@@ -445,6 +445,21 @@ final class MirrorViewModel {
         }
         selectedAnatomyLayer = enabledAnatomyLayers.isEmpty
             ? .referenceProxy : layer
+        invalidateSelectedAnatomy()
+    }
+
+    /// Solo a single actually registered anatomical system. This is never
+    /// enabled for a planned or unavailable source mesh.
+    func soloAnatomyLayer(_ layer: AnatomyDisplayLayer) {
+        guard let only = AnatomyLayerPresentation.soloSelection(
+            for: layer, ready: readyAnatomyLayers
+        ) else { return }
+        enabledAnatomyLayers = only
+        selectedAnatomyLayer = layer
+        invalidateSelectedAnatomy()
+    }
+
+    private func invalidateSelectedAnatomy() {
         calibratedAtlasBatch = nil
         skinnedAtlasBatch = nil
         skinnedAtlasBatches = []
