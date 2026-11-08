@@ -10,15 +10,19 @@ struct AlignedPoseVideoFrame {
     let pixelBuffer: CVPixelBuffer
     /// Optional foreground mask copied from the exact same result frame.
     let silhouette: PoseSilhouetteMask?
+    /// Capture callback receipt; not source exposure PTS or photon time.
+    let captureCallbackUptime: Double?
 
     init(
         pose: PoseSnapshot,
         pixelBuffer: CVPixelBuffer,
-        silhouette: PoseSilhouetteMask? = nil
+        silhouette: PoseSilhouetteMask? = nil,
+        captureCallbackUptime: Double? = nil
     ) {
         self.pose = pose
         self.pixelBuffer = pixelBuffer
         self.silhouette = silhouette
+        self.captureCallbackUptime = captureCallbackUptime
     }
 }
 
