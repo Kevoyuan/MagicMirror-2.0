@@ -406,8 +406,17 @@ def run(*, root=DEFAULT_ROOT, mode="source", bundle=None):
             name for name in present
             if name != "pose_landmarker_lite.task"
         ]
-        require(not accidental_geometry,
-                f"Unreviewed 3D/ML assets under app Resources: {accidental_geometry}")
+        if accidental_geometry:
+            # A source checkout is allowed to contain commercially reviewed
+            # geometry ONLY if it passes the entire paid Release gate. This
+            # avoids an accidental permanent CI failure on genuine launch
+            # candidates while preserving today's default deny.
+            clearance = _json(root / CLEARANCE_NAME)
+            require(clearance.get("releaseApproved") is True,
+                    f"Unreviewed 3D/ML assets under app Resources: {accidental_geometry}")
+            report = run(root=root, mode="release")
+            return {"mode": "source", "foundAssets": sorted(present),
+                    "paidReleaseCleared": report["paidReleaseCleared"]}
         model = present.get("pose_landmarker_lite.task")
         if model is not None:
             digest = hashlib.sha256(model.read_bytes()).hexdigest()
