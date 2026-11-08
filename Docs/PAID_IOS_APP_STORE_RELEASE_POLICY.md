@@ -29,8 +29,11 @@ content. Apple may apply protections to an App Store package. An
 App-Store-compatible separate written permission or a distribution
 strategy validated by an intellectual property lawyer may be needed.
 This project deliberately **does not auto-clear ordinary CC BY-SA**
-assets for a paid packaged app; current template requires an
-alternative source-specific written grant if any are considered.
+assets for a paid packaged app. It permits **either** a source-specific
+written grant **or** the owner-selected separately published CC BY-SA
+model-only path, but the latter still needs real original-component
+rights review and independent App Store distribution/DRM compatibility
+assessment before an actual paid Release.
 
 **NC / NC-SA / ND / unclear:** never include in the paid build on a
 Creative Commons basis. A signed separate commercial permission
