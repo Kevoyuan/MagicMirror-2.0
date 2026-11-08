@@ -24,7 +24,12 @@ struct MirrorLiveRenderSurface: View {
                 selectedAtlasNodePath: model.isPaused
                     ? nil : model.reviewedPartSelection?.sourceHierarchyPath,
                 selectedAtlasSystem: model.isPaused
-                    ? nil : model.reviewedPartSelection?.system
+                    ? nil : model.reviewedPartSelection?.system,
+                onSourceSubmissionReport: { [weak model] report in
+                    DispatchQueue.main.async { [weak model] in
+                        model?.acceptSourceSubmissionReport(report)
+                    }
+                }
             )
             .overlay {
                 AnatomyReferenceHighlight(model: model)
