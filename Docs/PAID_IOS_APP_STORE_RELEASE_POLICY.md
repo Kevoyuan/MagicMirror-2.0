@@ -170,3 +170,25 @@ through the standard XcodeGen paid Release path.
 
 **Do NOT mark `releaseApproved` true or commit source assets merely
 to make CI green. The paid product is still under development.**
+
+
+## Official DBCLS BodyParts3D 4.0 as an alternative model source
+
+There is a promising **lower-cost** route to legitimate anatomy geometry:
+obtain the `isa_BP3D_4.0_obj_99.zip` / `partof_BP3D_4.0_obj_99.zip`
+OBJ archives **directly** from the official DBCLS archive, which
+currently publishes the database under **CC BY 4.0**. It does not have
+the automatic ShareAlike requirement of a Z-Anatomy derivative, but
+**CC BY 4.0 also contains a no-additional-effective-technical-restrictions
+clause**. The exact source and Apple App Store/DRM distribution still
+need independent review, required attribution and a documented lawful
+distribution plan. This repository intentionally still blocks ordinary
+CC BY-tagged third-party anatomical binaries from paid Release by default.
+
+Never acquire a third-party *adapted* BodyParts3D model and label it
+as direct original DBCLS model. The new route needs its own verified
+archive/hash, source-specific geometry import, human-reviewed rig/weights
+and mobile pipeline; no actual OBJ has yet been imported or granted
+release clearance.
+
+Compare the choices: `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.

@@ -459,3 +459,16 @@ commercial usage rights and actual iPhone measured alignment.
 Then finish Mobile-5 privacy, notices, StoreKit/paid listing, TestFlight
 and required independent legal release approval.
 See `Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md`.
+
+
+### Commercial source decision: DBCLS original vs commissioned (2026-11-08)
+
+Direct official DBCLS BodyParts3D 4.0 OBJ data now has an official
+2025 CC BY 4.0 license statement, distinct from the mixed-source
+Z-Anatomy derivative. This is a **potentially lower-cost, lower-chain-
+complexity** input; **both** CC BY 4.0 and CC BY-SA 4.0 contain
+no-effective-DRM restrictions, so neither is automatically cleared for
+a paid protected App Store binary. Avoid unapproved conversions or
+misattributed derivatives. Compare a lawfully cleared direct OBJ
+pipeline against commissioning independently authored iOS rigged
+geometry. See `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.

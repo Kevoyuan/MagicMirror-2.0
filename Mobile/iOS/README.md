@@ -746,3 +746,10 @@ data also need verification.
 
 [Commercial shipping policy](../../Docs/PAID_IOS_APP_STORE_RELEASE_POLICY.md)
 and [new original anatomy commissioning brief](CommercialRelease/ORIGINAL_ANATOMY_ASSET_BRIEF.md).
+
+
+**Potential lower-cost commercial atlas source:** the official DBCLS
+BodyParts3D release 4.0 is now marked CC BY 4.0; it is **not** the
+same byte-level or derivative-rights source as Z-Anatomy's original
+FBX. App Store technical restrictions still require review.
+See `Docs/PAID_ANATOMY_MODEL_SOURCE_OPTIONS.md`.
