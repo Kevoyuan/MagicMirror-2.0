@@ -68,4 +68,27 @@ final class AnatomyLayerPresentationTests: XCTestCase {
         XCTAssertTrue(proxy.selected)
         XCTAssertEqual(proxy.statusKey, "SELECTED")
     }
+    func testSoloRejectsUnregisteredAndProxyLayers() {
+        let ready: Set<AnatomyDisplayLayer> = [.skeleton, .muscles]
+        XCTAssertNil(AnatomyLayerPresentation.soloSelection(
+            for: .organs, ready: ready
+        ))
+        XCTAssertNil(AnatomyLayerPresentation.soloSelection(
+            for: .referenceProxy, ready: ready
+        ))
+        XCTAssertNil(AnatomyLayerPresentation.soloSelection(
+            for: .skeleton, ready: []
+        ))
+    }
+
+    func testSoloSelectsExactlyOneRegisteredAnatomySystem() {
+        let ready: Set<AnatomyDisplayLayer> = [.skeleton, .muscles]
+        XCTAssertEqual(AnatomyLayerPresentation.soloSelection(
+            for: .muscles, ready: ready
+        ), Set([.muscles]))
+        XCTAssertEqual(AnatomyLayerPresentation.soloSelection(
+            for: .skeleton, ready: ready
+        ), Set([.skeleton]))
+    }
+
 }
