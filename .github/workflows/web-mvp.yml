@@ -34,7 +34,7 @@ jobs:
           cache: npm
           cache-dependency-path: Web/package.json
       - name: Install Web dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install --legacy-peer-deps --no-audit --no-fund
       - name: Verify script syntax
         run: |
           node --check scripts/stage-assets.mjs
