@@ -1,0 +1,62 @@
+name: One-time pinned Z-Anatomy skeletal source inventory
+on:
+  push:
+    branches: [feature/ios-atlas-per-mesh-rights-and-rig-gates]
+    paths: [.github/workflows/inspect-pinned-fbx-once.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-real-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact upstream original FBX (not an app asset)
+        run: |
+          python3 -m Tools.anatomy_tools.fetch_atlas --download
+          python3 -m Tools.anatomy_tools.fetch_atlas --verify-only
+      - name: Install headless Blender for source mesh hierarchy audit
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq blender
+      - name: Import actual source in Blender and inventory every source mesh
+        run: |
+          blender -b --python Mobile/iOS/Scripts/inventory_source_fbx.py -- \
+            --system skeleton \
+            --fbx Unity/Assets/ThirdParty/ZAnatomy/SkeletalSystem100.fbx \
+            --out "$RUNNER_TEMP/skeleton.audit-draft.json"
+      - name: Summarize actual inventory and warn about release blockers
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["RUNNER_TEMP"]) / "skeleton.audit-draft.json"
+          data = json.loads(path.read_text(encoding="utf-8"))
+          rows = data["bindings"]
+          assert rows and all(not x["componentLicense"]["humanReviewed"] for x in rows)
+          assert not data["reviewedForDistribution"]
+          verts = sum(x["sourceInspection"]["vertexCount"] for x in rows)
+          polygons = sum(x["sourceInspection"]["polygonCount"] for x in rows)
+          grouped = sum(bool(x["sourceInspection"]["vertexGroups"]) for x in rows)
+          print(f"REAL UPSTREAM: meshes={len(rows)} source_vertices={verts} polygons={polygons} objects_with_groups={grouped}")
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          summary.write_text(
+              "# Pinned original Z-Anatomy FBX inspection\n\n"
+              "Exact source verified by length and Git blob SHA1. "
+              f"Imported **{len(rows)}** actual mesh objects, {verts} "
+              f"source vertices and {polygons} polygons; "
+              f"{grouped} objects contain vertex groups.\n\n"
+              "All rights, skinning and landmark fields stay **UNREVIEWED**; "
+              "no binary model is uploaded or approved.\n",
+              encoding="utf-8"
+          )
+          PY
+      - name: Preserve TEXT-ONLY inventory for human review, never FBX
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-skeleton-audit-draft
+          path: ${{ runner.temp }}/skeleton.audit-draft.json
+          retention-days: 7
