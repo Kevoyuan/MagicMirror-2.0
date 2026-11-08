@@ -9,6 +9,7 @@ Input must be a genuinely reviewed atlas; never mark checkboxes true
 solely to make the gate pass.
 """
 import argparse
+from datetime import date
 import hashlib
 import io
 import json
@@ -76,9 +77,17 @@ def review_atlas_manifest(manifest, binary):
     _require(manifest.get("modelSHA256") == _digest(binary),
              "Atlas source manifest does not match published mesh SHA-256")
     header = manifest.get("componentLicenseReview")
+    review_date = header.get("reviewDate") if isinstance(header, dict) else None
+    try:
+        reviewed_on = date.fromisoformat(review_date) if isinstance(
+            review_date, str
+        ) else None
+    except ValueError:
+        reviewed_on = None
     _require(isinstance(header, dict) and
              _filled(header.get("reviewerName")) and
-             _filled(header.get("reviewDate")) and
+             reviewed_on is not None and
+             date(2000, 1, 1) <= reviewed_on <= date.today() and
              _filled(header.get("reviewNotes")) and
              header.get("intendedUse") == "commercial-distribution",
              "Full original per-mesh human rights review is mandatory")
@@ -289,9 +298,11 @@ def verify_pack_bytes(raw_zip, model_name, binary, manifest_name, manifest_bytes
                  "Published SHA256SUMS did not match all public files")
         actual_manifest = json.loads(manifest_bytes)
         review_atlas_manifest(actual_manifest, binary)
-        _require(archive.read(model_name[:-7] + ".obj").startswith(
-            b"# MagicMirror geometry-only derivative; CC BY-SA 4.0"
-        ), "Missing usable open OBJ version")
+        _require(actual_manifest.get("modelFile") == model_name,
+                 "Public provenance manifest names an unrelated model")
+        _require(archive.read(model_name[:-7] + ".obj") ==
+                 _obj(binary, actual_manifest["parts"]),
+                 "Public reuse OBJ has different geometry from shipped app")
         if skinning_name:
             skin = json.loads(archive.read(skinning_name))
             _require(skin.get("reviewedJointWeights") is True and
