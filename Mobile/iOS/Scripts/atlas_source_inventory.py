@@ -26,8 +26,8 @@ def make_unapproved_review(*, source_repository, source_revision,
         seen.add(path)
         vertices = item.get("vertexCount")
         polygons = item.get("polygonCount")
-        if type(vertices) is not int or vertices <= 0 or (
-            type(polygons) is not int or polygons <= 0
+        if type(vertices) is not int or vertices < 0 or (
+            type(polygons) is not int or polygons < 0
         ):
             raise InventoryError("Invalid source mesh dimensions")
         groups = item.get("vertexGroups")
@@ -41,6 +41,8 @@ def make_unapproved_review(*, source_repository, source_revision,
             "sourceInspection": {
                 "vertexCount": vertices,
                 "polygonCount": polygons,
+                "hasRenderableTriangles": vertices >= 3 and polygons > 0,
+                "requiresHumanGeometryReview": vertices < 3 or polygons == 0,
                 "vertexGroups": sorted(groups),
                 "hasArmatureModifier": bool(
                     item.get("hasArmatureModifier", False)

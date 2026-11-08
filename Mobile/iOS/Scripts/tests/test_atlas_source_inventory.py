@@ -39,12 +39,26 @@ class SourceInventoryTests(unittest.TestCase):
                 output, output["bindings"]
             )
 
+    def test_empty_geometry_preserved_for_explicit_human_remediation(self):
+        output = make_unapproved_review(
+            source_repository="https://example.org",
+            source_revision="a" * 40, source_path="x.fbx",
+            system="skeleton",
+            meshes=[{"sourceHierarchyPath": "empty-holder", "vertexCount": 0,
+                     "polygonCount": 0, "vertexGroups": []}],
+        )
+        self.assertEqual(len(output["bindings"]), 1)
+        inspection = output["bindings"][0]["sourceInspection"]
+        self.assertFalse(inspection["hasRenderableTriangles"])
+        self.assertTrue(inspection["requiresHumanGeometryReview"])
+        self.assertFalse(output["reviewedForDistribution"])
+
     def test_bad_source_identity_or_no_mesh_fails(self):
         base = dict(source_repository="https://example.org",
                     source_revision="a" * 40, source_path="x.fbx",
                     system="skeleton")
         for meshes in (
-            [], [{"sourceHierarchyPath": "a", "vertexCount": 0,
+            [], [{"sourceHierarchyPath": "a", "vertexCount": -1,
                   "polygonCount": 1, "vertexGroups": []}],
             [{"sourceHierarchyPath": "a", "vertexCount": 3,
               "polygonCount": 1, "vertexGroups": []}] * 2
