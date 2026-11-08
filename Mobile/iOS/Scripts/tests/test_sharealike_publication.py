@@ -223,6 +223,7 @@ class PublicCCShareAlikeModelTests(unittest.TestCase):
         self.assertTrue(self.run_release()["paidReleaseCleared"])
 
     def test_no_public_pack_and_no_lawyer_drm_review_both_block(self):
+        self.policy["shareAlikePublications"][0]["publicArchiveSHA256"] = "a" * 64
         with self.assertRaisesRegex(
             gate.CommercialReleaseError, "Actual published archive missing"
         ):
