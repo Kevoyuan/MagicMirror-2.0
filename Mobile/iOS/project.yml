@@ -32,8 +32,7 @@ targets:
         script: |
           set -eu
           if [ "$CONFIGURATION" = "Release" ]; then
-            python3 "$SRCROOT/Scripts/paid_release_gate.py" \\
-              --root "$SRCROOT" --mode release
+            python3 "$SRCROOT/Scripts/paid_release_gate.py"  --root "$SRCROOT" --mode release
           fi
     postBuildScripts:
       - name: "Re-audit actual paid iOS .app bundle"
@@ -42,9 +41,7 @@ targets:
         script: |
           set -eu
           if [ "$CONFIGURATION" = "Release" ]; then
-            python3 "$SRCROOT/Scripts/paid_release_gate.py" \\
-              --root "$SRCROOT" --mode bundle \\
-              --bundle "$TARGET_BUILD_DIR/$WRAPPER_NAME"
+            python3 "$SRCROOT/Scripts/paid_release_gate.py"  --root "$SRCROOT" --mode bundle  --bundle "$TARGET_BUILD_DIR/$WRAPPER_NAME"
           fi
     settings:
       base:
