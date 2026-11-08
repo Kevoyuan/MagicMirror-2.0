@@ -33,7 +33,8 @@ struct AtlasComponentLicenseEvidence: Decodable {
             !attribution.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             !sourceMeshIdentity.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             !originReviewNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            evidenceURL.hasPrefix("https://")
+            URLComponents(string: evidenceURL)?.scheme == "https" &&
+            !(URLComponents(string: evidenceURL)?.host ?? "").isEmpty
     }
 }
 
@@ -44,8 +45,15 @@ struct AtlasComponentLicenseReview: Decodable {
     let reviewNotes: String
 
     var isDocumented: Bool {
-        !reviewerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            !reviewDate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withFullDate]
+        guard reviewDate.count == 10,
+              let reviewed = parser.date(from: reviewDate),
+              reviewed <= Date(),
+              reviewed >= Date(timeIntervalSince1970: 946684800) else {
+            return false
+        }
+        return !reviewerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             intendedUse == "commercial-distribution" &&
             !reviewNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }

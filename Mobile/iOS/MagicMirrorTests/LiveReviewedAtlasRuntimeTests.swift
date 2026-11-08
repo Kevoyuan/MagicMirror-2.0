@@ -276,6 +276,52 @@ final class LiveReviewedAtlasRuntimeTests: XCTestCase {
         XCTAssertNil(last)
     }
 
+    func testSkinningRejectsAnotherMeshBoneDespiteValidModelSHA() {
+        let base = resources()!
+        let parts = base.mesh.manifest.parts
+        let bones = base.hierarchy.bones
+        XCTAssertGreaterThan(bones.count, 1)
+        var vertices: [ReviewedAtlasSkinningFile.Vertex] = []
+        for part in parts {
+            let bone = bones.first {
+                $0.nodePath == part.sourceHierarchyPath
+            }!.id
+            vertices += (0..<part.vertexCount).map { _ in
+                ReviewedAtlasSkinningFile.Vertex(
+                    boneIds: [bone, bone, bone, bone],
+                    weights: [1, 0, 0, 0]
+                )
+            }
+        }
+        let good = ReviewedAtlasSkinningFile(
+            schemaVersion: 1,
+            sourceRevision: base.mesh.manifest.sourceRevision,
+            modelSHA256: base.mesh.manifest.modelSHA256,
+            reviewedJointWeights: true,
+            vertices: vertices
+        )
+        XCTAssertNoThrow(try AtlasSkinningPackage.validate(
+            good, atlas: base.mesh, hierarchy: base.hierarchy
+        ))
+        let wrongID = bones.first {
+            $0.nodePath != parts[0].sourceHierarchyPath
+        }!.id
+        vertices[0] = ReviewedAtlasSkinningFile.Vertex(
+            boneIds: [wrongID, wrongID, wrongID, wrongID],
+            weights: [1, 0, 0, 0]
+        )
+        let wrong = ReviewedAtlasSkinningFile(
+            schemaVersion: 1,
+            sourceRevision: base.mesh.manifest.sourceRevision,
+            modelSHA256: base.mesh.manifest.modelSHA256,
+            reviewedJointWeights: true,
+            vertices: vertices
+        )
+        XCTAssertThrowsError(try AtlasSkinningPackage.validate(
+            wrong, atlas: base.mesh, hierarchy: base.hierarchy
+        ))
+    }
+
     func testReviewedFourWeightSkinningUsesGPUPathAfterReferenceCapture() {
         let base = resources()!
         let bones = base.hierarchy.bones

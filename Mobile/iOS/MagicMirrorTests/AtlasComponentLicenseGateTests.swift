@@ -40,6 +40,32 @@ final class AtlasComponentLicenseGateTests: XCTestCase {
             .isApprovedForCommercialAtlas)
     }
 
+    func testFutureDatedOrMalformedHumanEvidenceCannotPass() {
+        XCTAssertFalse(AtlasComponentLicenseReview(
+            reviewerName: "Synthetic",
+            reviewDate: "2099-12-31",
+            intendedUse: "commercial-distribution",
+            reviewNotes: "Future-dated synthetic record"
+        ).isDocumented)
+        XCTAssertFalse(AtlasComponentLicenseReview(
+            reviewerName: "Synthetic",
+            reviewDate: "today",
+            intendedUse: "commercial-distribution",
+            reviewNotes: "Invalid date"
+        ).isDocumented)
+        let invalidURL = AtlasComponentLicenseEvidence(
+            licenseId: "CC-BY-SA-4.0",
+            originalSource: "synthetic",
+            attribution: "synthetic",
+            sourceMeshIdentity: "synthetic/test",
+            originReviewNotes: "synthetic",
+            evidenceURL: "https://",
+            humanReviewed: true,
+            commercialReuseConfirmed: true
+        )
+        XCTAssertFalse(invalidURL.isApprovedForCommercialAtlas)
+    }
+
     func testReviewRecordWithoutActualNamedReviewerIsNotAcceptable() {
         XCTAssertFalse(AtlasComponentLicenseReview(
             reviewerName: " ",
