@@ -184,3 +184,5 @@
 "Show only this registered anatomy system" = "只显示该已配准的解剖系统";
 "Center plane" = "剖面居中";
 "Reset the section plane to its center" = "将剖切平面重置到中心";
+"Reviewed anatomy visible" = "已显示审核通过的解剖模型";
+"Reference proxy visible" = "正在显示参考骨架";
