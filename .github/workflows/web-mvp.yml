@@ -1,0 +1,64 @@
+name: Web-first MVP
+
+on:
+  push:
+    paths:
+      - 'Web/**'
+      - '.github/workflows/web-mvp.yml'
+  pull_request:
+    paths:
+      - 'Web/**'
+      - '.github/workflows/web-mvp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-mvp-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-source-build:
+    name: Typecheck, unit tests and honest source-only build
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: Web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: Web/package.json
+      - name: Install Web dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Verify script syntax
+        run: |
+          node --check scripts/stage-assets.mjs
+          node --check scripts/check-assets.mjs
+          node --check scripts/check-release.mjs
+      - name: Typecheck and synthetic geometry tests
+        run: |
+          npm run typecheck
+          npm test
+      - name: Compile Web frontend sources (NOT a deployable release)
+        run: npm run build:code
+      - name: Stage and verify real developer model and local WASM
+        run: |
+          npm run stage:assets
+          npm run check:assets
+          echo 'These model bytes are for CI developer testing; not distributed as a public release.'
+      - name: Verify public release remains locked pending model privacy/licensing
+        run: |
+          if npm run check:release; then
+            echo "::error::Public release guard unexpectedly approved a model with no real rights review"
+            exit 1
+          fi
+          echo "PASS: public model distribution stays blocked by default."
+      - name: Note non-verified browser/rights scope
+        run: |
+          echo 'This compiles browser code and runs synthetic unit tests ONLY.'
+          echo 'No physical webcam, WebGL, Safari, HTTPS, media model binary, or third-party model redistribution rights validated.'

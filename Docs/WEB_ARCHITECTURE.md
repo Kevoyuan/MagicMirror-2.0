@@ -1,0 +1,74 @@
+# MagicMirror Web — active architecture v0.1
+
+**As of:** 2026-11-08. Active Web; native iOS held/frozen;
+Android canceled. This is the architecture of **existing Web source**,
+not a promise of a completed human anatomy AR renderer.
+
+## Runtime data flow
+
+```mermaid
+flowchart TD
+  A[User click: permit browser camera] --> B[getUserMedia stream + video element]
+  B --> C[MediaPipe Tasks Web pose landmarker / VIDEO]
+  C --> D{33-point confidence + time checks}
+  D -->|partial limb| E[Visible observed proxy segments]
+  D -->|reliable torso| E
+  D -->|unknown / lost / stale| F[Hide uncertain geometry]
+  E --> G[object-fit cover + front mirror projection]
+  G --> H[Three.js shaded 3D cylinder/sphere reference]
+  B --> I[HTML video crop]
+  H --> J[Transparent WebGL canvas]
+  I --> K[One camera-first Leonardo screen]
+  J --> K
+  K --> L[Whole/Arms/Legs, opacity, overlay pause, privacy/layer notes]
+```
+
+`Web/src/main.ts` owns camera permission/start/stop, monotonic
+video-time identity, document visibility cleanup, ~13Hz update
+throttling and UI state. `Web/src/pose.ts` is a deterministic
+testable confidence/visibility/crop module.
+`Web/src/scene.ts` manages GPU mesh creation, reuse, compositing
+and disposal. No cloud inference API or server-side camera pipeline.
+
+**Caution:** video remains an independently advancing HTML element;
+the current synchronous infer-and-draw pass does **not** guarantee
+that the displayed video frame matches the one just processed,
+especially if inference stalls. This is a W1 instrumentation/
+frame-integrity problem; don't claim an already fixed AR registration.
+The 3D proxy is rendered using 2D positions plus cosmetic depth only.
+MediaPipe `worldLandmarks` alone are not camera extrinsics.
+
+## Development vs publication
+
+- `Web/src`: original MIT-licensed application source.
+- `Web/node_modules`: pinned npm packages, locally provisioned.
+- `Web/public/wasm`: npm package-provided binary runtime staged
+  locally for development; excluded from Git.
+- `Web/public/models/pose_landmarker_lite.task`: exact developer
+  staged Google-hosted binary (size/SHA256 pinned); excluded from Git.
+- `Web/scripts/check-release.mjs` and
+  `Web/release-clearance.json`: deployment safety gate;
+  default unapproved due to model-weight distribution and metrics
+  privacy obligations. `build:code` for CI does not waive them.
+- `Mobile/iOS`: frozen, **not** a Web build/runtime dependency.
+- `Unity`/`Tools`: historical algorithm and rig research only.
+- `Z-Anatomy`: potential future separately licensed anatomy
+  source, **not** bundled as part of current Web.
+
+## Future reviewed atlas pipeline
+
+```text
+Per-original-mesh source / author / license evidence
+  -> exclude NC/unknown and review CC BY-SA reuse terms
+  -> Blender human-reviewed joint hierarchy + coherent rig/skin weights
+  -> geometry optimization + recorded source mapping
+  -> independently calibrated camera/atlas registration
+  -> browser-renderable signed or hashed model package
+  -> separate attribution, modifications and lawful downloadable derivative
+  -> Web renderer with explicit rights, motion and occlusion gates
+```
+
+Source author rights **do not vanish** by converting an FBX to GLB,
+switching from App Store to Web or open-sourcing application code.
+The installed iOS rights gates in Draft PRs #51–#53 remain reference
+work and are not claimed to be merged into Web.

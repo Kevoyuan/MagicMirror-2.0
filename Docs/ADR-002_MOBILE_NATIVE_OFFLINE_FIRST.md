@@ -1,3 +1,10 @@
+> **Superseded platform decision (2026-11-08).** The owner selected **Web open source first**.
+> The only active plan is [Web roadmap](WEB_MVP_ROADMAP.md) and
+> [Web architecture](WEB_ARCHITECTURE.md), governed by
+> [ADR-003](ADR-003_WEB_OPEN_SOURCE_FIRST.md). Preserve this file and
+> all historical source, but **do not resume native iOS/desktop
+> development or Android** without a new explicit decision.
+
 # ADR-002 — Mobile-native, offline-first MagicMirror as the only shipping product
 
 **Status:** Accepted product/platform decision (2026-11-06); amended 2026-11-07 to iOS-only. Native iOS prototype sources exist; physical-device and shipping gates remain open.

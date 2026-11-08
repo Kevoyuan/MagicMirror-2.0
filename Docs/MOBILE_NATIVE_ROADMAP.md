@@ -1,3 +1,10 @@
+> **Paused iOS development (2026-11-08).** The owner selected **Web open source first**.
+> The only active plan is [Web roadmap](WEB_MVP_ROADMAP.md) and
+> [Web architecture](WEB_ARCHITECTURE.md), governed by
+> [ADR-003](ADR-003_WEB_OPEN_SOURCE_FIRST.md). Preserve this file and
+> all historical source, but **do not resume native iOS/desktop
+> development or Android** without a new explicit decision.
+
 # MagicMirror iOS — exclusive product delivery roadmap (updated 2026-11-07)
 
 **User promise:** launch a phone app, point one phone camera at a person,

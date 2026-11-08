@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "distribution": "public-web-static",
+  "releaseApproved": false,
+  "review": {
+    "reviewer": "",
+    "reviewDate": "",
+    "evidenceReference": "",
+    "legalReviewCompleted": false,
+    "privacyMetricsReviewed": false
+  },
+  "runtimeModel": {
+    "file": "models/pose_landmarker_lite.task",
+    "sha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+    "redistributionLicenseEvidence": "",
+    "publicWebDistributionReviewed": false
+  },
+  "thirdPartyRuntime": {
+    "package": "@mediapipe/tasks-vision",
+    "version": "1.2.2",
+    "license": "Apache-2.0",
+    "dependencyNoticesReviewed": false
+  },
+  "anatomy": {
+    "source": "original-procedural-proxy-only",
+    "containsExternalMesh": false,
+    "zAnatomyOriginalMeshesIncluded": false
+  },
+  "notes": "This template deliberately DOES NOT approve hosting or public distribution of model weights. Build code for CI via build:code; deploy only after independent, real rights/privacy review."
+}
