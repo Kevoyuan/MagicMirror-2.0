@@ -9,6 +9,48 @@ import simd
 ///
 /// This package format does not establish correct camera extrinsics or
 /// human anatomy by itself. No atlas binary is bundled by default.
+/// A local asset can be structurally valid yet incorporate restricted
+/// third-party anatomy. Only an explicitly reviewed per-part rights ledger
+/// permits the installed app to load its 3D geometry. A flag/hash is NOT
+/// a substitute for checking the actual source license.
+struct AtlasComponentLicenseEvidence: Decodable {
+    let licenseId: String
+    let originalSource: String
+    let attribution: String
+    let sourceMeshIdentity: String
+    let originReviewNotes: String
+    let evidenceURL: String
+    let humanReviewed: Bool
+    let commercialReuseConfirmed: Bool
+
+    var isApprovedForCommercialAtlas: Bool {
+        let permitted: Set<String> = [
+            "CC-BY-SA-4.0", "CC-BY-SA-2.1-JP", "CC-BY-4.0"
+        ]
+        return permitted.contains(licenseId) &&
+            humanReviewed && commercialReuseConfirmed &&
+            !originalSource.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !attribution.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !sourceMeshIdentity.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !originReviewNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            evidenceURL.hasPrefix("https://")
+    }
+}
+
+struct AtlasComponentLicenseReview: Decodable {
+    let reviewerName: String
+    let reviewDate: String
+    let intendedUse: String
+    let reviewNotes: String
+
+    var isDocumented: Bool {
+        !reviewerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !reviewDate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            intendedUse == "commercial-distribution" &&
+            !reviewNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
 struct MobileAtlasManifest: Decodable {
     let schemaVersion: Int
     let sourceRepository: String
@@ -22,6 +64,7 @@ struct MobileAtlasManifest: Decodable {
     let reviewedForDistribution: Bool
     let reviewedJointBindings: Bool
     let parts: [MobileAtlasBinding]
+    var componentLicenseReview: AtlasComponentLicenseReview? = nil
     /// Required for additional anatomical systems; legacy skeleton
     /// exports may omit this field while retaining the skeletal source.
     var anatomicalSystem: String? = nil
@@ -37,6 +80,7 @@ struct MobileAtlasBinding: Decodable {
     let restTo: [Float]
     let vertexOffset: Int
     let vertexCount: Int
+    var componentLicense: AtlasComponentLicenseEvidence? = nil
 
     var restSegment: (SIMD3<Float>, SIMD3<Float>)? {
         guard restFrom.count == 3, restTo.count == 3 else { return nil }
@@ -102,6 +146,14 @@ struct VerifiedAnatomyAtlas {
               manifest.modelSHA256.count == 64,
               !manifest.parts.isEmpty else {
             throw MobileAtlasError.invalidManifest
+        }
+        // An atlas-wide CC BY-SA credit alone cannot override an
+        // NC-restricted kidney or inner-ear mesh included in that atlas.
+        guard manifest.componentLicenseReview?.isDocumented == true,
+              manifest.parts.allSatisfy({
+                $0.componentLicense?.isApprovedForCommercialAtlas == true
+              }) else {
+            throw MobileAtlasError.unreviewed
         }
 
         guard let meshURL = bundle.url(
