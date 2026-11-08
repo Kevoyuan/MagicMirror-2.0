@@ -120,6 +120,7 @@ const statusText = element<HTMLElement>("#status-text");
 const opacitySlider = element<HTMLInputElement>("#opacity");
 const opacityValue = element<HTMLOutputElement>("#opacity-value");
 
+let lastStatusText = "";
 let proxy: ProxySkeletonRenderer | undefined;
 try {
   proxy = new ProxySkeletonRenderer(canvas);
@@ -143,7 +144,6 @@ let previousVideoTime = -1;
 let lastInferenceAt = -Infinity;
 let lastFoundAt = -Infinity;
 let previousCoverage: Coverage = "none";
-let lastStatusText = "";
 const frameSpacingMs = 75; // ~13Hz inference. detectForVideo is synchronous and can block UI.
 const staleMs = 350;
 
