@@ -142,7 +142,7 @@ def _dependency_gate(manifest, root):
     require(project_file.is_file(), "Pinned project.yml required")
     project_text = project_file.read_text(encoding="utf-8")
     pinned = re.search(
-        r"MediaPipeTasks:\\s*\\n\\s+url:\\s*https://github\\.com/google-ai-edge/mediapipe\\s*\\n\\s+revision:\\s*([0-9a-f]{40})",
+        r"MediaPipeTasks:\s*\n\s+url:\s*https://github\.com/google-ai-edge/mediapipe\s*\n\s+revision:\s*([0-9a-f]{40})",
         project_text
     )
     require(pinned is not None and
