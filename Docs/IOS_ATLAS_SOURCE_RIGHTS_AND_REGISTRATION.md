@@ -171,3 +171,16 @@ under front/side/turn/occlusion, >10 minutes on a named iPhone and
 measured display FPS, battery/thermal behavior and motion-to-photon
 latency. Release target remains >=30 displayed FPS and <=150 ms p95
 movement-to-screen, **currently unverified**.
+
+
+## Verified pinned original asset inspection
+
+The first actual GitHub Actions Blender 5 import of the pinned
+skeletal FBX succeeded: **1,952 original mesh objects, 828,711 vertices,
+1,093,544 polygon faces, zero pre-existing object vertex-weight groups,
+and four non-renderable imported objects**. The workflow checks the
+source's SHA and provides a **text-only unapproved review draft**; it
+does not distribute any geometry or validate a person/camera.
+Source evidence and the 256-joint GPU architectural conflict are
+recorded in
+`Docs/IOS_ACTUAL_ZANATOMY_SKELETON_AUDIT_2026-11-08.md`.
