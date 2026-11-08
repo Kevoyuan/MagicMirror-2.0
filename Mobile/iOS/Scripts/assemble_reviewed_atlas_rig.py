@@ -208,6 +208,56 @@ def assemble(package: Path, review_file: Path, system: str = "skeleton"):
             chain.add(parent)
             parent = parents[parent]
 
+    # Explicit author-attested per-source-mesh influence scope; no
+    # proximity or folder-name guessing may assign a mesh to a joint.
+    skin_file = package / (base + ".skinning.json")
+    if review.get("reviewedJointWeights") is True:
+        require(skin_file.is_file(), "Reviewed GPU skinning sidecar missing")
+    if skin_file.is_file():
+        require(review.get("reviewedJointWeights") is True,
+                "Unreviewed skinning sidecar must not be assembled")
+        require(len(bones) <= 256, "GPU bone palette exceeds 256 reviewed bones")
+        skin = _read_json(skin_file)
+        require(isinstance(skin, dict) and
+                skin.get("reviewedJointWeights") is True and
+                skin.get("modelSHA256") == digest and
+                skin.get("sourceRevision") == revision,
+                "Skinning sidecar revision or SHA is not approved")
+        vertices = skin.get("vertices")
+        require(isinstance(vertices, list) and len(vertices) == count,
+                "Skinning influences do not cover exact atlas vertices")
+        for part in parts:
+            name = part["sourceHierarchyPath"]
+            reviewed_part = records[name]
+            permitted = reviewed_part.get("approvedSkinBoneIds")
+            require(isinstance(permitted, list) and
+                    bool(permitted) and
+                    len(set(permitted)) == len(permitted) and
+                    reviewed_part["boneId"] in permitted and
+                    set(permitted).issubset(ids),
+                    f"Missing vetted skinning bone palette: {name}")
+            permitted_set = set(permitted)
+            start = part["vertexOffset"]
+            for offset in range(start, start + part["vertexCount"]):
+                item = vertices[offset]
+                require(isinstance(item, dict),
+                        f"Missing skinning vertex {offset}")
+                bone_ids = item.get("boneIds")
+                weights = item.get("weights")
+                require(isinstance(bone_ids, list) and len(bone_ids) == 4 and
+                        isinstance(weights, list) and len(weights) == 4,
+                        f"Malformed GPU skinning influences at {offset}")
+                require(all(isinstance(bid, str) and bid in ids
+                            for bid in bone_ids) and
+                        all(type(w) in (int, float) and
+                            math.isfinite(w) and w >= 0 and w <= 1
+                            for w in weights) and
+                        abs(sum(weights) - 1) <= 0.001,
+                        f"Invalid GPU skinning influences at {offset}")
+                require(all(weight <= 1e-6 or bid in permitted_set
+                            for bid, weight in zip(bone_ids, weights)),
+                        f"Cross-mesh unapproved skinning influence: {name}")
+
     atlas_id = review.get("atlasId", f"{system}-{revision[:12]}")
     require(isinstance(atlas_id, str) and bool(atlas_id.strip()),
             "Human reviewed atlas ID required")
