@@ -261,6 +261,9 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        // Sample callback receipt uses the same monotonic clock later read
+        // at Metal queue submission, unlike the media PTS timescale.
+        let callbackUptime = ProcessInfo.processInfo.systemUptime
         let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         let seconds = CMTimeGetSeconds(timestamp)
         guard seconds.isFinite, seconds >= 0 else { return }
@@ -279,7 +282,7 @@ extension CameraPosePipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
         )
         guard frameGate.register(
             timestampMilliseconds: timeMs, imageSize: size,
-            intrinsics: intrinsic
+            intrinsics: intrinsic, captureCallbackUptime: callbackUptime
         ), let landmarker,
               sourceImages.retain(
                 timestampMilliseconds: timeMs,
@@ -368,7 +371,8 @@ extension CameraPosePipeline: PoseLandmarkerLiveStreamDelegate {
         postAlignedFrame(snapshot.isUsable
             ? AlignedPoseVideoFrame(
                 pose: snapshot, pixelBuffer: sourceImage,
-                silhouette: silhouette
+                silhouette: silhouette,
+                captureCallbackUptime: metadata.captureCallbackUptime
             )
             : nil)
         switch snapshot.coverage {
