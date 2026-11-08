@@ -220,7 +220,12 @@ class PublicCCShareAlikeModelTests(unittest.TestCase):
             self.assertIn("f 1//1 2//2 3//3", obj)
             self.assertIn("Z-Anatomy", z.read("ATTRIBUTION.md").decode())
             self.assertIn("BodyParts3D", z.read("ATTRIBUTION.md").decode())
+            self.assertIn("synthetic-fixture-only-000",
+                          z.read("COMPONENT_CREDITS.md").decode())
         self.assertTrue(self.run_release()["paidReleaseCleared"])
+        self.assertTrue(
+            gate.run(root=self.root, mode="source")["paidReleaseCleared"]
+        )
 
     def test_cc_by_sa_release_does_not_require_a_separate_written_grant(self):
         self.make_archive()
