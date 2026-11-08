@@ -7,6 +7,8 @@ on:
       - 'Mobile/iOS/Scripts/export_full_atlas.py'
       - 'Mobile/iOS/Scripts/atlas_sources.py'
       - 'Mobile/iOS/Scripts/atlas_license_evidence.py'
+      - 'Mobile/iOS/Scripts/atlas_source_inventory.py'
+      - 'Mobile/iOS/Scripts/inventory_source_fbx.py'
       - 'Mobile/iOS/Scripts/atlas_rig_manifest.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
       - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
@@ -18,6 +20,9 @@ on:
       - 'Tools/anatomy_tools/**'
       - 'Mobile/iOS/Scripts/export_full_atlas.py'
       - 'Mobile/iOS/Scripts/atlas_sources.py'
+      - 'Mobile/iOS/Scripts/atlas_license_evidence.py'
+      - 'Mobile/iOS/Scripts/atlas_source_inventory.py'
+      - 'Mobile/iOS/Scripts/inventory_source_fbx.py'
       - 'Mobile/iOS/Scripts/atlas_rig_manifest.py'
       - 'Mobile/iOS/Scripts/verify_atlas_package.py'
       - 'Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py'
@@ -35,7 +40,7 @@ jobs:
           python-version: '3.11'
       - name: Validate Python tool syntax and manifest JSON
         run: |
-          python -m compileall -q Tools/anatomy_tools Mobile/iOS/Scripts/export_full_atlas.py Mobile/iOS/Scripts/atlas_sources.py Mobile/iOS/Scripts/atlas_license_evidence.py Mobile/iOS/Scripts/atlas_rig_manifest.py Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py Mobile/iOS/Scripts/verify_atlas_package.py Mobile/iOS/Scripts/tests
+          python -m compileall -q Tools/anatomy_tools Mobile/iOS/Scripts/export_full_atlas.py Mobile/iOS/Scripts/atlas_sources.py Mobile/iOS/Scripts/atlas_license_evidence.py Mobile/iOS/Scripts/atlas_source_inventory.py Mobile/iOS/Scripts/inventory_source_fbx.py Mobile/iOS/Scripts/atlas_rig_manifest.py Mobile/iOS/Scripts/assemble_reviewed_atlas_rig.py Mobile/iOS/Scripts/verify_atlas_package.py Mobile/iOS/Scripts/tests
           python -m json.tool Assets-Manifest/asset_sources.json > /dev/null
       - name: Validate pinned whole-FBX provenance against downloader
         run: |

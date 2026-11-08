@@ -433,3 +433,39 @@ GPU-skinned anatomical layers in one render pass. Missing masks
 preserve existing source-matched rendering without fabricating
 foreground silhouettes. This improves reference-geometry background
 clipping but is **not** true internal-tissue depth occlusion.
+
+
+## Mobile-3/4 rights-verified source inventory, rig and camera continuity (2026-11-08)
+
+The only authoritative iOS model source remains the pinned, unshipped
+Z-Anatomy skeletal FBX. A Blender-only **source inventory** can now
+enumerate actual imported mesh hierarchy names, triangles and authored
+vertex groups from SHA-verified original input, generating an explicitly
+**unapproved** rights/rig worksheet, not guessed bones.
+
+A per-original-mesh **commercial distribution rights evidence** schema is
+now required by exporter, independently verified package preflight,
+private rig assembly and native iOS asset loading. The reviewer records
+actual origin, source mesh identity, evidence URL, allowed license,
+attribution and human signoff. Known non-commercial licenses and unknown
+licenses fail closed even when an atlas-wide CC BY-SA header exists.
+The manifest binds the original rights ledger to each exact mesh path;
+a swapped origin cannot silently pass the private review comparison.
+
+For Blender-authored skin weights, each source mesh now needs reviewer-
+approved allowable bone IDs. Export refuses unknown group IDs or
+unreviewed hierarchy; assembly checks each of the actual sidecar's
+vertex influences against its originating mesh and verified rig IDs.
+This does not generate anatomy-specific weights, smooth original
+skinning or approve a huge unoptimized 3D model automatically.
+
+The on-device camera candidate diagnostic now requires consecutive
+same-source, temporally coherent PnP hypotheses before display, rejecting
+large camera flips, source replay, missing intrinsics and bad fit.
+It remains a **MediaPipe self-fit diagnostic**, not independent camera
+extrinsics, and cannot unlock atlas/Metal drawing.
+
+See `Docs/IOS_ATLAS_SOURCE_RIGHTS_AND_REGISTRATION.md`. These advances
+are code-level engineering gates with synthetic tests, not authorized
+third-party model distribution, a shipped full anatomical rig, a measured
+iPhone overlay or the Mobile-3/4/5 physical exit gates.

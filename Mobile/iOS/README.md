@@ -713,3 +713,24 @@ does not determine hand-over-rib depth, occluded interior anatomy,
 true tissue locations, LiDAR occlusion or medical X-ray structure.
 Precise segmentation orientation/quality and thermal performance
 still need physical iPhone review before release.
+
+
+## Pin, audit and review the real skeletal source before any iPhone asset
+
+The Z-Anatomy project's general CC BY-SA 4.0 declaration coexists
+with per-asset third-party restrictions, including some NC models.
+The approved-path developer tools now enumerate the exact source FBX
+hierarchy in Blender and produce a default **unreviewed** rights/rig
+worksheet. Every mesh requires a real origin/license evidence URL,
+author credit, reviewed rest anchors, stable bone ID and suitable
+parent relationship before export. If an authored GPU skinning map is
+present, each per-mesh source vertex group must resolve to a permitted
+reviewed rig bone; cross-mesh unapproved weights fail. The iOS loader
+rejects undocumented commercial-rights evidence.
+
+Read the full reviewed source checklist and reproducible commands in
+`Docs/IOS_ATLAS_SOURCE_RIGHTS_AND_REGISTRATION.md`. No original FBX,
+modified derivatives, rights approval or independent on-device camera
+calibration has been added. A three-candidate temporal gate improves
+the *diagnostic* camera hypothesis only; it never authorizes live
+atlas rendering. All original RGB/pose capture remains on device.
