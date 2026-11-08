@@ -22,9 +22,9 @@ class PaidReleaseGateTests(unittest.TestCase):
         self.resources.mkdir()
         (self.root / "CommercialRelease").mkdir()
         (self.root / "project.yml").write_text(
-            "packages:\\n  MediaPipeTasks:\\n"
-            "    url: https://github.com/google-ai-edge/mediapipe\\n"
-            f"    revision: {gate.PINNED_MEDIAPIPE_REVISION}\\n",
+            "packages:\n  MediaPipeTasks:\n"
+            "    url: https://github.com/google-ai-edge/mediapipe\n"
+            f"    revision: {gate.PINNED_MEDIAPIPE_REVISION}\n",
             encoding="utf-8"
         )
         self.fake_model = b"FAKE NOT GOOGLE MEDIA PIPE POSE"
@@ -122,9 +122,9 @@ class PaidReleaseGateTests(unittest.TestCase):
 
     def test_swiftpm_dependency_revision_must_match_reviewed_dependency(self):
         (self.root / "project.yml").write_text(
-            "packages:\\n  MediaPipeTasks:\\n"
-            "    url: https://github.com/google-ai-edge/mediapipe\\n"
-            "    revision: " + "a" * 40 + "\\n",
+            "packages:\n  MediaPipeTasks:\n"
+            "    url: https://github.com/google-ai-edge/mediapipe\n"
+            "    revision: " + "a" * 40 + "\n",
             encoding="utf-8"
         )
         with self.assertRaisesRegex(
