@@ -15,6 +15,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paid_release_gate as gate
 import sharealike_publication as share
+from stage_cc_model_attribution import notice_from_clearance
 
 
 class PublicCCShareAlikeModelTests(unittest.TestCase):
@@ -194,6 +195,10 @@ class PublicCCShareAlikeModelTests(unittest.TestCase):
         self.policy["shareAlikePublications"][0][
             "publicArchiveSHA256"
         ] = report["archiveSHA256"]
+        (self.resources / "CCModelAttribution.json").write_text(
+            json.dumps(notice_from_clearance(self.policy)),
+            encoding="utf-8"
+        )
         return report
 
     def save_policy(self):
@@ -291,6 +296,17 @@ class PublicCCShareAlikeModelTests(unittest.TestCase):
         ] = "f" * 64
         with self.assertRaisesRegex(
             gate.CommercialReleaseError, "SHA-256"
+        ):
+            self.run_release()
+
+    def test_visible_model_download_link_must_match_license_record(self):
+        self.make_archive()
+        notice_file = self.resources / "CCModelAttribution.json"
+        notice = json.loads(notice_file.read_text())
+        notice["publicModels"][0]["publicArchiveSHA256"] = "0" * 64
+        notice_file.write_text(json.dumps(notice))
+        with self.assertRaisesRegex(
+            gate.CommercialReleaseError, "Visible in-app public model"
         ):
             self.run_release()
 
