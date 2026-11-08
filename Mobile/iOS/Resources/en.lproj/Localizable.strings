@@ -184,3 +184,5 @@
 "Show only this registered anatomy system" = "Show only this registered anatomy system";
 "Center plane" = "Center plane";
 "Reset the section plane to its center" = "Reset the section plane to its center";
+"Reviewed anatomy visible" = "Reviewed anatomy visible";
+"Reference proxy visible" = "Reference proxy visible";
