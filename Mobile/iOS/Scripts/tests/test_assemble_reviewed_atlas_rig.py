@@ -213,6 +213,39 @@ class AssembleReviewedAtlasRigTests(unittest.TestCase):
             (self.root / "anatomy_atlas_manifest.json").exists()
         )
 
+    def test_vetted_skinning_rejects_cross_mesh_bone_weight(self):
+        self.review["reviewedJointWeights"] = True
+        self.review["reviewedRigHierarchy"] = True
+        for row in self.review["bindings"]:
+            row["approvedSkinBoneIds"] = [row["boneId"]]
+        self.write()
+        weights = []
+        for row in self.review["bindings"]:
+            weights.extend([{
+                "boneIds": [row["boneId"]] * 4,
+                "weights": [1.0, 0.0, 0.0, 0.0]
+            }] * 3)
+        path = self.root / "skeleton_atlas.skinning.json"
+        skin = {
+            "schemaVersion": 1,
+            "sourceRevision": "a" * 40,
+            "modelSHA256": self.meta["modelSHA256"],
+            "reviewedJointWeights": True,
+            "vertices": weights,
+        }
+        path.write_text(json.dumps(skin), encoding="utf-8")
+        self.assertEqual(self.build()["vertex_count"], 12)
+        skin["vertices"][0] = {
+            "boneIds": [self.review["bindings"][1]["boneId"]] * 4,
+            "weights": [1, 0, 0, 0],
+        }
+        path.write_text(json.dumps(skin), encoding="utf-8")
+        with self.assertRaisesRegex(AssemblyError, "Cross-mesh"):
+            self.build()
+        path.unlink()
+        with self.assertRaisesRegex(AssemblyError, "sidecar missing"):
+            self.build()
+
     def test_no_orphan_rig_written_on_failed_review(self):
         self.review["reviewedRigHierarchy"] = False
         self.write()
