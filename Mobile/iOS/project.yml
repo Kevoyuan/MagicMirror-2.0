@@ -22,6 +22,30 @@ targets:
     dependencies:
       - package: MediaPipeTasks
         product: MediaPipeTasksVision
+    # Non-bypassable on normal XcodeGen Release / Archive builds.
+    # Git-ignored local models are still copied by Xcode's Resources phase:
+    # only checked, explicitly released bytes may ship in a PAID product.
+    preBuildScripts:
+      - name: "Paid App Store rights audit before Release"
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          set -eu
+          if [ "$CONFIGURATION" = "Release" ]; then
+            python3 "$SRCROOT/Scripts/paid_release_gate.py" \\
+              --root "$SRCROOT" --mode release
+          fi
+    postBuildScripts:
+      - name: "Re-audit actual paid iOS .app bundle"
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          set -eu
+          if [ "$CONFIGURATION" = "Release" ]; then
+            python3 "$SRCROOT/Scripts/paid_release_gate.py" \\
+              --root "$SRCROOT" --mode bundle \\
+              --bundle "$TARGET_BUILD_DIR/$WRAPPER_NAME"
+          fi
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.kevoyuan.magicmirror.ios
