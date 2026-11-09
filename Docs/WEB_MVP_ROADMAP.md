@@ -135,3 +135,16 @@ rights. Typechecking alone is not a shipped MVP.
 - [ ] Validate real apparent jitter and moving-person lag against
   raw unfiltered landmarks on desktop/iPhone browser. No camera-to-
   display latency improvement has been measured by CI.
+
+## W4b · Native bilingual Web UI (SOURCE IMPLEMENTED; visual QA open)
+
+- [x] Small **中文 / EN** switch in the camera-first header.
+- [x] Local, no-network dictionary translating core static controls,
+  guide/privacy/source content, actual camera statuses and
+  educational note details; existing user pose data never leaves
+  the browser for translation.
+- [x] Pure bilingual language tests; no machine-translated anatomical
+  claims, no guessed 3D measurement.
+- [ ] Review every long dialogue paragraph, accessibility name and
+  dynamic local model-study error in both locales on real mobile and
+  desktop browsers; not all literal copy has been QA-approved.

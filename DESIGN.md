@@ -553,3 +553,12 @@ commentary and permanent 'not actual bone imaging' qualification.
 Keep the camera dominant and fade/hide cards when observation is
 lost. The local static FBX/GLB source mesh inspector remains a
 separate Folio II and does not constitute real-time rigged anatomy.
+
+## Web bilingual header (2026-11-09)
+
+Add exactly one small, keyboard-accessible **EN / 中文** control
+without increasing top-banner height. It changes UI labels and
+educational copy only, not the original imported anatomy mesh
+names, provenance, tracking session or camera frame. On mobile
+maintain the camera as the dominant surface; verify narrow
+portrait iPhone layouts and screen reader labels in both languages.

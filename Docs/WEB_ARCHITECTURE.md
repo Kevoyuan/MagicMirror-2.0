@@ -160,3 +160,14 @@ It does not filter source video nor claim world-space anatomical
 camera registration. An impossible abrupt jump hides that keypoint
 for one frame and then reacquires; the Layers folio can disable
 this **visual-only** processing. Tests are synthetic.
+
+## W4b local language presentation
+
+`Web/src/i18n.ts` contains a curated local CN/EN dictionary,
+lightweight DOM text/accessible-label presentation and a
+nonpersistent switch. `main.ts` preserves raw camera state
+messages and re-renders them on locale changes without creating
+or restarting a MediaPipe/camera session. The real anatomical
+source filename and per-mesh provenance remain original
+strings rather than being auto-translated by an external API.
+This is browser UI localization, not medical terminology QA.

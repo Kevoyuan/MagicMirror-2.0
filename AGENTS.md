@@ -194,3 +194,15 @@ on lost pose or long time gaps, hides single-frame implausible
 jumps, and does not retain any pose history beyond the in-memory
 latest joint positions. The Layers folio can disable smoothing
 for developer comparison; tests must establish nonprediction.
+
+## 9. Web locale switch and contribution consistency (2026-11-09)
+
+The Web header now provides a compact **中文 / EN** button, using
+original, locally bundled translations from `Web/src/i18n.ts`.
+Never use third-party translation services or send camera/pose
+text to a cloud endpoint. Keep status, permission errors, privacy
+copy, camera controls and learning cards aligned across locales.
+Do **not** translate arbitrary user-provided model filenames,
+mesh source names or authorship; preserve exact provenance.
+The switch must never change media sessions, tracking identity,
+model binaries or active privacy controls.
