@@ -548,6 +548,12 @@ languageButton.addEventListener("click", () => {
   if (atlasViewer) refreshAtlasParts();
   else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
+  if (atlasViewer?.getRigidPreviewPartId() !== null &&
+      atlasViewer?.getRigidPreviewPartId() !== undefined) {
+    atlasRigidStatus.textContent = locale === "en"
+      ? "Local single-source-mesh rigid preview only · NOT body tracking."
+      : "仅本地单网格刚体运动实验 · 不是人体实时追踪。";
+  }
   if (atlasClipSelect.disabled && atlasClipSelect.options.length) {
     atlasClipSelect.options[0].textContent = locale === "en"
       ? "No authored animation clips" : "无模型内置动画";
@@ -1076,6 +1082,7 @@ atlasAnchorClear.addEventListener("click", () => {
     ? "Cleared anchor points for the selected mesh."
     : "已清除当前选中来源网格的两个端点。";
   refreshAtlasAnchorStatus();
+  refreshAtlasRigidControls();
 });
 atlasAnchorExport.addEventListener("click", () => {
   const inventory = atlasViewer?.sourceInventory();
@@ -1128,6 +1135,7 @@ atlasAnchorImport.addEventListener("change", () => {
       ? `Loaded ${checked.size} LOCAL anchor drafts (not calibrated or legally cleared).`
       : `已导入 ${checked.size} 组本地端点草稿（未经校准或版权审核）。`;
     refreshAtlasAnchorStatus();
+    refreshAtlasRigidControls();
   }).catch((error) => {
     atlasAnchorMessage.textContent = locale === "en"
       ? `Anchor import refused: ${String(error)}`
