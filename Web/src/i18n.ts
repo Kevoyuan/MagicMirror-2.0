@@ -11,6 +11,9 @@ const en: Record<string, string> = {
   "关闭摄像头": "Stop camera",
   "保存画面": "Save image",
   "本地推理 · 尚未运行": "On-device inference · Not started",
+  "诊断": "Diagnostics",
+  "阅读解剖说明": "Read anatomy note",
+  "图层与许可说明": "Layers & licensing",
   "观察区域": "Body region",
   "全身": "Whole",
   "手臂": "Arms",
@@ -152,7 +155,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value"
+      "#tracking-status,#guidance,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);
