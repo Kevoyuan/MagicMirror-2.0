@@ -335,3 +335,11 @@ a { color: inherit; }
 @media (max-width: 600px) {
   .part-note { top: 58px; }
 }
+
+/* W1b: optional procedural reference-only smoothing */
+.smooth-control {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 0 6px; color: #4d5a45;
+  font-size: 12px; font-weight: 600;
+}
+.smooth-control input { width: 17px; height: 17px; accent-color: #345b50; }

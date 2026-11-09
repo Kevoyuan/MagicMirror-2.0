@@ -120,3 +120,18 @@ rights. Typechecking alone is not a shipped MVP.
   browser performance budgets and static deployment.
 - Reconsider a commercial iOS client only after an explicit owner
   reactivation decision. No parallel native backlog in W0–W4.
+
+## W1b · Visual temporal stability (SOURCE IMPLEMENTED; real QA open)
+
+- [x] Adaptive low-latency smoothing of the *visible procedural
+  proxy only*, never MediaPipe raw identity/rights evidence.
+- [x] Hard reset on disappearance, long observation gap, camera stop,
+  out-of-order timestamps; reject implausible single-joint
+  teleport without fabricating the missing joint.
+- [x] Optional Layers folio checkbox lets a developer compare
+  raw observations to stable display.
+- [x] Pure tests for small motion, telemetry ordering, impossible
+  movement, missing joints, reacquisition and dropout.
+- [ ] Validate real apparent jitter and moving-person lag against
+  raw unfiltered landmarks on desktop/iPhone browser. No camera-to-
+  display latency improvement has been measured by CI.

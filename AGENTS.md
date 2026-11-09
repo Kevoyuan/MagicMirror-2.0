@@ -181,3 +181,16 @@ Z-Anatomy mesh. Never infer medical conditions. Dismiss detail
 when tracking/camera state invalidates the observed segment.
 Do not silently promote proxy educational annotations to
 reviewed per-mesh true atlas selection or copied textbook content.
+
+## 8. W1b adaptive proxy pose smoothing (2026-11-09)
+
+Confidence-preserving, time-aware smoothing is allowed for the
+**visual procedural reference only**. It must never extrapolate hidden
+joints, turn a low-visibility MediaPipe point into a visible
+anatomical prediction, hallucinate real bone locations or claim
+medical calibration. The W1b source module
+`Web/src/smoothing.ts` resets when the capture session is stopped,
+on lost pose or long time gaps, hides single-frame implausible
+jumps, and does not retain any pose history beyond the in-memory
+latest joint positions. The Layers folio can disable smoothing
+for developer comparison; tests must establish nonprediction.
