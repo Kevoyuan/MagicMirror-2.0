@@ -310,22 +310,26 @@ export class LocalAtlasViewer {
     end: SourcePoint3 | null;
   }): boolean {
     if (!this.canRigidPreview(id, points)) return false;
+    const root = this.lastLoaded;
+    const start = points.start;
+    const end = points.end;
+    if (!root || !start || !end) return false;
     const entry = this.findPart(id)!;
     this.resetRigidPreview();
     const mesh = entry.mesh;
     mesh.updateWorldMatrix(true, false);
     const parent = mesh.parent;
     if (!parent) return false;
-    this.lastLoaded.updateWorldMatrix(true, false);
+    root.updateWorldMatrix(true, false);
     this.rigidPreview = {
       id,
       originalMatrix: mesh.matrix.clone(),
       originalAutoUpdate: mesh.matrixAutoUpdate,
-      originalRootWorld: this.lastLoaded.matrixWorld.clone(),
+      originalRootWorld: root.matrixWorld.clone(),
       originalParentWorld: parent.matrixWorld.clone(),
       originalMeshWorld: mesh.matrixWorld.clone(),
-      start: [...points.start],
-      end: [...points.end!],
+      start: [start[0], start[1], start[2]],
+      end: [end[0], end[1], end[2]],
       axis: "z",
       angleDegrees: 0,
     };
