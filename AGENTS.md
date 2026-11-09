@@ -332,3 +332,42 @@ Next: validate real body-to-mesh camera frame and joint
 hierarchy with **known original source anatomy**, then
 implement a bounded replay/simulation rather than
 claiming actual calibrated 3D human anatomy.
+
+## 14. W2f reversible ONE-mesh rigid source-preview only (2026-11-09)
+
+Continue the **Web-first open-source** product, keeping iOS
+frozen and Android canceled. After a real user selects a
+NON-SKINNED original mesh, manually assigns a W2d MediaPipe
+surface reference segment, and selects distinct W2e source
+A/B points, enable an **explicit click-only local experiment**:
+rotate this one original mesh rigidly around A by at most
+±90 degrees about an **original-model-root X/Y/Z axis**.
+B is a reference direction/endpoint and marker, NOT an
+anatomically verified skeletal joint. A/B are not camera,
+world-measured human or medically meaningful coordinates.
+
+`Web/src/rigid-preview.ts` is the pure, testable matrix
+foundation: `P_parent^-1 * R_root * D_pivot * R_root^-1
+* M_mesh_original_world`. Each slider update MUST start
+from an immutable original mesh matrix/world transform,
+not compound on the already-previewed result. Restore
+the original matrix AND `matrixAutoUpdate` state on
+reset, cancel, model change, hide or modal closure.
+Never rewrite the original imported geometry or disk file.
+
+W2f is **only for exactly ONE plain Mesh at a time**.
+Reject any selected `SkinnedMesh`, **any model with
+authored animation clips**, missing/overlapping anchors,
+nonfinite/oversized angle, hidden mesh, or missing source
+model; never blend the preview with an `AnimationMixer`.
+No camera input, online access, skinning/weight generation,
+joint hierarchy, multi-part skeletal parenting, medical
+measurements, body-pose retargeting or atlas public release
+is authorized by this feature. Keep all real bone/asset
+rights gates fail-closed.
+
+Synthetic TS/Vitest matrix identity, arbitrary transformed
+source-parent frame, rotation pivot and no-accumulation
+tests must pass. A green CI **does not replace** real
+Chrome/Safari source model import, WebGL interaction or
+physical 3D calibration.

@@ -611,3 +611,19 @@ local protected JSON export/import. The labels
 must emphasize *manual, uncalibrated source points*
 rather than genuine anatomical joints or live body
 pose. Keep the viewport as the primary element.
+
+## Folio II · One-part original-mesh motion reference (2026-11-09)
+
+Below manual mesh mapping and source A/B reference
+points, add a restrained parchment/green **single
+mesh rigid preview** control. A visible plain source
+mesh is rotated by an explicitly chosen **model X/Y/Z
+axis** about the user's manual A position; cap angle
+to ±90° and show changing B point. Offer a strong
+**Restore original pose** action. Keep this separate
+from the authored-animation player and camera.
+Disable controls for SkinnedMesh, animated source
+models, incomplete source points or invisible parts.
+Do not call this actual bone tracking, medical
+calibration, or a rigged skeleton; camera stays
+dominant in the main Leonardo interface.
