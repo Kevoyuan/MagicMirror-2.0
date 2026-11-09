@@ -6,6 +6,7 @@ import SwiftUI
 struct AnatomyLayersSheet: View {
     @Bindable var model: MirrorViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var page: NotebookPage = .systems
     @State private var showLayerExplanation = false
     @State private var showSectionExplanation = false
@@ -66,7 +67,8 @@ struct AnatomyLayersSheet: View {
         }
         .tint(LeonardoPalette.verdigris)
         .preferredColorScheme(.light)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize
+            ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
