@@ -1,12 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * W2j browser smoke: only the ORIGINAL code-generated GLB and offline
- * source-model angle timeline. No webcam, Google .task, actual Z-Anatomy
- * files, licensed model redistribution or browser camera permission.
- *
- * The CI Chromium software rasterizer executes real WebGL + GLTF
- * Exporter/Loader; it is NOT hardware iPhone Safari/Chrome acceptance.
+ * W2j/W2k browser integration only: original generated GLB, no camera,
+ * no third-party Z-Anatomy/Google model assets or public deployment.
+ * CI Linux WebKit emulates iPhone Safari viewport/touch and engine,
+ * but is NOT genuine iOS hardware, Safari privacy, GPU, or thermal QA.
  */
 export default defineConfig({
   testDir: "./tests/browser",
@@ -22,16 +20,28 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
-    ...devices["Desktop Chrome"],
-    launchOptions: {
-      args: [
-        "--enable-webgl",
-        "--use-gl=angle",
-        "--use-angle=swiftshader",
-        "--enable-unsafe-swiftshader",
-      ],
-    },
   },
+  projects: [
+    {
+      name: "chromium-desktop",
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: {
+          args: [
+            "--enable-webgl", "--use-gl=angle", "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
+          ],
+        },
+      },
+    },
+    {
+      name: "webkit-iphone-emulation",
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "webkit",
+      },
+    },
+  ],
   webServer: {
     command: "npm run dev -- --host 127.0.0.1",
     url: "http://127.0.0.1:5173",
