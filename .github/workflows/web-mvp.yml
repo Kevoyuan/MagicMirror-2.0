@@ -68,7 +68,7 @@ jobs:
   # Tests only MagicMirror's original generated 3-box GLB. No webcam/task
   # model, Z-Anatomy assets, user uploads or public release distribution.
   browser-demo-smoke:
-    name: Original 3D demo browser smoke (manual, Chromium WebGL)
+    name: Original 3D demo browser smoke (Chromium + iPhone WebKit engine)
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (contains(github.head_ref, 'browser-smoke') || contains(github.head_ref, 'chromium-demo-smoke')))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -84,9 +84,9 @@ jobs:
           cache-dependency-path: Web/package.json
       - name: Install exact developer dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
-      - name: Install isolated headless Chromium runtime
-        run: npx playwright install --with-deps chromium
-      - name: Exercise real GLTF exporter/loader, WebGL and local timeline
+      - name: Install isolated Chromium and WebKit browser engines
+        run: npx playwright install --with-deps chromium webkit
+      - name: Exercise GLB/WebGL and original timeline on desktop and iPhone-size WebKit
         env:
           CI: "true"
         run: npm run test:browser
