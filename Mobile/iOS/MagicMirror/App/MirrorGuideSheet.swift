@@ -6,6 +6,7 @@ import SwiftUI
 struct MirrorGuideSheet: View {
     @Binding var showDiagnostics: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var page: GuidePage = .using
 
     private enum GuidePage: String, CaseIterable, Identifiable {
@@ -62,7 +63,8 @@ struct MirrorGuideSheet: View {
         }
         .tint(LeonardoPalette.verdigris)
         .preferredColorScheme(.light)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize
+            ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
