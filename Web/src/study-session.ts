@@ -19,7 +19,7 @@ import {
 } from "./study-timeline";
 
 /**
- * W2j: ONE explicit, LOCAL-only study restore file. It bundles the four
+ * W2l: ONE explicit, LOCAL-only study restore file. It bundles the four
  * separate user-authored drafts (W2d mapping, W2e anchor points, W2g virtual
  * source chain, W2i angle keyframes) so a reviewer can restore a whole
  * in-memory research state with one verified action.

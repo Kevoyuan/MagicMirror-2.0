@@ -167,7 +167,38 @@ Synthetic unit tests cannot replace
 real GPU/mobile browser acceptance.
 
 
-## W2j one-file session and replay review standard
+## Opt-in end-to-end Chromium testing
+
+Run `npm run test:browser` after installing
+Playwright Chromium to test the actual Leonardo
+UI plus the only fully original 3-box GLB
+example. CI runs the browser job only through
+manual workflow dispatch or PR branches with
+`browser-smoke`; normal PR tests stay fast.
+No media devices, camera traces, original
+Z-Anatomy meshes, restricted Google model
+weights or user files may be included in
+Playwright tests or uploaded as CI artifacts.
+Never claim these software-WebGL results
+validate iPhone camera tracking, FBX provenance,
+live joint retargeting or commercial licensing.
+
+## Two-engine opt-in browser checks (W2k)
+
+Install both Chromium and WebKit and run
+`npm run test:browser` to cover the original
+GLB study, desktop and iPhone-sized touch UI.
+The first GitHub hosted two-engine run passed
+6/6 scenarios (run 42652358053). WebKit
+on Linux is a browser-engine/viewport test,
+not authentic Safari on iPhone hardware.
+Still obtain owner-supplied physical camera,
+orientation, FPS, thermal, permissions,
+licensed actual source model and accessibility
+evidence before any release claim.
+
+
+## W2l one-file session and replay review standard
 
 A local study session bundles only the four existing
 user-authored drafts plus the ORIGINAL model identity.

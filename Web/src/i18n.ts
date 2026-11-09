@@ -11,6 +11,9 @@ const en: Record<string, string> = {
   "关闭摄像头": "Stop camera",
   "保存画面": "Save image",
   "本地推理 · 尚未运行": "On-device inference · Not started",
+  "诊断": "Diagnostics",
+  "阅读解剖说明": "Read anatomy note",
+  "图层与许可说明": "Layers & licensing",
   "观察区域": "Body region",
   "全身": "Whole",
   "手臂": "Arms",
@@ -202,7 +205,7 @@ const en: Record<string, string> = {
     "Drag to rotate, scroll to zoom, click a mesh to inspect its original name.",
   "注意：即使可以导入 Z-Anatomy，本地静态浏览也不证明模型已绑定动画、逐网格许可合规或可公开商用。":
     "Even if Z-Anatomy loads, a local static preview does not establish skinning, component-by-component rights or commercial redistribution permission.",
-  // W2j one-file local study session (Folio II)
+  // W2l one-file local study session (Folio II)
   "本地研究会话 · 单文件原子恢复": "Local study session · one-file atomic restore",
   "将人工映射、模型空间端点、虚拟运动链与角度关键帧合并为一份显式下载的本地 JSON。导入时先整体核验原始模型哈希与各草稿一致性，全部通过才一次性替换研究状态；不含模型几何、摄像头画面或任何版权授权。":
     "Bundle the manual mapping, source-space points, virtual chain and angle keyframes into ONE explicitly downloaded local JSON. Import verifies the original model hash and every draft before replacing the study state atomically. No source geometry, camera frames or rights approval is included.",
@@ -222,7 +225,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics"
+      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);

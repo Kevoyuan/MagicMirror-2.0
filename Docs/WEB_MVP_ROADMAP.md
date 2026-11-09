@@ -14,6 +14,12 @@
       coordinate transform and front-camera mirror semantics.
 - [x] Camera-first Leonardo layout, focus, opacity, camera switch,
       overlay pause, contextual privacy/asset and disabled layer info.
+- [x] Web UI Leonardo v2 source refinement: safe-area header, on-demand
+      opacity/diagnostics/study explanation, 44px controls, responsive
+      mobile parchment sheets and proxy-first honest layer content.
+- [x] Add bilingual disclosure copy and synthetic localization test coverage.
+- [ ] Verify real Safari/Chrome layout, text zoom, keyboard/dialog focus,
+      70% camera-stage composition target and overlapping status/notes.
 - [x] Keep third-party mesh/model binaries out of Git; stage pinned
       developer model and package WASM with hash/byte checks.
 - [x] Author synthetic pose/crop tests and GitHub Web CI source build.
@@ -374,7 +380,61 @@ rights. Typechecking alone is not a shipped MVP.
   before advertising true anatomical AR.
 
 
-## W2j · One-file local study session (SOURCE IMPLEMENTED; real browser QA OPEN)
+## W2j · Original-demo browser integration smoke
+
+- [x] Add real Chromium browser tests for UI navigation
+  without camera permission, EN locale switch and close.
+- [x] Exercise the original generated, self-contained
+  3-box GLB through real GLTFExporter/GLTFLoader,
+  Chromium WebGL, source-part list, bounded manual
+  chain and local keyframe loop controls.
+- [x] Download source-SHA-bound timeline JSON, verify
+  rights status remains NOT_REVIEWED, reject a forged
+  source SHA, and re-import valid local data without
+  changing original geometry or camera state.
+- [x] Install Playwright only for opt-in smoke; preserve
+  fast source CI and existing default-denied public
+  deployment. Use the same `Web-first MVP` workflow,
+  with manual dispatch or a `browser-smoke` PR branch,
+  no additional workflow.
+- [x] Verified the exact opt-in PR workflow on GitHub-hosted
+  Chromium/WebGL: **3/3 Playwright E2E tests passed**,
+  including real generated GLB/WebGL, live timeline
+  controls, bad-source rejection and good JSON reimport.
+  Evidence: https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+  Ordinary Web pushes still skip Chromium installation;
+  browser-smoke PR branches and manual dispatch opt in.
+- [ ] Independently test actual camera permission,
+  iPhone Safari portrait/landscape, real Z-Anatomy
+  source FBX import/units, skinning, performance,
+  privacy and component copyright in physical devices.
+  Headless CI is not hardware acceptance.
+
+## W2k · Two-engine original-demo browser integration (BROWSER CI PASS)
+
+- [x] Reuse real W2j browser E2E in **desktop Chromium**
+  and **mobile/touch-enabled iPhone 13 Linux WebKit emulation**.
+- [x] Both browser engines run the actual source code-generated
+  original GLB exporter/loader/WebGL pipeline, user chain
+  controls, local frame replay, source SHA JSON rejection
+  and safe reimport. No camera usage or external anatomy assets.
+- [x] Pin GitHub's opt-in browser job to Ubuntu 24.04 and
+  install both Playwright engines only when manually
+  dispatched or a `browser-smoke` feature PR requests
+  the heavy check; ordinary source CI remains fast.
+- [x] **6/6 real browser E2E PASS** (3 desktop Chromium,
+  3 Linux WebKit with iPhone-size viewport/touch)
+  https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+- [ ] Physical iPhone Safari (camera permission, WebGL on
+  actual Apple GPU, viewport/orientation, thermal/GPU
+  performance, local large FBX import and source assets),
+  plus legal/privacy approval, remains independently blocked.
+
+
+> Merge note: developed as "W2j" on a parallel branch; renamed to W2l on merge
+> because mainline W2j/W2k are the opt-in browser smoke milestones.
+
+## W2l · One-file local study session (SOURCE IMPLEMENTED; real browser QA OPEN)
 
 - [x] Bundle the four separate user-authored drafts (W2d mapping,
   W2e source A/B points, W2g virtual chain, W2i keyframes) into ONE

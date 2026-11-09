@@ -38,6 +38,40 @@ If `npm run stage:assets` fails, review upstream package/model URLs
 and hashes instead of weakening verification. The `latest` download
 URL is mutable; changed model bytes fail the developer staging script.
 
+## Web UI design — Leonardo notebook v2.0 (source implementation)
+
+The active [Web design contract](../DESIGN.md) supersedes the archived
+SwiftUI-only visual handoff. The live camera remains the primary view;
+no dashboard or account layer has been introduced.
+
+- The mobile header keeps the brand, language toggle and real pose status
+  on one compact row while respecting browser safe-area insets.
+- Whole / Arms / Legs remain directly reachable; **Opacity** uses a native
+  collapsible `<details>` control. The four existing actions retain
+  keyboard focus and 44px minimum targets.
+- Local inference diagnostics are available on demand, not constantly
+  drawn over the live camera. Their numbers are process/output timings,
+  not display FPS, medical measurements or sensor latency.
+- A visible proxy limb can show an original educational note. The note
+  initially shows a short title; **Read anatomy note** expands its
+  explanation. The card and active camera guidance are not displayed
+  on top of one another.
+- The Anatomy / Privacy dialogs and static FBX/GLB study viewer render
+  as scrollable parchment bottom sheets on narrow touch viewports,
+  retaining native `<dialog>` close and Escape behavior.
+- The layer folio now displays the **working proxy** and local file
+  action before the longer rights explanation. Genuine multi-system
+  AR layers stay unavailable until licensed, rigged and registered.
+- English and Simplified Chinese disclosure labels are built from local
+  `Web/src/i18n.ts`; user-provided source mesh filenames are never
+  translated or uploaded.
+
+**UI acceptance still open:** check real Chrome / Safari desktop and
+iPhone Safari safe areas, screen reader and keyboard flow, browser zoom,
+camera layer alignment, overlay-note interactions and 70% camera-stage
+composition target on a representative portrait phone. CI source build
+does not establish real-device UX or asset publication rights.
+
 ## Honest implemented features
 
 - Browser `getUserMedia` with an explicit click/permission flow,
@@ -452,7 +486,69 @@ Run a real browser interaction test
 before considering it hardware verified.
 
 
-## W2j: save and restore one local study session
+## W2j: Optional real Chromium browser integration test
+
+For an actual desktop-browser runtime smoke of
+the ORIGINAL three-box tutorial (no webcam, no
+external anatomical geometry or Google task
+model weights):
+
+```bash
+cd Web
+npm install --legacy-peer-deps
+npx playwright install chromium webkit
+npm run test:browser
+```
+
+Playwright opens a local Vite server; it checks
+the exact production study UI, GLB exporter/loader,
+software WebGL, virtual multi-part chain and
+keyframe replay, explicit local SHA-bound JSON
+download, forged-source rejection and valid
+re-import. Tests never press the webcam button.
+
+Ordinary GitHub Web CI still does only the
+fast TS/Vitest/build/release-denial checks.
+Run `Web-first MVP` manually via GitHub Actions
+or open a PR branch containing `browser-smoke`
+to opt into the heavier Chromium job in the
+**same workflow**. Browser smoke is not a
+publicly deployable release, not Z-Anatomy
+usage permission and **not physical iPhone Safari
+or real camera acceptance**.
+
+Browser CI pins **Ubuntu 24.04** for Playwright's supported Chromium
+runtime; ordinary source checks continue on the current GitHub
+default runner. The browser smoke is specifically software WebGL,
+not an iPhone/physical GPU performance or medical anatomy acceptance.
+
+**First verified browser smoke (2026-11-09):** all **3/3**
+Playwright tests passed on GitHub-hosted Ubuntu 24.04
+Chromium with software WebGL and no webcam permission:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+This is real browser execution of the original generated GLB,
+not a confirmation of Safari/iPhone or original Z-Anatomy FBX behavior.
+
+### W2k: Original-demo mobile-browser engine coverage
+
+The opt-in suite now runs **six** real browser checks:
+three on desktop Chromium and the same three on
+Linux WebKit using an **iPhone 13 viewport and touch
+emulation**. GitHub-hosted Ubuntu 24.04 verified
+**6/6 passed** for the original generated GLB,
+model-space ghost chain, timeline replay and
+source-locked local JSON on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+
+This is meaningful desktop/mobile browser-engine
+integration confidence, but **not** a physical
+iPhone Safari camera/WebGL performance result.
+Real Z-Anatomy licensing, original FBX import,
+medical/camera calibration and public release
+review are not cleared by these tests.
+
+
+## W2l: save and restore one local study session
 
 Instead of downloading and re-importing the separate mapping,
 endpoint and keyframe JSON files in the right order, open

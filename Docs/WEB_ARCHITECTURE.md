@@ -405,7 +405,55 @@ human pose animation or public model
 distribution is authorized by these frames.
 
 
-## W2j one-file local study session and replay diagnostics
+## W2j opt-in actual browser smoke environment
+
+`Web/playwright.config.ts` starts the unmodified Vite
+development server at `localhost:5173`; headless Chromium
+with a software WebGL renderer opens the same DOM and lazy
+Three.js source loader as a regular end-user.
+`Web/tests/browser/original-demo.spec.ts` uses the
+original THREE.js generated GLB from `study-demo.ts`,
+rather than any actual third-party anatomical FBX
+or Google task model. It exercises page state,
+source GLB parsing, virtual ghost preview, timeline
+loop, user-initiated JSON download and rejection
+of falsified model SHA, entirely without a camera
+request. This validates selected browser integration
+behavior, NOT a certified anatomical visualization,
+mobile Safari, actual source performance, live
+pose tracking, medical calibration or distribution
+rights.
+
+The existing `.github/workflows/web-mvp.yml`
+runs fast source/unit tests on ordinary Web
+changes. Its extra Chromium job is opt-in for
+manual workflow runs or PR branches with
+`browser-smoke` in the name. The source build
+and public release guard stay unchanged.
+
+## W2k browser engine and phone-viewport regression coverage
+
+The opt-in browser job in the existing Web workflow
+now installs pinned Playwright Chromium AND WebKit on
+Ubuntu 24.04. The exact same `original-demo.spec.ts`
+runs in two projects: real desktop Chromium with software
+WebGL and Linux WebKit using iPhone 13 mobile viewport
+and touch emulation. 6 of 6 E2E checks completed on
+GitHub-hosted Actions (2026-11-09, run 42652358053).
+It exercises a real browser engine in place of a
+pure mathematical unit test, without any camera
+permissions, third-party meshes or model weights.
+
+Linux WebKit/iPhone viewport emulation does not have
+the same OS sandbox, media devices, graphics/thermal
+stack or actual screen orientation as hardware
+Apple Safari. Physical Safari remains W0 acceptance
+work; this result must not unlock model-weight
+redistribution, camera-to-bone 3D registration,
+Z-Anatomy rig validity or public hosting.
+
+
+## W2l one-file local study session and replay diagnostics
 
 `Web/src/study-session.ts` composes the already validated
 `AtlasMappingDraft`, `AtlasAnchorDraft`, an ordered bounded W2g

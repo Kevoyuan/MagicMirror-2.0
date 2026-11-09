@@ -43,7 +43,7 @@ const session = () => makeStudySession(source, mappings, anchors, nodes, frames)
 const clone = (value: unknown): any =>
   JSON.parse(JSON.stringify(value)) as any;
 
-describe("W2j one-file local study session, all-or-nothing restore", () => {
+describe("W2l one-file local study session, all-or-nothing restore", () => {
   it("roundtrips mapping, anchors, chain and keyframes for the exact source", () => {
     const bundle = session();
     expect(bundle).toMatchObject({
