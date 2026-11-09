@@ -7,6 +7,8 @@ struct AnatomyLayersSheet: View {
     @Bindable var model: MirrorViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var page: NotebookPage = .systems
+    @State private var showLayerExplanation = false
+    @State private var showSectionExplanation = false
 
     private enum NotebookPage: String, CaseIterable, Identifiable {
         case systems = "Systems"
@@ -18,7 +20,7 @@ struct AnatomyLayersSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 17) {
+                VStack(alignment: .leading, spacing: 12) {
                     manuscriptHeader
 
                     Picker("Anatomy study", selection: $page) {
@@ -68,31 +70,27 @@ struct AnatomyLayersSheet: View {
         .presentationDragIndicator(.visible)
     }
 
+    /// The first useful layer must be visible at the medium sheet detent:
+    /// keep editorial branding in one line and avoid a decorative title card.
     private var manuscriptHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("STUDI DI ANATOMIA")
-                    .font(.system(size: 11, weight: .semibold, design: .serif))
-                    .tracking(2.0)
+                    .font(.system(.caption2, design: .serif, weight: .semibold))
+                    .tracking(1.2)
                     .foregroundStyle(LeonardoPalette.copperInk)
-                Spacer(minLength: 8)
-                Text("FOLIO · II")
-                    .font(.system(size: 11, weight: .medium, design: .serif))
-                    .tracking(1.3)
-                    .foregroundStyle(LeonardoPalette.mutedInk)
+
+                Text("The anatomy notebook")
+                    .font(.system(.headline, design: .serif, weight: .semibold))
+                    .foregroundStyle(LeonardoPalette.ink)
+                    .accessibilityAddTraits(.isHeader)
             }
-
-            Text("The anatomy notebook")
-                .font(.system(.title2, design: .serif, weight: .semibold))
-                .foregroundStyle(LeonardoPalette.ink)
-
-            Text("Explore only the anatomical systems verified for the current camera view.")
-                .font(.subheadline)
+            Spacer(minLength: 8)
+            Text("FOLIO · II")
+                .font(.system(.caption2, design: .serif))
+                .tracking(0.8)
                 .foregroundStyle(LeonardoPalette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
-
-            ManuscriptRule()
-                .padding(.top, 2)
+                .accessibilityHidden(true)
         }
     }
 
@@ -103,20 +101,6 @@ struct AnatomyLayersSheet: View {
             $0 != .referenceProxy
         }
         return VStack(alignment: .leading, spacing: 11) {
-            HStack(spacing: 8) {
-                Image(systemName: "square.3.layers.3d")
-                    .foregroundStyle(LeonardoPalette.verdigris)
-                Text("ANATOMICAL SYSTEMS")
-                    .font(.caption.weight(.semibold))
-                    .tracking(1)
-                Spacer(minLength: 4)
-                Text(readySystems.count, format: .number)
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
-                Text("ready")
-                    .font(.caption)
-            }
-            .foregroundStyle(LeonardoPalette.ink)
-
             HStack(spacing: 10) {
                 Image(systemName: visibleSystems.isEmpty
                       ? "figure.stand" : "square.stack.3d.up.fill")
@@ -150,20 +134,30 @@ struct AnatomyLayersSheet: View {
                     .accessibilityHint("Return to the illustrative pose reference")
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(LeonardoPalette.agedPaper.opacity(0.45),
                         in: RoundedRectangle(cornerRadius: 13))
             .accessibilityElement(children: .contain)
 
-            Text("Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered.")
-                .font(.footnote)
-                .foregroundStyle(LeonardoPalette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
-
             ForEach(AnatomyDisplayLayer.allCases) { layer in
                 layerRow(layer)
             }
+
+            DisclosureGroup(
+                "How anatomy layers work",
+                isExpanded: $showLayerExplanation
+            ) {
+                Text("Select more than one registered system, or use Solo to view one alone. Locked models are not installed and registered.")
+                    .font(.footnote)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 7)
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(LeonardoPalette.verdigris)
+            .padding(.vertical, 4)
         }
     }
 
@@ -302,12 +296,16 @@ struct AnatomyLayersSheet: View {
             }
             .foregroundStyle(LeonardoPalette.ink)
 
-            Text(LocalizedStringKey(model.canSectionReviewedAtlas
-                ? "3D surface section clipping is available for the reviewed and registered skinned atlas. This shows cut surfaces without generating anatomical cross-section caps."
-                : "3D surface section controls unlock only when a reviewed, registered, GPU-skinned atlas is actually available. A drawn guide line is not a real cut."))
-                .font(.subheadline)
-                .foregroundStyle(LeonardoPalette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
+            Label(
+                model.canSectionReviewedAtlas
+                    ? "Surface clipping available"
+                    : "Requires registered 3D anatomy",
+                systemImage: model.canSectionReviewedAtlas
+                    ? "checkmark.circle" : "lock"
+            )
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(LeonardoPalette.mutedInk)
+            .fixedSize(horizontal: false, vertical: true)
 
             if model.canSectionReviewedAtlas, model.activeSection != nil {
                 Button("Show complete reference atlas") {
@@ -389,6 +387,22 @@ struct AnatomyLayersSheet: View {
                         .foregroundStyle(LeonardoPalette.mutedInk)
                 }
             }
+
+            DisclosureGroup(
+                "What do section planes show?",
+                isExpanded: $showSectionExplanation
+            ) {
+                Text(LocalizedStringKey(model.canSectionReviewedAtlas
+                    ? "3D surface section clipping is available for the reviewed and registered skinned atlas. This shows cut surfaces without generating anatomical cross-section caps."
+                    : "3D surface section controls unlock only when a reviewed, registered, GPU-skinned atlas is actually available. A drawn guide line is not a real cut."))
+                    .font(.footnote)
+                    .foregroundStyle(LeonardoPalette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 7)
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(LeonardoPalette.verdigris)
+            .padding(.vertical, 4)
 
             Text(LocalizedStringKey(model.canSectionReviewedAtlas
                 ? "GPU 3D SURFACE CLIPPING · REFERENCE GEOMETRY ONLY"
