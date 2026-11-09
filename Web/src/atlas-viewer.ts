@@ -7,6 +7,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { inspectLocalAtlasFile, normalizeSlice, sliceNormal,
   type SliceOrientation } from "./atlas-source";
 import { sourcePathForPart, type AtlasPart } from "./atlas-catalog";
+import { buildLocalAtlasInventory, type AtlasInventory } from "./atlas-inventory";
 
 interface LocalMeshEntry {
   readonly id: number;
@@ -52,6 +53,15 @@ export class LocalAtlasViewer {
   private parts: LocalMeshEntry[] = [];
   private isolatedPartId: number | null = null;
   private selectedPartId: number | null = null;
+  private sourceIdentity: {
+    fileName: string;
+    fileSizeBytes: number;
+    sourceSHA256: string;
+    importedMeshes: number;
+    triangles: number;
+    skinnedMeshes: number;
+    authoredJoints: number;
+  } | null = null;
   private previousPointer?: { x: number; y: number };
   onPartSelected: ((part: AtlasPart) => void) | undefined;
 
@@ -148,6 +158,14 @@ export class LocalAtlasViewer {
       triangles: part.triangles,
       visible: part.mesh.visible,
     }));
+  }
+
+  sourceInventory(): AtlasInventory | null {
+    if (!this.sourceIdentity || !this.loaded) return null;
+    return buildLocalAtlasInventory({
+      ...this.sourceIdentity,
+      parts: this.getParts(),
+    });
   }
 
   getIsolatedPartId(): number | null { return this.isolatedPartId; }
@@ -264,6 +282,13 @@ export class LocalAtlasViewer {
     // Read the file once and parse locally; no fetch(URL.createObjectURL)
     // which could accidentally leak the file to a remote worker/CDN.
     const bytes = await file.arrayBuffer();
+    if (!crypto.subtle) {
+      throw new Error("Secure-context SHA-256 is required for local source provenance.");
+    }
+    const digestBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    const sourceSHA256 = Array.from(digestBytes, (value) =>
+      value.toString(16).padStart(2, "0")
+    ).join("");
     let object: Object3D;
     if (format === "fbx") {
       const { FBXLoader } = await import("three/addons/loaders/FBXLoader.js");
@@ -340,6 +365,11 @@ export class LocalAtlasViewer {
     });
     this.loaded = true;
     this.lastLoaded = object;
+    this.sourceIdentity = {
+      fileName: file.name, fileSizeBytes: file.size, sourceSHA256,
+      importedMeshes, triangles, skinnedMeshes,
+      authoredJoints: jointNames.size,
+    };
     this.resetView();
     return {
       file: file.name, importedMeshes, triangles, skinnedMeshes,
@@ -378,6 +408,7 @@ export class LocalAtlasViewer {
     this.clearSelection();
     this.parts = [];
     this.isolatedPartId = null;
+    this.sourceIdentity = null;
     if (!this.lastLoaded) return;
     const geometries = new Set<Mesh["geometry"]>();
     this.lastLoaded.traverse((node) => {
