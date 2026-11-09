@@ -39,7 +39,10 @@ root.innerHTML = `
       <div class="stage-heading">
         <span class="folio-caption">FIG. 01 / THE HUMAN FORM</span>
         <div class="stage-utilities">
-          <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+          <details class="diagnostics-disclosure">
+            <summary>诊断</summary>
+            <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+          </details>
           <button id="snapshot" type="button" class="snapshot-button" disabled title="下载当前参考画面为 PNG">保存画面</button>
         </div>
       </div>
@@ -63,8 +66,11 @@ root.innerHTML = `
         </div>
         <h3 id="part-title">人体参考区域</h3>
         <span id="part-subtitle" class="part-note-subtitle"></span>
-        <p id="part-description"></p>
-        <small>教学示意 ≠ 真实骨骼扫描 · 非医疗诊断</small>
+        <details id="part-note-more" class="part-note-more">
+          <summary>阅读解剖说明</summary>
+          <p id="part-description"></p>
+          <small>教学示意 ≠ 真实骨骼扫描 · 非医疗诊断</small>
+        </details>
       </aside>
 
       <div class="stage-corner-note" aria-hidden="true">
@@ -83,10 +89,13 @@ root.innerHTML = `
             <label><input name="focus" type="radio" value="legs"><span>腿部</span></label>
           </div>
         </fieldset>
-        <div class="opacity-field">
-          <label class="field-label" for="opacity">参考透明度 <output id="opacity-value">65%</output></label>
-          <input id="opacity" type="range" min="15" max="90" value="65" step="5" />
-        </div>
+        <details id="opacity-disclosure" class="opacity-disclosure">
+          <summary>透明度 <span aria-hidden="true">⌄</span></summary>
+          <div class="opacity-field">
+            <label class="field-label" for="opacity">参考透明度 <output id="opacity-value">65%</output></label>
+            <input id="opacity" type="range" min="15" max="90" value="65" step="5" />
+          </div>
+        </details>
       </div>
       <div class="action-row">
         <button id="toggle-overlay" class="action-button" type="button" disabled>暂停叠加</button>
@@ -105,15 +114,18 @@ root.innerHTML = `
   <dialog id="layers-dialog" class="folio-dialog" aria-labelledby="layers-title">
     <div class="dialog-heading"><span>THE ANATOMY FOLIO</span><button class="close-dialog" data-close="layers-dialog" aria-label="关闭图层">×</button></div>
     <h2 id="layers-title">解剖图层</h2>
-    <p>只有原创程序生成的三维示意骨架可用。Z-Anatomy 的真实骨骼、肌肉与器官尚未通过授权、绑定和配准验收。</p>
+    <div class="layer-row"><strong>◉ 参考骨架 / Proxy</strong><span class="available-label">已实现</span></div>
     <label class="smooth-control"><input id="stabilize" type="checkbox" checked> <span>稳定显示示意骨架（无关节预测）</span></label>
     <button id="open-atlas-studio" class="primary-button atlas-entry" type="button">导入本地 FBX / GLB 解剖模型</button>
     <p class="local-model-hint">仅在本设备预览你主动选择的文件，模型不会上传。导入的是静态研究模型，尚未与人体姿态绑定。</p>
-    <div class="layer-row"><strong>◉ 参考骨架 / Proxy</strong><span class="available-label">已实现</span></div>
     <div class="layer-row muted"><strong>骨骼 / Anatomy atlas</strong><span>待审核</span></div>
     <div class="layer-row muted"><strong>肌肉 / Muscles</strong><span>规划中</span></div>
     <div class="layer-row muted"><strong>器官 / Organs</strong><span>规划中</span></div>
     <div class="layer-row muted"><strong>横断 / 矢状 / 冠状剖面</strong><span>规划中</span></div>
+    <details class="folio-explainer">
+      <summary>图层与许可说明</summary>
+      <p>只有原创程序生成的三维示意骨架可用。Z-Anatomy 的真实骨骼、肌肉与器官尚未通过授权、绑定和配准验收。</p>
+    </details>
   </dialog>
 
   <dialog id="privacy-dialog" class="folio-dialog" aria-labelledby="privacy-title">
@@ -190,6 +202,7 @@ const noteCard = element<HTMLElement>("#part-note");
 const noteTitle = element<HTMLElement>("#part-title");
 const noteSubtitle = element<HTMLElement>("#part-subtitle");
 const noteDescription = element<HTMLElement>("#part-description");
+const noteExpansion = element<HTMLDetailsElement>("#part-note-more");
 const metric = element<HTMLElement>("#frame-metric");
 const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
@@ -240,6 +253,7 @@ function setStatus(text: string, kind: StatusKind): void {
 }
 function hideNote(): void {
   noteCard.hidden = true;
+  noteExpansion.open = false;
   currentNote = null;
 }
 function renderCurrentNote(): void {
@@ -251,7 +265,7 @@ function renderCurrentNote(): void {
 }
 function showGuidance(text: string | null): void {
   lastGuidanceRaw = text;
-  guidance.hidden = !text;
+  guidance.hidden = !text || !noteCard.hidden;
   if (text) guidance.textContent = translate(text, locale);
 }
 function setLocale(next: Locale): void {
@@ -465,10 +479,15 @@ canvas.addEventListener("click", (event) => {
     return;
   }
   currentNote = note;
+  noteExpansion.open = false;
   renderCurrentNote();
   noteCard.hidden = false;
+  guidance.hidden = true;
 });
-element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
+element<HTMLButtonElement>("#close-part-note").addEventListener("click", () => {
+  hideNote();
+  showGuidance(lastGuidanceRaw);
+});
 languageButton.addEventListener("click", () => {
   setLocale(locale === "zh" ? "en" : "zh");
   if (atlasViewer) refreshAtlasParts();
