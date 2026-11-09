@@ -175,3 +175,29 @@ rights. Typechecking alone is not a shipped MVP.
 - [ ] Carry out full human source-by-source copyright/license
   evidence review; create a **real** authored mobile rig and
   camera registration before enabling live anatomy overlays.
+
+## W2c · Source rig quality sampling & authored animation (SOURCE IMPLEMENTED)
+
+- [x] Inspect actual imported `SkinnedMesh`, skeleton joint UUIDs,
+  authored `skinWeight`/`skinIndex` data, and model-authored
+  `AnimationClip` objects. Do **not** create missing Z-Anatomy
+  weights or claim this is a complete anatomical rig.
+- [x] Bound vertex-weight sampling per mesh; report actual
+  missing/unweighted/invalid joint references and suspicious
+  influence sums, marked clearly as **sampled only**.
+- [x] Preview independently authored FBX/GLB clips with user-click
+  Play/Pause, no autoplay and no MediaPipe body-pose retargeting.
+  Ignore malformed or extreme source clips and cap list to 40
+  previewable candidates.
+- [x] Include sampled diagnostics in the user-initiated
+  local JSON inventory while leaving the full rights status
+  `NOT_REVIEWED` and all original per-mesh license fields blank.
+- [x] Pure tests for valid/malformed weighted vertices and bounded
+  animation sanity, strict TS + CI build.
+- [ ] Verify actual animated, rigged GLB/FBX playback and joint
+  deformations in desktop Chrome and iPhone Safari; source test
+  does not prove WebGL skinning runtime correctness.
+- [ ] Review original Z-Anatomy FBX's real missing weights and
+  author an independent cohesive rig using Blender before any
+  live human-motion retargeting; add camera-space calibration,
+  semantic source-part mapping, occlusion and per-part rights.

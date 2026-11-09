@@ -576,3 +576,15 @@ An optional local JSON source inventory download must be
 explicitly user-triggered and labelled *not a rights review*.
 This is a private model study surface, not a live camera overlay
 or real Z-Anatomy anatomical slice mode.
+
+## Folio II · Model rig and clip diagnostics (2026-11-09)
+
+Below the private static 3D model viewport, put a compact
+**Rig & animation** study band: actual bound mesh/joint counts,
+honest sampled vertex-weight alerts, and a small Play/Pause
+control for clips **present in the selected source file**.
+The source FBX/GLB is still displayed only locally. Disable
+animation controls if the file has no clips. Never describe
+an unskinned original Z-Anatomy skeleton as ready for real-time
+MediaPipe retargeting and never autocreate a fake rig. The
+camera screen retains its visually dominant layout.

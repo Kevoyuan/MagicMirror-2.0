@@ -201,3 +201,30 @@ The study model limits remain ≤75 MB selected file, ≤2,000,000
 triangles and ≤5,000 source meshes; large input may still impose
 significant in-memory parsing costs, so actual device profiling
 is an open acceptance requirement.
+
+## W2c rig diagnostics and animation study pipeline
+
+`Web/src/rig-diagnostics.ts` performs pure, bounded sample-level
+checks on **real imported** `skinWeight` and `skinIndex`
+attributes from a user-selected FBX/GLB `SkinnedMesh`.
+These are reported in the separate **static Folio II** along
+with actual authored skeleton joint and skinned-mesh counts.
+The local source inventory exports the sampling counts with
+`samplingOnly=true` and independently keeps
+`rightsStatus=NOT_REVIEWED`; it is not a license, a complete
+weight audit or a clinical correctness result.
+
+FBXLoader's source `object.animations` and GLTFLoader's
+`gltf.animations` are inspected as source-authored
+`AnimationClip` objects. Safe, previewable clips are limited
+to the first 40 candidates, with individual duration at most
+600 seconds and track count at most 10,000. The user must
+explicitly select/play these clips. Three.js AnimationMixer
+updates only the **local static study model** in a bounded
+requestAnimationFrame loop; close/pause/replace cleans up actions.
+No animation data is inferred from camera landmarks, sent to
+a server or shipped as a licensed asset.
+
+This does **NOT** change the separate camera pipeline:
+MediaPipe's live procedural proxy still follows 2D observed
+surface points, without a reviewed Z-Anatomy skinning rig.

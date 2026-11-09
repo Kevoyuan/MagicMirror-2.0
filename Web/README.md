@@ -237,3 +237,34 @@ Current file limits: ≤75 MB, ≤2 million triangles and ≤5,000
 source meshes. Desktop browsers are recommended for original
 large FBX study; no actual Z-Anatomy import/device FPS
 performance is claimed until separately measured.
+
+## W2c: Test authored bone weights and file-contained animation locally
+
+Inside the **local-only anatomy study** dialog, the
+**Rig and authored animation diagnostics / 绑定与动画诊断**
+panel reports the actual imported model's SkinnedMesh and
+joint count. If the model contains weight attributes, it
+**samples** vertices (does not exhaustively audit all vertices)
+for missing weights, invalid weight values, out-of-range joint
+references, and suspicious influence sums.
+
+With a rigged model containing **its own authored animation**,
+choose an animation from the file and press Play/Pause. This
+plays only the source model's authored clips in the separate
+static inspector; it does **not** reflect your body motion.
+Imported models with no valid clips display a disabled player.
+No animation autoplays by opening or granting camera access.
+
+The local **Export source inventory JSON** also records the
+rig-sample diagnostic, explicitly `samplingOnly: true`,
+and overall original-mesh rights remain `NOT_REVIEWED`.
+For an original unrigged Z-Anatomy skeleton FBX the
+expected diagnostics may show *zero* authored skinned meshes
+and *no* compatible clips: **this does not mean the camera
+prototype is rigged or a medical observation**.
+
+Actual GPU skin deformations and clip playback still need
+physical browser validation. A real tracked anatomical
+skeleton requires an independently authored cohesive rig,
+pose-to-joint retargeter, anatomical camera registration,
+per-part rights signoff and measured performance.
