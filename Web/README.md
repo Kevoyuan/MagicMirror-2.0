@@ -363,3 +363,32 @@ source compilation checks. Real original FBX on
 desktop/iPhone browsers, GPU latency, exact
 reference orientation and multi-bone rig quality
 require actual hardware and human anatomy review.
+
+
+## W2g: Study a manual multi-mesh movement chain (not actual anatomy AR)
+
+In the PRIVATE source-model study dialog, import your own FBX/GLB,
+select a **plain** original mesh, map it to a MediaPipe
+surface-reference segment and click A/B on that actual
+mesh. Repeat for at least two and at most twelve parts.
+
+Select each source mesh and click **Add selected mesh**
+in the **Multi-mesh virtual chain** panel. For a child,
+choose another selected mesh as its **manual parent**.
+The app rejects cycles and invalid/unaligned identities;
+far-apart endpoints are reported as a geometric warning.
+Click **Preview virtual chain**, then click a node
+in the small chain list and use the X/Y/Z ±90° slider.
+Child **golden wireframe ghost geometry** follows the parent
+while original FBX/GLB mesh geometry and transforms stay
+unchanged. **Zero all angles**, Stop, a source/mapping
+change or closing the dialog ends the study. Nothing is
+uploaded, saved automatically or rendered over the live
+camera as actual internal anatomy.
+
+Source models with authored animation clips or selected
+SkinnedMesh are not eligible; use the separate authored
+animation inspector. This does not create a rig,
+generate skinning or reconstruct a patient skeleton.
+Real hardware/Safari tests, actual source permissions,
+rest-pose semantics and camera space are still open.

@@ -371,3 +371,38 @@ source-parent frame, rotation pivot and no-accumulation
 tests must pass. A green CI **does not replace** real
 Chrome/Safari source model import, WebGL interaction or
 physical 3D calibration.
+
+
+## 15. W2g original-source virtual hierarchy research (2026-11-09)
+
+**Active platform is Web, iOS code remains frozen, Android canceled.**
+A W2g virtual joint graph is an explicitly user-authored study of
+2–12 original, separately mapped NON-SKINNED source meshes with
+two distinct W2e points per mesh. Each node records an ORIGINAL
+source mesh ID, optional manual parent source mesh ID, an unverified
+source-root point A/B, a source X/Y/Z axis, and a bounded ±90° angle.
+Graph validation MUST reject cycles, duplicate parts, unselected
+parents, invalid points/axes, oversized inputs and unbounded angles.
+
+Parent-child transforms MUST follow the documented pure kinematic
+formula using immutable original source-root coordinates, not
+camera frames. W2g renders **independent THREE.js ghost Mesh objects**
+sharing the source geometry without changing original mesh transform,
+hierarchy, material, visibility, vertices, skinning or authored
+animations. Do NOT dispose shared geometry when clearing ghosts.
+The local original FBX/GLB remains untouched; preview is memory-only.
+Ghosts must disappear after modal close, source change, mapping
+or point changes, and should be reset on source-visibility edits.
+If the source includes authored animation clips or any selected
+part is SkinnedMesh, fail closed and keep the original model
+viewer available.
+
+Do not infer the parent from bone names or treat manual source
+mesh hierarchy as a validated anatomical skeletal rig.
+A large start-to-parent-end distance is a STUDY warning,
+not proof of anatomical attachment. This is neither
+3D body calibration nor MediaPipe retargeting, X-ray,
+patient anatomy, redistributed Z-Anatomy geometry nor
+commercial rights authorization. Continue blocking public
+release until per-mesh rights and Google model-weight
+privacy/redistribution evidence and actual physical device QA.

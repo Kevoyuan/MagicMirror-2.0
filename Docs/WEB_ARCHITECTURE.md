@@ -316,3 +316,34 @@ rig, not an anatomically verified bone hinge, not a
 person-specific camera transform or patient X-ray.
 The public model rights and SDK privacy release gates
 remain unchanged and unapproved.
+
+
+## W2g virtual KINEMATIC STUDY graph, not a real anatomical rig
+
+`Web/src/kinematic-chain.ts` holds a testable bounded
+manual DAG of SOURCE mesh IDs, original model-local A/B
+points, explicit parent source IDs, X/Y/Z model axes
+and angle values. It validates graph structure and
+topologically propagates parent SOURCE-root transforms:
+`D_child_total = D_parent_total * T(A_child) *
+R_local(axis,angle) * T(-A_child)`.
+The source remains unverified for real joint placement
+or anatomy classification. No MediaPipe observations enter
+this module.
+
+`LocalAtlasViewer.beginChainPreview` leaves every original
+Mesh untouched, creates at most twelve temporary gold
+wireframe ghost meshes reusing geometry, stores immutable
+source mesh WORLD matrices, and applies
+`M_ghost = RootWorld * D_total * inverse(RootWorld) * M_source_original`.
+A child ghost follows its parent transform without modifying
+the original imported hierarchy, skins, material or
+any underlying FBX/GLB asset. All chain errors are fail
+closed; changing model/mapping/anchor or closing the dialog
+tears down the transient ghost study. The explicit
+per-mesh parent editor and slider are in Folio II.
+
+This is a local, ORIGINAL-model coordinate preview.
+No camera extrinsics, 3D pose identity, bone proportions,
+medical skeletal joint axes, retarget weights or
+redistribution rights have been reviewed.

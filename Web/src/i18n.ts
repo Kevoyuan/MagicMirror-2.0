@@ -121,6 +121,20 @@ const en: Record<string, string> = {
   "导出映射草稿": "Export mapping draft",
   "导入本地映射 JSON": "Import local mapping JSON",
   "清空映射": "Clear mappings",
+  "多部件运动链 · 原模型虚拟预览": "Multi-mesh virtual chain · Original-model study",
+  "选择至少两个已标记 A/B 的普通来源网格，手动指定父部件。运动以独立金色线框副本呈现，原始网格完全不修改。模型坐标轴和端点未经过医学、相机或真实关节校准。":
+    "Select at least two original plain meshes with A/B points and manually assign parents. Gold wireframe ghosts move while all source geometry stays unchanged. Model axes and clicked points are NOT medically, camera or joint calibrated.",
+  "加入选中部件": "Add selected mesh",
+  "移除选中部件": "Remove selected mesh",
+  "当前选中部件的父节点": "Parent of selected source mesh",
+  "无父节点": "No parent",
+  "预览运动链": "Preview virtual chain",
+  "停止并恢复": "Stop and restore",
+  "当前节点旋转轴": "Selected node rotation axis",
+  "当前节点角度": "Selected node angle",
+  "所有角度归零": "Zero all angles",
+  "请选择真实来源网格建立 2–12 节人工运动链；不执行人体追踪。":
+    "Choose 2–12 real source meshes for a manual virtual chain; no human pose tracking.",
   "单部件刚体旋转实验 · 本地预览": "Single-mesh rigid rotation · Local experiment",
   "选择已映射且有 A/B 端点的普通网格，以原始模型的 A 点为支点，绕模型 X/Y/Z 轴旋转。B 点仅表示运动参考方向；不生成骨骼关节、权重或人体实时动画。带 SkinnedMesh 或内置动画的模型不可使用此模式。":
     "Select a mapped, ordinary mesh with A/B endpoints. Rotate around A using the SOURCE model X/Y/Z axis. B is a movement reference, not a bone joint. No rig, weights or human-driven animation is generated. Models containing SkinnedMesh or authored clips are excluded.",
@@ -186,7 +200,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count"
+      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);

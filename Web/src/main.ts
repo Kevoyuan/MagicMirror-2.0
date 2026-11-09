@@ -18,6 +18,10 @@ import {
 } from "./atlas-anchors";
 import type { SliceOrientation } from "./atlas-source";
 import type { SourceAxis } from "./rigid-preview";
+import {
+  countLargeStudyGaps, orderStudyChain,
+  type StudyChainNode,
+} from "./kinematic-chain";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
@@ -234,6 +238,35 @@ root.innerHTML = `
           <button id="atlas-rigid-reset" type="button" disabled>恢复原始姿态</button>
         </div>
         <p id="atlas-rigid-status" role="status" aria-live="polite">未开始。需要一个普通可见网格、人工映射和两个不同的模型空间端点。</p>
+      </section>
+      <section class="atlas-chain-panel" aria-labelledby="atlas-chain-title">
+        <h4 id="atlas-chain-title">多部件运动链 · 原模型虚拟预览</h4>
+        <p>选择至少两个已标记 A/B 的普通来源网格，手动指定父部件。运动以独立金色线框副本呈现，原始网格完全不修改。模型坐标轴和端点未经过医学、相机或真实关节校准。</p>
+        <div class="atlas-chain-actions">
+          <button id="atlas-chain-add" type="button" disabled>加入选中部件</button>
+          <button id="atlas-chain-remove" type="button" disabled>移除选中部件</button>
+          <label for="atlas-chain-parent">当前选中部件的父节点
+            <select id="atlas-chain-parent" disabled><option value="">无父节点</option></select>
+          </label>
+          <button id="atlas-chain-start" type="button" disabled>预览运动链</button>
+          <button id="atlas-chain-stop" type="button" disabled>停止并恢复</button>
+        </div>
+        <div id="atlas-chain-list" class="atlas-chain-list" role="list"></div>
+        <div class="atlas-chain-pose">
+          <label for="atlas-chain-axis">当前节点旋转轴
+            <select id="atlas-chain-axis" disabled>
+              <option value="x">X</option>
+              <option value="y">Y</option>
+              <option value="z" selected>Z</option>
+            </select>
+          </label>
+          <label for="atlas-chain-angle">当前节点角度
+            <input id="atlas-chain-angle" type="range" min="-90" max="90" step="1" value="0" disabled />
+          </label>
+          <output id="atlas-chain-degrees" for="atlas-chain-angle">0°</output>
+          <button id="atlas-chain-zero" type="button" disabled>所有角度归零</button>
+        </div>
+        <p id="atlas-chain-status" role="status" aria-live="polite">请选择真实来源网格建立 2–12 节人工运动链；不执行人体追踪。</p>
       </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -548,6 +581,13 @@ languageButton.addEventListener("click", () => {
   if (atlasViewer) refreshAtlasParts();
   else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
+  atlasChainStatus.textContent = atlasViewer?.getChainPreviewActive()
+    ? (locale === "en"
+      ? "Local virtual chain preview · NOT a real skeletal or camera retarget."
+      : "仅本地虚拟运动链预览 · 非真实骨骼或摄像头动作映射。")
+    : (locale === "en"
+      ? "Select 2–12 real source meshes with manual A/B points for study."
+      : "请选择 2–12 个已人工标记端点的真实来源网格。");
   if (atlasViewer?.getRigidPreviewPartId() !== null &&
       atlasViewer?.getRigidPreviewPartId() !== undefined) {
     atlasRigidStatus.textContent = locale === "en"
@@ -660,6 +700,20 @@ const atlasRigidAngle = element<HTMLInputElement>("#atlas-rigid-angle");
 const atlasRigidDegrees = element<HTMLOutputElement>("#atlas-rigid-degrees");
 const atlasRigidReset = element<HTMLButtonElement>("#atlas-rigid-reset");
 const atlasRigidStatus = element<HTMLElement>("#atlas-rigid-status");
+const atlasChainAdd = element<HTMLButtonElement>("#atlas-chain-add");
+const atlasChainRemove = element<HTMLButtonElement>("#atlas-chain-remove");
+const atlasChainParent = element<HTMLSelectElement>("#atlas-chain-parent");
+const atlasChainStart = element<HTMLButtonElement>("#atlas-chain-start");
+const atlasChainStop = element<HTMLButtonElement>("#atlas-chain-stop");
+const atlasChainAxis = element<HTMLSelectElement>("#atlas-chain-axis");
+const atlasChainAngle = element<HTMLInputElement>("#atlas-chain-angle");
+const atlasChainDegrees = element<HTMLOutputElement>("#atlas-chain-degrees");
+const atlasChainZero = element<HTMLButtonElement>("#atlas-chain-zero");
+const atlasChainStatus = element<HTMLElement>("#atlas-chain-status");
+const atlasChainList = element<HTMLElement>("#atlas-chain-list");
+const atlasChainIds = new Set<number>();
+const atlasChainParents = new Map<number, number | null>();
+const atlasChainAngles = new Map<number, { axis: SourceAxis; degrees: number }>();
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -704,6 +758,7 @@ async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
           : "请在同一个原始网格上选择两个不同的端点。";
         return;
       }
+      resetStudyChainDraft();
       atlasAnchors.set(sample.sourceMeshId, next);
       const triplet = sample.originalRootLocalPoint.map(v => v.toFixed(3)).join(", ");
       atlasAnchorMessage.textContent = locale === "en"
@@ -777,6 +832,99 @@ function refreshAtlasRigidControls(): void {
   }
 }
 
+function chainNodesForCurrentStudy(): StudyChainNode[] {
+  const result: StudyChainNode[] = [];
+  for (const id of atlasChainIds) {
+    const pair = atlasAnchors.get(id);
+    const poseSegment = atlasMappings.get(id);
+    if (!pair?.start || !pair.end || !poseSegment ||
+        !sufficientAnchorDistance(pair.start, pair.end)) {
+      throw new Error("Chain references an unanchored or unmapped source mesh");
+    }
+    const pose = atlasChainAngles.get(id) ?? { axis: "z" as SourceAxis, degrees: 0 };
+    result.push({
+      sourceMeshId: id, parentMeshId: atlasChainParents.get(id) ?? null,
+      start: pair.start, end: pair.end,
+      axis: pose.axis, degrees: pose.degrees,
+    });
+  }
+  return orderStudyChain(result);
+}
+
+function stopLocalStudyChain(): void {
+  atlasViewer?.resetChainPreview();
+  atlasChainStatus.textContent = locale === "en"
+    ? "Virtual chain stopped. Original geometry and transforms were never modified."
+    : "虚拟运动链已停止；原始网格和变换始终未被修改。";
+}
+
+function resetStudyChainDraft(): void {
+  stopLocalStudyChain();
+  atlasChainIds.clear();
+  atlasChainParents.clear();
+  atlasChainAngles.clear();
+}
+
+function refreshAtlasChainControls(): void {
+  const selected = atlasViewer?.getSelectedPartId() ?? null;
+  const included = selected !== null && atlasChainIds.has(selected);
+  const points = selected !== null ? atlasAnchors.get(selected) : undefined;
+  const eligible = selected !== null && Boolean(
+    atlasMappings.has(selected) && points &&
+    atlasViewer?.canRigidPreview(selected, points)
+  );
+  const active = atlasViewer?.getChainPreviewActive() ?? false;
+  atlasChainAdd.disabled = active || !eligible ||
+    included || atlasChainIds.size >= 12;
+  atlasChainRemove.disabled = active || !included;
+  atlasChainParent.disabled = active || !included;
+  atlasChainStart.disabled = active || atlasChainIds.size < 2;
+  atlasChainStop.disabled = !active;
+  atlasChainAxis.disabled = !active || !included;
+  atlasChainAngle.disabled = !active || !included;
+  atlasChainZero.disabled = !active;
+
+  atlasChainParent.replaceChildren();
+  atlasChainParent.add(new Option(
+    locale === "en" ? "Independent root" : "独立根节点", ""
+  ));
+  const parts = atlasViewer?.getParts() ?? [];
+  if (included) {
+    for (const id of atlasChainIds) {
+      if (id === selected) continue;
+      const name = parts[id]?.name ?? `Source #${id}`;
+      atlasChainParent.add(new Option(`#${id} ${name}`, String(id)));
+    }
+    const parent = atlasChainParents.get(selected!) ?? null;
+    atlasChainParent.value = parent === null ? "" : String(parent);
+  }
+
+  const current = included ? atlasChainAngles.get(selected!) : undefined;
+  atlasChainAxis.value = current?.axis ?? "z";
+  atlasChainAngle.value = String(current?.degrees ?? 0);
+  atlasChainDegrees.textContent = `${current?.degrees ?? 0}°`;
+
+  const list = document.createDocumentFragment();
+  for (const id of atlasChainIds) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "atlas-chain-node";
+    item.setAttribute("role", "listitem");
+    if (id === selected) item.setAttribute("aria-current", "true");
+    const parent = atlasChainParents.get(id) ?? null;
+    item.textContent = `#${id} ${parts[id]?.name ?? "Source mesh"} · ${parent === null ? "ROOT" : `← #${parent}`}`;
+    item.addEventListener("click", () => {
+      const chosen = atlasViewer?.selectPart(id);
+      if (chosen) {
+        displayAtlasPart(chosen);
+        refreshAtlasParts();
+      }
+    });
+    list.append(item);
+  }
+  atlasChainList.replaceChildren(list);
+}
+
 function refreshAtlasParts(): void {
   const parts = atlasViewer?.getParts() ?? [];
   const { matches, totalMatches, totalParts, hiddenParts, truncated } =
@@ -796,6 +944,7 @@ function refreshAtlasParts(): void {
   atlasMapClear.disabled = atlasMappings.size === 0;
   refreshAtlasAnchorStatus();
   refreshAtlasRigidControls();
+  refreshAtlasChainControls();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -890,6 +1039,7 @@ function refreshAtlasParts(): void {
         atlasMappings.set(part.id, mapping.value as PoseSegmentId);
       }
       if (former !== atlasMappings.get(part.id)) {
+        resetStudyChainDraft();
         atlasAnchors.delete(part.id);
         atlasViewer?.cancelAnchorPick();
         atlasAnchorMessage.textContent = locale === "en"
@@ -947,6 +1097,7 @@ atlasExportInventory.addEventListener("click", () => {
 });
 
 atlasMapClear.addEventListener("click", () => {
+  resetStudyChainDraft();
   atlasMappings.clear();
   atlasAnchors.clear();
   atlasViewer?.cancelAnchorPick();
@@ -996,6 +1147,7 @@ atlasMapImport.addEventListener("change", () => {
     }
     const parsed: unknown = JSON.parse(source);
     const validated = parseDraftMapping(parsed, current);
+    resetStudyChainDraft();
     // An incoming mapping may have changed every semantic part assignment;
     // clear prior anchor pairs instead of silently attaching them to a new one.
     atlasAnchors.clear();
@@ -1059,6 +1211,99 @@ atlasRigidReset.addEventListener("click", () => {
   refreshAtlasRigidControls();
 });
 
+atlasChainAdd.addEventListener("click", () => {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  const points = id !== null ? atlasAnchors.get(id) : undefined;
+  if (id === null || atlasChainIds.size >= 12 || !points ||
+      !atlasMappings.has(id) || !atlasViewer?.canRigidPreview(id, points)) return;
+  atlasChainIds.add(id);
+  atlasChainParents.set(id, null);
+  atlasChainAngles.set(id, { axis: "z", degrees: 0 });
+  refreshAtlasChainControls();
+});
+atlasChainRemove.addEventListener("click", () => {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  if (id === null || !atlasChainIds.has(id)) return;
+  atlasChainIds.delete(id);
+  atlasChainParents.delete(id);
+  atlasChainAngles.delete(id);
+  for (const [child, parent] of atlasChainParents) {
+    if (parent === id) atlasChainParents.set(child, null);
+  }
+  refreshAtlasChainControls();
+});
+atlasChainParent.addEventListener("change", () => {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  if (id === null || !atlasChainIds.has(id) ||
+      atlasViewer?.getChainPreviewActive()) return;
+  const nextParent = atlasChainParent.value === ""
+    ? null : Number(atlasChainParent.value);
+  const old = atlasChainParents.get(id) ?? null;
+  atlasChainParents.set(id, nextParent);
+  try {
+    if (atlasChainIds.size >= 2) chainNodesForCurrentStudy();
+    atlasChainStatus.textContent = locale === "en"
+      ? "Manual source hierarchy updated. Not a human anatomical joint tree."
+      : "已更新人工来源部件父子关系，尚非真实人体解剖关节层级。";
+  } catch (error) {
+    atlasChainParents.set(id, old);
+    atlasChainStatus.textContent = locale === "en"
+      ? `Invalid hierarchy: ${String(error)}` : `层级无效：${String(error)}`;
+  }
+  refreshAtlasChainControls();
+});
+atlasChainStart.addEventListener("click", () => {
+  try {
+    const nodes = chainNodesForCurrentStudy();
+    if (!atlasViewer?.beginChainPreview(nodes)) {
+      throw new Error("Selected original source meshes are not safe for non-skinned virtual preview");
+    }
+    const gaps = countLargeStudyGaps(nodes);
+    atlasChainStatus.textContent = locale === "en"
+      ? `Virtual chain active: ${nodes.length} ghost meshes, ${gaps} disconnected-looking source endpoints. Original source unchanged. NOT medical tracking.`
+      : `已预览 ${nodes.length} 个虚拟网格，其中 ${gaps} 个父子端点距离偏大。原模型未更改，非人体骨骼追踪。`;
+    refreshAtlasRigidControls();
+  } catch (error) {
+    atlasChainStatus.textContent = locale === "en"
+      ? `Cannot preview: ${String(error)}` : `无法预览：${String(error)}`;
+  }
+  refreshAtlasChainControls();
+});
+atlasChainStop.addEventListener("click", () => {
+  stopLocalStudyChain();
+  refreshAtlasChainControls();
+});
+function applyStudyJointAngle(): void {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  if (id === null || !atlasChainIds.has(id)) return;
+  const axis = atlasChainAxis.value as SourceAxis;
+  const degrees = Number(atlasChainAngle.value);
+  if (!atlasViewer?.setChainJoint(id, axis, degrees)) {
+    stopLocalStudyChain();
+    atlasChainStatus.textContent = locale === "en"
+      ? "Invalid source chain. Preview stopped safely."
+      : "来源网格运动链无效，已安全停止预览。";
+    refreshAtlasChainControls();
+    return;
+  }
+  atlasChainAngles.set(id, { axis, degrees });
+  atlasChainDegrees.textContent = `${degrees}°`;
+  atlasChainStatus.textContent = locale === "en"
+    ? `Source #${id}: ${axis.toUpperCase()} ${degrees}°. Descendant ghost geometry follows its parent. No skinning or camera retargeting.`
+    : `来源节点 #${id}：${axis.toUpperCase()} ${degrees}°。子部件虚拟网格继承父部件运动；无皮肤权重或摄像头动作映射。`;
+}
+atlasChainAxis.addEventListener("change", applyStudyJointAngle);
+atlasChainAngle.addEventListener("input", applyStudyJointAngle);
+atlasChainZero.addEventListener("click", () => {
+  if (!atlasViewer?.getChainPreviewActive()) return;
+  for (const id of atlasChainIds) {
+    const pose = atlasChainAngles.get(id) ?? { axis: "z" as SourceAxis, degrees: 0 };
+    if (!atlasViewer.setChainJoint(id, pose.axis, 0)) break;
+    atlasChainAngles.set(id, { axis: pose.axis, degrees: 0 });
+  }
+  refreshAtlasChainControls();
+});
+
 function beginLocalAnchor(endpoint: AnchorEndpoint): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasMappings.has(id) ||
@@ -1075,6 +1320,7 @@ function beginLocalAnchor(endpoint: AnchorEndpoint): void {
 atlasAnchorStart.addEventListener("click", () => beginLocalAnchor("start"));
 atlasAnchorEnd.addEventListener("click", () => beginLocalAnchor("end"));
 atlasAnchorClear.addEventListener("click", () => {
+  resetStudyChainDraft();
   const id = atlasViewer?.getSelectedPartId();
   if (id !== null && id !== undefined) atlasAnchors.delete(id);
   atlasViewer?.cancelAnchorPick();
@@ -1128,6 +1374,7 @@ atlasAnchorImport.addEventListener("change", () => {
     }
     const raw: unknown = JSON.parse(text);
     const checked = parseAnchorDraft(raw, current, atlasMappings);
+    resetStudyChainDraft();
     atlasAnchors.clear();
     atlasViewer?.cancelAnchorPick();
     for (const [id, pair] of checked) atlasAnchors.set(id, pair);
@@ -1158,6 +1405,7 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
   });
 });
 atlasDialog.addEventListener("close", () => {
+  stopLocalStudyChain();
   stopLocalRigidPreview();
   atlasViewer?.cancelPendingLoad();
   atlasViewer?.cancelAnchorPick();
@@ -1172,6 +1420,7 @@ atlasFile.addEventListener("change", () => {
   atlasFile.disabled = true;
   atlasInfo.textContent = "正在本地解析模型；大体积 FBX 可能导致浏览器暂时变慢…";
   void ensureAtlasViewer().then((viewer) => viewer.load(file)).then((stats) => {
+    resetStudyChainDraft();
     atlasInfo.textContent = stats.file + " · " +
       stats.importedMeshes.toLocaleString() + " 网格 · " +
       stats.triangles.toLocaleString() + " 三角形 · " +
@@ -1202,6 +1451,7 @@ atlasFile.addEventListener("change", () => {
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
     atlasExportInventory.disabled = false;
+    resetStudyChainDraft();
     stopLocalRigidPreview();
     atlasMappings.clear();
     atlasAnchors.clear();

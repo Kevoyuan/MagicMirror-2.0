@@ -627,3 +627,19 @@ models, incomplete source points or invisible parts.
 Do not call this actual bone tracking, medical
 calibration, or a rigged skeleton; camera stays
 dominant in the main Leonardo interface.
+
+
+## Folio II · Virtual source-mesh articulation studio (2026-11-09)
+
+Keep the camera-first home screen uncluttered. In the
+separate Leonardo source-model study modal, group
+**2–12 manually selected original Mesh objects** into
+an explicitly labeled *virtual movement chain*. Show
+small selectable chips for each original source mesh,
+a deliberate parent selector, independent X/Y/Z
+angle slider and Zero / Stop controls. Render moving
+source ghosts as a warm gold wireframe overlay
+on the untouched static imported source. This is a
+research instrument for viewing parent/child spatial
+relationships, NEVER a clinically accurate joint
+tree or live patient skeleton projection.

@@ -118,3 +118,17 @@ claims of live patient skeleton alignment; keep
 rig/rights/SDK gates unapproved until verified
 separately. Require synthetic matrix no-drift tests
 plus real browser functional inspection.
+
+
+## W2g source-chain review standard
+
+Manual parent links describe a LOCAL virtual hierarchy,
+not an anatomical joint tree. Keep `MAX_STUDY_CHAIN_MESHES=12`,
+source-root pivot math and cycle/angle validation tested.
+Render temporary ghost meshes separately from the imported
+hierarchy, reusing source geometry ONLY while the original
+viewer owns it. Always release ghost objects without
+disposing shared geometry; preserve exact original source
+matrices, source labels and authored animation clips.
+No live camera retargeting or public anatomy rights is
+approved by synthetic graph tests alone.

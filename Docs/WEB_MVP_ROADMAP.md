@@ -284,3 +284,33 @@ rights. Typechecking alone is not a shipped MVP.
   MediaPipe **3D** pose calibration, multi-joint
   retargeting and exact source-frame synchronized AR,
   with independent per-original-mesh rights evidence.
+
+
+## W2g · Bounded manually-authored virtual source-mesh hierarchy (SOURCE IMPLEMENTED)
+
+- [x] Build a strict model-root-space transform graph for
+  **2–12** explicitly selected non-skinned source meshes with
+  user-selected parent references and distinct original A/B points.
+- [x] Reject cycles, duplicates, unselected parents, malformed
+  source points/angles and excessive inputs before changing display.
+- [x] Propagate parent transforms to child source parts while
+  computing all matrices from immutable rest transforms.
+  Warn when an authored parent/child endpoint gap exceeds
+  20% of the parent's source-space segment length.
+- [x] Render independent golden wireframe **ghost** geometry,
+  preserving the original source meshes, their exact matrices,
+  skin weights, materials and underlying shared geometry.
+- [x] Source browser provides Add/Remove, manual parent
+  editor, start/stop, per-node X/Y/Z ±90° angle controls
+  and reset all angles. Valid source mapping/anchors required.
+- [x] Existing generated local model and privacy/release rights
+  gates remain unchanged. No third-party geometry added to Git.
+- [x] Pure tests for multi-generation movement, parent-first
+  ordering, cycles, malformed source graphs, singular matrices
+  and no accumulated drift. Web source CI typecheck/unit/build.
+- [ ] Hardware verification of actual model FBX/GLB geometry,
+  ghost rendering, mobile GPU memory and touch targets.
+- [ ] Author a reviewed 3D human bone hierarchy and
+  anatomical rest joints, genuine per-mesh rigging,
+  MediaPipe world-frame/camera calibration and physical
+  body motion retargeting; these remain separately blocked.
