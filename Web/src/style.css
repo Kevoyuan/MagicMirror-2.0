@@ -835,3 +835,66 @@ a { color: inherit; }
   font-size: 11px; line-height: 1.55;
   color: #74674e;
 }
+
+/* W2i only source-space hand-authored test angles, never camera recording. */
+.atlas-timeline-panel {
+  margin: 12px 0 9px; padding: 11px;
+  border: 1px solid #b2a27d; border-radius: 9px;
+  background: #f1e7d1; color: #3b5746;
+}
+.atlas-timeline-panel h4 {
+  margin: 0 0 5px; font: 600 15px/1.4 Georgia,"Songti SC",serif;
+}
+.atlas-timeline-panel > p {
+  font: 11px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color: #7b6d50; margin: 5px 0 9px;
+}
+.atlas-timeline-track {
+  display: flex; align-items: end; gap: 10px;
+}
+.atlas-timeline-track label {
+  display: grid; gap: 3px; flex: 1;
+  font-size: 11px; font-weight: 600; color: #6f765e;
+}
+.atlas-timeline-track input[type=range] {
+  width: 100%; min-height: 33px; accent-color: #4b8266;
+}
+.atlas-timeline-track output {
+  flex: none; min-width: 47px;
+  text-align: right; color: #3a6a54;
+  font: 600 13px/34px ui-monospace,Consolas,monospace;
+}
+.atlas-timeline-actions {
+  display: flex; flex-wrap: wrap; align-items: end;
+  gap: 6px; margin: 9px 0 8px;
+}
+.atlas-timeline-actions button,
+.atlas-timeline-actions label {
+  min-height: 36px; padding: 7px 10px;
+  border: 1px solid #aba384; border-radius: 6px;
+  color: #36584a; background: #e4e9da;
+  font-size: 11px; font-weight: 600;
+}
+.atlas-timeline-actions button:disabled {
+  opacity: .45; cursor: not-allowed;
+}
+.atlas-timeline-actions input[type=file] {
+  width: 100%; max-width: 100%;
+  font-size: 11px; min-height: 30px;
+}
+.atlas-timeline-frames {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 5px; background: #e2ddc8; border-radius: 6px;
+  min-height: 28px;
+}
+.atlas-timeline-frame {
+  min-height: 34px; padding: 6px 9px;
+  border: 1px solid #b0a78d; border-radius: 6px;
+  background: #f9f3e5; color: #456551;
+  font: 600 11px ui-monospace,Consolas,monospace;
+}
+@media(max-width:620px) {
+  .atlas-timeline-panel { padding: 8px; }
+  .atlas-timeline-actions button { flex: 1 1 auto; }
+  .atlas-timeline-track { gap: 5px; }
+}

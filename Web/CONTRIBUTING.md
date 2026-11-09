@@ -147,3 +147,21 @@ correct source-level license review and explicit
 public distribution approval. Document all
 physical browser validation separately from
 synthetic unit tests.
+
+
+## W2i source-only timeline safety
+
+Do not record a person's camera frames or
+infer internal anatomical joint angles from
+video in the local W2i timeline. Persist
+only explicitly authored source-model angle
+values in user-downloaded JSON, tied to
+the exact original source model and
+manual parent/anchor graph. Import must
+reject unknown/forged metadata and
+nonfinite angles. Keep UI playback
+requestAnimationFrame cancellable on
+all camera-independent study lifecycle
+events and batch scene updates.
+Synthetic unit tests cannot replace
+real GPU/mobile browser acceptance.

@@ -22,6 +22,11 @@ import {
   ORIGINAL_STUDY_DEMO, createOriginalStudyDemoFile,
 } from "./study-demo";
 import {
+  makeStudyTimelineDraft, parseStudyTimelineDraft,
+  sampleStudyTimeline, studyFrameAt, timelineDownloadName,
+  type StudyKeyframe,
+} from "./study-timeline";
+import {
   countLargeStudyGaps, orderStudyChain,
   type StudyChainNode,
 } from "./kinematic-chain";
@@ -272,6 +277,28 @@ root.innerHTML = `
           <button id="atlas-chain-zero" type="button" disabled>所有角度归零</button>
         </div>
         <p id="atlas-chain-status" role="status" aria-live="polite">请选择真实来源网格建立 2–12 节人工运动链；不执行人体追踪。</p>
+      </section>
+      <section class="atlas-timeline-panel" aria-labelledby="atlas-timeline-title">
+        <h4 id="atlas-timeline-title">离线关键帧与循环回放</h4>
+        <p>仅对当前原创或本地来源的虚拟运动链记录角度，不包含摄像头画面或真实人体骨骼。每帧绑定原始文件哈希、人工网格父子关系和模型空间端点。</p>
+        <div class="atlas-timeline-track">
+          <label for="atlas-timeline-time">时间轴（毫秒）
+            <input id="atlas-timeline-time" type="range" min="0" max="6000" step="100" value="0" disabled />
+          </label>
+          <output id="atlas-timeline-display" for="atlas-timeline-time">0.0s</output>
+        </div>
+        <div class="atlas-timeline-actions">
+          <button id="atlas-timeline-capture" type="button" disabled>记录当前角度</button>
+          <button id="atlas-timeline-delete" type="button" disabled>删除此关键帧</button>
+          <button id="atlas-timeline-play" type="button" disabled>循环播放</button>
+          <button id="atlas-timeline-pause" type="button" disabled>暂停</button>
+          <button id="atlas-timeline-clear" type="button" disabled>清空帧</button>
+          <button id="atlas-timeline-export" type="button" disabled>导出本地动作草稿</button>
+          <label for="atlas-timeline-import">导入动作草稿 JSON</label>
+          <input id="atlas-timeline-import" type="file" accept=".json,application/json" disabled />
+        </div>
+        <div id="atlas-timeline-frames" class="atlas-timeline-frames" role="list"></div>
+        <p id="atlas-timeline-status" role="status" aria-live="polite">请先预览 2–12 个原始网格，然后记录两个不同时间的关键帧；不执行真实人体追踪。</p>
       </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -720,6 +747,21 @@ const atlasChainList = element<HTMLElement>("#atlas-chain-list");
 const atlasChainIds = new Set<number>();
 const atlasChainParents = new Map<number, number | null>();
 const atlasChainAngles = new Map<number, { axis: SourceAxis; degrees: number }>();
+const atlasTimelineTime = element<HTMLInputElement>("#atlas-timeline-time");
+const atlasTimelineDisplay = element<HTMLOutputElement>("#atlas-timeline-display");
+const atlasTimelineCapture = element<HTMLButtonElement>("#atlas-timeline-capture");
+const atlasTimelineDelete = element<HTMLButtonElement>("#atlas-timeline-delete");
+const atlasTimelinePlay = element<HTMLButtonElement>("#atlas-timeline-play");
+const atlasTimelinePause = element<HTMLButtonElement>("#atlas-timeline-pause");
+const atlasTimelineClear = element<HTMLButtonElement>("#atlas-timeline-clear");
+const atlasTimelineExport = element<HTMLButtonElement>("#atlas-timeline-export");
+const atlasTimelineImport = element<HTMLInputElement>("#atlas-timeline-import");
+const atlasTimelineFrames = element<HTMLElement>("#atlas-timeline-frames");
+const atlasTimelineStatus = element<HTMLElement>("#atlas-timeline-status");
+let studyTimelineFrames: StudyKeyframe[] = [];
+let studyTimelineFrameId = 0;
+let studyTimelineStartedAt = 0;
+let studyTimelineStartPositionMs = 0;
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -857,7 +899,87 @@ function chainNodesForCurrentStudy(): StudyChainNode[] {
   return orderStudyChain(result);
 }
 
+function pauseStudyTimeline(): void {
+  if (studyTimelineFrameId) window.cancelAnimationFrame(studyTimelineFrameId);
+  studyTimelineFrameId = 0;
+  studyTimelineStartedAt = 0;
+}
+
+function clearStudyTimeline(): void {
+  pauseStudyTimeline();
+  studyTimelineFrames = [];
+  atlasTimelineTime.value = "0";
+  atlasTimelineDisplay.textContent = "0.0s";
+}
+
+function applyStudyTimelineSample(timeMs: number): boolean {
+  if (!atlasViewer?.getChainPreviewActive()) return false;
+  const sampled = sampleStudyTimeline(studyTimelineFrames, timeMs);
+  if (!sampled || !atlasViewer.setChainPose(sampled)) return false;
+  for (const point of sampled) {
+    atlasChainAngles.set(point.sourceMeshId, {
+      axis: point.axis, degrees: point.degrees,
+    });
+  }
+  const selected = atlasViewer.getSelectedPartId();
+  const joint = selected !== null ? sampled.find(p => p.sourceMeshId === selected) : null;
+  if (joint) {
+    atlasChainAxis.value = joint.axis;
+    atlasChainAngle.value = String(Math.round(joint.degrees));
+    atlasChainDegrees.textContent = `${Math.round(joint.degrees)}°`;
+  }
+  atlasTimelineTime.value = String(timeMs);
+  atlasTimelineDisplay.textContent = `${(timeMs / 1000).toFixed(1)}s`;
+  return true;
+}
+
+function refreshStudyTimelineControls(): void {
+  const chainReady = atlasChainIds.size >= 2 &&
+    Boolean(atlasViewer?.sourceInventory());
+  const active = atlasViewer?.getChainPreviewActive() ?? false;
+  const playing = studyTimelineFrameId !== 0;
+  atlasTimelineCapture.disabled = !active ||
+    studyTimelineFrames.length >= 32;
+  atlasTimelinePlay.disabled = !active || playing ||
+    studyTimelineFrames.length < 2;
+  atlasTimelinePause.disabled = !playing;
+  atlasTimelineTime.disabled = !active ||
+    studyTimelineFrames.length < 1;
+  atlasTimelineExport.disabled = !chainReady || !studyTimelineFrames.length;
+  atlasTimelineImport.disabled = !chainReady;
+  atlasTimelineClear.disabled = !studyTimelineFrames.length;
+  atlasTimelineDelete.disabled = !studyTimelineFrames.some(frame =>
+    frame.timeMs === Number(atlasTimelineTime.value)
+  );
+  atlasTimelineTime.max = String(Math.max(6000,
+    studyTimelineFrames.at(-1)?.timeMs ?? 0));
+  const nodes = document.createDocumentFragment();
+  for (const frame of studyTimelineFrames) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "atlas-timeline-frame";
+    button.setAttribute("role", "listitem");
+    button.textContent = `${(frame.timeMs / 1000).toFixed(1)}s`;
+    button.title = locale === "en"
+      ? "Show manually authored frame" : "查看人工创建的角度关键帧";
+    button.addEventListener("click", () => {
+      pauseStudyTimeline();
+      atlasTimelineTime.value = String(frame.timeMs);
+      if (active) applyStudyTimelineSample(frame.timeMs);
+      else {
+        atlasTimelineStatus.textContent = locale === "en"
+          ? "Start virtual chain preview before scrubbing frame angles."
+          : "请先开启虚拟运动链预览再查看关键帧姿态。";
+      }
+      refreshStudyTimelineControls();
+    });
+    nodes.append(button);
+  }
+  atlasTimelineFrames.replaceChildren(nodes);
+}
+
 function stopLocalStudyChain(): void {
+  pauseStudyTimeline();
   atlasViewer?.resetChainPreview();
   atlasChainStatus.textContent = locale === "en"
     ? "Virtual chain stopped. Original geometry and transforms were never modified."
@@ -865,6 +987,7 @@ function stopLocalStudyChain(): void {
 }
 
 function resetStudyChainDraft(): void {
+  clearStudyTimeline();
   stopLocalStudyChain();
   atlasChainIds.clear();
   atlasChainParents.clear();
@@ -951,6 +1074,7 @@ function refreshAtlasParts(): void {
   refreshAtlasAnchorStatus();
   refreshAtlasRigidControls();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -1222,6 +1346,7 @@ atlasChainAdd.addEventListener("click", () => {
   const points = id !== null ? atlasAnchors.get(id) : undefined;
   if (id === null || atlasChainIds.size >= 12 || !points ||
       !atlasMappings.has(id) || !atlasViewer?.canRigidPreview(id, points)) return;
+  clearStudyTimeline();
   atlasChainIds.add(id);
   atlasChainParents.set(id, null);
   atlasChainAngles.set(id, { axis: "z", degrees: 0 });
@@ -1230,6 +1355,7 @@ atlasChainAdd.addEventListener("click", () => {
 atlasChainRemove.addEventListener("click", () => {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasChainIds.has(id)) return;
+  clearStudyTimeline();
   atlasChainIds.delete(id);
   atlasChainParents.delete(id);
   atlasChainAngles.delete(id);
@@ -1248,6 +1374,7 @@ atlasChainParent.addEventListener("change", () => {
   atlasChainParents.set(id, nextParent);
   try {
     if (atlasChainIds.size >= 2) chainNodesForCurrentStudy();
+    if (old !== nextParent) clearStudyTimeline();
     atlasChainStatus.textContent = locale === "en"
       ? "Manual source hierarchy updated. Not a human anatomical joint tree."
       : "已更新人工来源部件父子关系，尚非真实人体解剖关节层级。";
@@ -1269,6 +1396,7 @@ atlasChainStart.addEventListener("click", () => {
       ? `Virtual chain active: ${nodes.length} ghost meshes, ${gaps} disconnected-looking source endpoints. Original source unchanged. NOT medical tracking.`
       : `已预览 ${nodes.length} 个虚拟网格，其中 ${gaps} 个父子端点距离偏大。原模型未更改，非人体骨骼追踪。`;
     refreshAtlasRigidControls();
+    refreshStudyTimelineControls();
   } catch (error) {
     atlasChainStatus.textContent = locale === "en"
       ? `Cannot preview: ${String(error)}` : `无法预览：${String(error)}`;
@@ -1278,10 +1406,12 @@ atlasChainStart.addEventListener("click", () => {
 atlasChainStop.addEventListener("click", () => {
   stopLocalStudyChain();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 });
 function applyStudyJointAngle(): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasChainIds.has(id)) return;
+  pauseStudyTimeline();
   const axis = atlasChainAxis.value as SourceAxis;
   const degrees = Number(atlasChainAngle.value);
   if (!atlasViewer?.setChainJoint(id, axis, degrees)) {
@@ -1292,8 +1422,11 @@ function applyStudyJointAngle(): void {
     refreshAtlasChainControls();
     return;
   }
+  const previously = atlasChainAngles.get(id);
+  if (previously && previously.axis !== axis) clearStudyTimeline();
   atlasChainAngles.set(id, { axis, degrees });
   atlasChainDegrees.textContent = `${degrees}°`;
+  refreshStudyTimelineControls();
   atlasChainStatus.textContent = locale === "en"
     ? `Source #${id}: ${axis.toUpperCase()} ${degrees}°. Descendant ghost geometry follows its parent. No skinning or camera retargeting.`
     : `来源节点 #${id}：${axis.toUpperCase()} ${degrees}°。子部件虚拟网格继承父部件运动；无皮肤权重或摄像头动作映射。`;
@@ -1308,6 +1441,147 @@ atlasChainZero.addEventListener("click", () => {
     atlasChainAngles.set(id, { axis: pose.axis, degrees: 0 });
   }
   refreshAtlasChainControls();
+});
+
+atlasTimelineCapture.addEventListener("click", () => {
+  if (!atlasViewer?.getChainPreviewActive()) return;
+  pauseStudyTimeline();
+  try {
+    const atMs = Number(atlasTimelineTime.value);
+    const frame = studyFrameAt(chainNodesForCurrentStudy(), atMs);
+    const candidate = studyTimelineFrames
+      .filter(existing => existing.timeMs !== atMs)
+      .concat(frame).sort((a, b) => a.timeMs - b.timeMs);
+    const source = atlasViewer.sourceInventory();
+    if (!source) throw new Error("Original model source has not been identified");
+    makeStudyTimelineDraft(source, chainNodesForCurrentStudy(), candidate);
+    studyTimelineFrames = candidate;
+    atlasTimelineStatus.textContent = locale === "en"
+      ? `Captured ${candidate.length} manual joint-angle frames, no camera frames.`
+      : `已记录 ${candidate.length} 个人工角度关键帧，不包含摄像头图像。`;
+  } catch (error) {
+    atlasTimelineStatus.textContent = locale === "en"
+      ? `Frame capture rejected: ${String(error)}` : `关键帧记录被拒绝：${String(error)}`;
+  }
+  refreshStudyTimelineControls();
+});
+atlasTimelineDelete.addEventListener("click", () => {
+  pauseStudyTimeline();
+  const atMs = Number(atlasTimelineTime.value);
+  studyTimelineFrames = studyTimelineFrames.filter(f => f.timeMs !== atMs);
+  refreshStudyTimelineControls();
+});
+atlasTimelineClear.addEventListener("click", () => {
+  clearStudyTimeline();
+  atlasTimelineStatus.textContent = locale === "en"
+    ? "Cleared original-model keyframe draft."
+    : "已清空本地原模型角度关键帧草稿。";
+  refreshStudyTimelineControls();
+});
+atlasTimelineTime.addEventListener("input", () => {
+  pauseStudyTimeline();
+  const time = Number(atlasTimelineTime.value);
+  if (!applyStudyTimelineSample(time)) {
+    atlasTimelineStatus.textContent = locale === "en"
+      ? "Cannot scrub: preview a compatible virtual chain first."
+      : "无法拖动时间轴：请先预览兼容的虚拟运动链。";
+  }
+  refreshStudyTimelineControls();
+});
+atlasTimelinePlay.addEventListener("click", () => {
+  if (!atlasViewer?.getChainPreviewActive() || studyTimelineFrames.length < 2) return;
+  pauseStudyTimeline();
+  studyTimelineStartPositionMs = Number(atlasTimelineTime.value);
+  studyTimelineStartedAt = 0;
+  const first = studyTimelineFrames[0].timeMs;
+  const last = studyTimelineFrames[studyTimelineFrames.length - 1].timeMs;
+  const duration = last - first;
+  if (duration <= 0) return;
+  const tick = (now: number): void => {
+    if (!atlasDialog.open || document.visibilityState === "hidden" ||
+        !atlasViewer?.getChainPreviewActive()) {
+      pauseStudyTimeline();
+      refreshStudyTimelineControls();
+      return;
+    }
+    if (studyTimelineStartedAt === 0) studyTimelineStartedAt = now;
+    const played = Math.max(0, now - studyTimelineStartedAt);
+    const time = first + ((studyTimelineStartPositionMs - first + played) % duration + duration) % duration;
+    if (!applyStudyTimelineSample(time)) {
+      pauseStudyTimeline();
+      atlasTimelineStatus.textContent = locale === "en"
+        ? "Replay stopped because the source virtual chain became invalid."
+        : "来源运动链状态变化，已安全停止回放。";
+      refreshStudyTimelineControls();
+      return;
+    }
+    studyTimelineFrameId = window.requestAnimationFrame(tick);
+  };
+  studyTimelineFrameId = window.requestAnimationFrame(tick);
+  atlasTimelineStatus.textContent = locale === "en"
+    ? "Looping authored local test angles; not a captured human pose."
+    : "正在循环播放本地合成角度；不是人体采集的姿态。";
+  refreshStudyTimelineControls();
+});
+atlasTimelinePause.addEventListener("click", () => {
+  pauseStudyTimeline();
+  refreshStudyTimelineControls();
+});
+atlasTimelineExport.addEventListener("click", () => {
+  const source = atlasViewer?.sourceInventory();
+  if (!source) return;
+  try {
+    const draft = makeStudyTimelineDraft(source,
+      chainNodesForCurrentStudy(), studyTimelineFrames);
+    const blob = new Blob([JSON.stringify(draft, null, 2) + "\n"],
+      {type: "application/json;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = timelineDownloadName(source.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasTimelineStatus.textContent = locale === "en"
+      ? "Exported LOCAL uncalibrated source-keyframe JSON. Original model not included."
+      : "已导出本地未经校准的角度 JSON；不包含模型数据。";
+  } catch (error) {
+    atlasTimelineStatus.textContent = `Export refused: ${String(error)}`;
+  }
+});
+atlasTimelineImport.addEventListener("change", () => {
+  const file = atlasTimelineImport.files?.[0];
+  atlasTimelineImport.value = "";
+  if (!file || !atlasViewer?.sourceInventory()) return;
+  if (file.size < 1 || file.size > 1_000_000) {
+    atlasTimelineStatus.textContent = locale === "en"
+      ? "Timeline JSON must be 1–1,000,000 bytes."
+      : "时间轴 JSON 大小须在 1 到 1,000,000 字节之间。";
+    return;
+  }
+  atlasTimelineImport.disabled = true;
+  void file.text().then(text => {
+    const source = atlasViewer?.sourceInventory();
+    if (!source) throw new Error("Original local model is unavailable");
+    const raw: unknown = JSON.parse(text);
+    const checked = parseStudyTimelineDraft(raw, source,
+      chainNodesForCurrentStudy());
+    // Replace only after the ENTIRE source/graph/frame draft validates.
+    pauseStudyTimeline();
+    studyTimelineFrames = checked;
+    atlasTimelineTime.value = String(checked[0].timeMs);
+    atlasTimelineStatus.textContent = locale === "en"
+      ? `Imported ${checked.length} local angle frames for exact source identity. NOT calibrated.`
+      : `已导入 ${checked.length} 个与原模型严格对应的本地角度帧（未经校准）。`;
+    if (atlasViewer?.getChainPreviewActive()) {
+      applyStudyTimelineSample(checked[0].timeMs);
+    }
+  }).catch(error => {
+    atlasTimelineStatus.textContent = locale === "en"
+      ? `Timeline import rejected: ${String(error)}`
+      : `时间轴导入被拒绝：${String(error)}`;
+  }).finally(() => refreshStudyTimelineControls());
 });
 
 function beginLocalAnchor(endpoint: AnchorEndpoint): void {
@@ -1516,8 +1790,18 @@ function initializeOriginalDemoStudy(): void {
   atlasInfo.textContent = locale === "en"
     ? "Original procedural training fixture (3 generated source meshes). No external anatomy data or download."
     : "原创程序生成的训练示例（3 个来源网格），没有外部解剖资源、无需下载。";
+  studyTimelineFrames = [
+    studyFrameAt(nodes.map(node => ({ ...node, degrees: 0 })), 0),
+    studyFrameAt(nodes, 1500),
+    studyFrameAt(nodes.map(node => ({ ...node, degrees: 0 })), 3000),
+  ];
+  atlasTimelineTime.value = "1500";
+  atlasTimelineStatus.textContent = locale === "en"
+    ? "The ORIGINAL demo includes 3 synthetic keyframes. Press Loop to see motion."
+    : "原创示例已配置 3 个合成角度关键帧，点击循环播放即可观察运动。";
   refreshAtlasParts();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 }
 atlasFile.addEventListener("change", () => {
   const file = atlasFile.files?.[0];
@@ -1529,7 +1813,10 @@ atlasDemoButton.addEventListener("click", () => {
     ? "Generating an original, self-contained local GLB in this browser…"
     : "正在浏览器内生成原创独立 GLB 示例…";
   void createOriginalStudyDemoFile().then(file => {
-    if (!atlasDialog.open) return;
+    if (!atlasDialog.open) {
+      atlasDemoButton.disabled = false;
+      return;
+    }
     loadAtlasFile(file, true);
   }).catch(error => {
     atlasDemoButton.disabled = false;
@@ -1589,7 +1876,14 @@ document.addEventListener("visibilitychange", () => {
     stopCamera("页面进入后台，已关闭摄像头");
   }
 });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    pauseStudyTimeline();
+    refreshStudyTimelineControls();
+  }
+});
 window.addEventListener("pagehide", () => {
+  pauseStudyTimeline();
   stopCamera("页面已离开");
   observer.disconnect();
   runner?.close();

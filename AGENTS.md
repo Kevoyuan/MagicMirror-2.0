@@ -430,3 +430,33 @@ is silently uploaded or persisted. The tutorial
 must be opt-in via a direct button, explain the
 three **boxes** are not bones, and leave public
 anatomy/model release approval locked.
+
+
+## 17. W2i deterministic source-angle keyframe study (2026-11-09)
+
+Only the PRIVATE Web Folio II virtual source chain is allowed
+to capture local angle keyframes. W2i frames contain bounded
+`timeMs` (0–10,000), at most 32 deliberately user-authored
+frames and 2–12 explicit source mesh IDs with source X/Y/Z
+axis and degrees ±90. `Web/src/study-timeline.ts` checks
+strictly ascending unique times, exact authored graph
+signature (source part ID, manual parent, original model
+A/B, axis), and original source FBX/GLB SHA-256, file byte
+size and mesh count. Enforce all-or-nothing import, reject
+unknown authorization, camera/medical rights flags and
+invalid/extreme angles. No image, imported geometry
+or live camera pose is recorded or bundled in the JSON.
+
+Interpolation must remain **deterministic linear angle
+interpolation** with per-node axis fixed across frames.
+Apply all source chain nodes in ONE batch renderer update
+per animation frame, never 12 separate render passes.
+Pause on background, dialog close, source/mapping/anchor
+edits and user Stop. Changing selected graph parent or
+axis INVALIDATES existing keyframes, not silently
+retarget them to a new source. Release any pending
+requestAnimationFrame. A synthetic 3-bar fixture may
+include original authored test keyframes (not human
+recordings), opt-in only. Keep camera/clinical
+retargeting and per-mesh third-party licensing
+completely separate and fail closed.

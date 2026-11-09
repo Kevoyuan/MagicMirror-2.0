@@ -337,3 +337,38 @@ rights. Typechecking alone is not a shipped MVP.
   desktop Chrome and iPhone Safari interaction path
   on actual browsers; compile/unit tests alone do
   not establish runtime or mobile touch success.
+
+
+## W2i · Source-hash-bound offline angle timeline (SOURCE IMPLEMENTED)
+
+- [x] Deterministic, bounded original-root virtual
+  chain angle keyframes (1–32, 0–10 seconds,
+  per-node source axis and ±90° angles).
+- [x] Human-keyframe capture, delete, scrub,
+  play/pause/loop, clear and one-click local-only
+  JSON export/import with **no webcam frames**.
+- [x] Explicit source SHA/size/count plus exact
+  manual node hierarchy, source-root A/B anchors
+  and fixed axes; strict false rights/retargeting
+  claims, unknown fields and invalid data rejected.
+- [x] Atomic THREE.js batch source ghost
+  transforms per frame; no cumulative drift
+  or changes to imported model geometry.
+- [x] Seed three synthetic frames in the ORIGINAL
+  three-box onboarding demo so new users can
+  immediately try deterministic virtual movement.
+- [x] Pause requestAnimationFrame on source
+  change, hidden tab, model study close or
+  user stop; source or graph edit invalidates
+  stale keyframe draft.
+- [x] Synthetic tests for interpolation, boundaries,
+  altered model, parent/point/axis mismatch,
+  duplicate times and forged license claims.
+- [ ] Confirm Chromium and Safari real-frame
+  playback, touch smoothness, GPU budget and
+  source GLB chain orientation on real devices.
+- [ ] Review anatomical original sources,
+  author 3D joint/rest hierarchy, skinning
+  weights, camera/world landmark registration,
+  pose retargeting and privacy/rights signoff
+  before advertising true anatomical AR.
