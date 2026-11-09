@@ -7,6 +7,7 @@ import { translate, translateStaticDOM, type Locale } from "./i18n";
 import { TemporalPoseStabilizer } from "./smoothing";
 import type { LocalAtlasViewer } from "./atlas-viewer";
 import { searchAtlasParts, type AtlasPart } from "./atlas-catalog";
+import { inventoryDownloadName } from "./atlas-inventory";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
@@ -158,6 +159,7 @@ root.innerHTML = `
         <button id="atlas-show-all" type="button" disabled>显示全部</button>
         <button id="atlas-restore" type="button" disabled>退出独立显示</button>
         <button id="atlas-reset-camera" type="button" disabled>重置视角</button>
+        <button id="atlas-export-inventory" type="button" disabled>导出来源清单 JSON</button>
       </div>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -546,6 +548,7 @@ const atlasPartCount = element<HTMLElement>("#atlas-part-count");
 const atlasShowAll = element<HTMLButtonElement>("#atlas-show-all");
 const atlasRestore = element<HTMLButtonElement>("#atlas-restore");
 const atlasResetCamera = element<HTMLButtonElement>("#atlas-reset-camera");
+const atlasExportInventory = element<HTMLButtonElement>("#atlas-export-inventory");
 const atlasMore = element<HTMLButtonElement>("#atlas-more");
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
@@ -685,6 +688,30 @@ atlasRestore.addEventListener("click", () => {
   refreshAtlasParts();
 });
 atlasResetCamera.addEventListener("click", () => atlasViewer?.resetView());
+atlasExportInventory.addEventListener("click", () => {
+  const manifest = atlasViewer?.sourceInventory();
+  if (!manifest) return;
+  try {
+    const payload = JSON.stringify(manifest, null, 2) + "\n";
+    const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = inventoryDownloadName(manifest.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasPart.textContent = locale === "en"
+      ? "Downloaded a LOCAL geometry inventory (not a rights clearance)."
+      : "已在本地导出网格来源清单（不构成版权授权证明）。";
+  } catch (error) {
+    atlasPart.textContent = locale === "en"
+      ? "Could not export the local JSON inventory."
+      : "无法导出本地 JSON 清单。";
+    console.error("Local inventory export failed", error);
+  }
+});
 
 element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () => {
   stopCamera("进入本地模型研究模式");
@@ -718,6 +745,7 @@ atlasFile.addEventListener("change", () => {
     atlasSearch.disabled = false;
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
+    atlasExportInventory.disabled = false;
     atlasPageLimit = 60;
     atlasPart.textContent = locale === "en"
       ? "Select a source mesh to examine its original name and geometry."
