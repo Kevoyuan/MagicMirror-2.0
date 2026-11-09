@@ -3,6 +3,7 @@ import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
 import { educationFor } from "./education";
+import { TemporalPoseStabilizer } from "./smoothing";
 import type { LocalAtlasViewer } from "./atlas-viewer";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
@@ -100,6 +101,7 @@ root.innerHTML = `
     <div class="dialog-heading"><span>THE ANATOMY FOLIO</span><button class="close-dialog" data-close="layers-dialog" aria-label="关闭图层">×</button></div>
     <h2 id="layers-title">解剖图层</h2>
     <p>只有原创程序生成的三维示意骨架可用。Z-Anatomy 的真实骨骼、肌肉与器官尚未通过授权、绑定和配准验收。</p>
+    <label class="smooth-control"><input id="stabilize" type="checkbox" checked> <span>稳定显示示意骨架（无关节预测）</span></label>
     <button id="open-atlas-studio" class="primary-button atlas-entry" type="button">导入本地 FBX / GLB 解剖模型</button>
     <p class="local-model-hint">仅在本设备预览你主动选择的文件，模型不会上传。导入的是静态研究模型，尚未与人体姿态绑定。</p>
     <div class="layer-row"><strong>◉ 参考骨架 / Proxy</strong><span class="available-label">已实现</span></div>
@@ -184,6 +186,8 @@ try {
 
 let runner: LivePoseInference | undefined;
 const processing = new ProcessingWindow();
+const stabilizer = new TemporalPoseStabilizer();
+let stabilizingEnabled = true;
 let stream: MediaStream | undefined;
 let session = 0;
 let animationFrame = 0;
@@ -237,6 +241,7 @@ function stopCamera(message = "相机已关闭"): void {
   video.pause();
   video.srcObject = null;
   processing.reset();
+  stabilizer.reset();
   lastReceivedFrameId = 0;
   lastFoundAt = -Infinity;
   previousCoverage = "none";
@@ -354,7 +359,10 @@ function handlePoseFrame(frame: InferenceFrame): void {
     推理 p95 ${p.inferenceP95Ms.toFixed(0)}ms ·
     交付 p95 ${p.deliveryP95Ms.toFixed(0)}ms`.replace(/\s+/g, " ").trim();
 
-  const points = frame.landmarks ?? undefined;
+  const observed = frame.landmarks ?? undefined;
+  const points = stabilizingEnabled
+    ? stabilizer.sample(observed, frame.capturedAtMs) ?? undefined
+    : observed;
   const coverage = coverageFor(points);
   previousCoverage = coverage;
   if (!points || coverage === "none") {
@@ -466,6 +474,13 @@ for (const [buttonId, dialogId] of [
     element<HTMLDialogElement>(dialogId).showModal();
   });
 }
+element<HTMLInputElement>("#stabilize").addEventListener("change", (event) => {
+  const control = event.currentTarget as HTMLInputElement;
+  stabilizingEnabled = control.checked;
+  stabilizer.reset();
+  proxy?.hide();
+  hideNote();
+});
 const atlasDialog = element<HTMLDialogElement>("#atlas-dialog");
 const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
 const atlasFile = element<HTMLInputElement>("#atlas-file");

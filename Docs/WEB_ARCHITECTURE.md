@@ -148,3 +148,15 @@ anatomical facts, not medical/individual measurement.
 A lost/stale pose or stopped camera discards hit geometry and notes.
 Local model-study mesh picking is a separate path and never silently
 claims that a generic segment is a Z-Anatomy source component.
+
+## W1b procedural display smoothing
+
+`Web/src/smoothing.ts` is an **optional screen-space visual**
+low-pass filter downstream of the Worker/main inference pipeline.
+It receives only confidence-accepted 33-point observations,
+preserves current visibility/presence, never estimates invisible
+joints, and resets after stale/invalid/dropped camera sessions.
+It does not filter source video nor claim world-space anatomical
+camera registration. An impossible abrupt jump hides that keypoint
+for one frame and then reacquires; the Layers folio can disable
+this **visual-only** processing. Tests are synthetic.

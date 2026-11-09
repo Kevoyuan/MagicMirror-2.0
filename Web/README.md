@@ -182,3 +182,13 @@ Local FBX/GLB study mesh picking remains a different feature:
 it shows the **actual mesh name** from the user-provided file,
 not validated anatomical metadata. Truly animated, layered
 Z-Anatomy remains a subsequent rights- and rig-gated milestone.
+
+## Visual stability mode
+
+Layers → **稳定显示示意骨架** is ON by default for the procedural
+reference overlay. It adaptively smooths observed high-confidence
+joints but deliberately drops missing/low-confidence landmarks
+rather than guessing where a user's real bone might be.
+Disable it for a direct visual comparison with raw MediaPipe pose
+observations. Large one-frame teleports are hidden before reacquire.
+Neither mode is a clinical measurement or calibrated 3D tracking.
