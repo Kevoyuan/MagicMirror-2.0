@@ -17,8 +17,9 @@
 - [x] Keep third-party mesh/model binaries out of Git; stage pinned
       developer model and package WASM with hash/byte checks.
 - [x] Author synthetic pose/crop tests and GitHub Web CI source build.
-- [ ] Verify full Web CI results on final PR head and fix failures.
-- [ ] Run a real desktop browser and mobile Safari camera smoke test;
+- [x] Initial Web MVP PR #54 merged to main with green source/WASM/model staging CI.
+- [~] Owner reports a manual Web MVP test (2026-11-09); device/browser and outcome metrics were not supplied. Do not infer a pass for specific interactions.
+- [ ] Record real desktop browser and mobile Safari camera smoke test details;
       observe actual tracking, mirroring, occlusion, orientation,
       battery/thermal, usable overlay rate and recovery.
 - [ ] Independently verify Google PoseLandmarker **model weight**
@@ -32,11 +33,17 @@ rights. Typechecking alone is not a shipped MVP.
 
 ## W1 · Measured real-time browser reliability
 
-- Move blocking synchronous pose inference to an appropriate
-  browser-worker pipeline with verified frame transfer and fallback.
-- Instrument capture timestamp to inference to drawn overlay to
-  actual display, with bounded drop-old backlog; do not label
-  callback rate as FPS.
+- [x] Implement a Worker-first MediaPipe VIDEO pipeline (transferable
+  ImageBitmap), with one in-flight frame and main-thread fallback.
+  **Source/tests pass; actual browser worker availability remains unverified.**
+- [x] Instrument measured output rate, MediaPipe inference p50/p95,
+  request-to-result p95; reject stale camera-session results and cap
+  oldest in-flight frame. These are **not** actual display FPS,
+  image-sensor latency or confirmed camera/atlas registration.
+- [x] Explicit, click-only local PNG snapshot with object-fit/crop/
+  mirror mapping and nonmedical reference watermark.
+- [ ] Measure media capture-to-rendered-display on real hardware
+  (Worker alone does not ensure source video/overlay pixel locking).
 - Test laptop webcams, midrange Android Chrome (browser testing only,
   **no Android native app**), and iPhone Safari portrait/landscape.
 - Test front/rear mirror, video crop, partial frame visibility,
