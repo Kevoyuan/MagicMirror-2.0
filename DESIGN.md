@@ -1,18 +1,30 @@
 # MagicMirror 2.0 — DESIGN.md
 
-**Version:** 1.5 — anatomy system controls and section detail (2026-11-08)  
-**Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
+**Version:** 1.6 — compact anatomy folio and accessibility-first hierarchy (2026-11-09)  
+**Status:** Owner-approved B / Leonardo direction, native compact UI under PR #49; not a claim of licensed atlas assets or physical-device verification  
 **Product:** Native iPhone anatomy AR mirror, iOS 17+  
 **Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
 **Repository:** https://github.com/Kevoyuan/MagicMirror-2.0  
 **Applies to:** Mobile/iOS/MagicMirror/ — iOS UI and user-facing real-time rendering only  
 **Authority:** This file owns interaction and visual design. AGENTS.md, ADR-002, the active mobile roadmap, privacy/asset reviews, and code own product/engineering truth.
 
+## Current UI decision · 2026-11-09
+
+**Selected experience:** Leonardo Anatomy Notebook, iPhone portrait, **camera first**. Root design token owner remains `Mobile/iOS/MagicMirror/App/LeonardoPalette.swift`; navigation and localization belong to native SwiftUI and `Localizable.strings`. No Android, tabs, sign-in, uploaded video, or website-based runtime.
+
+**A live subject is the primary visual object**, not the notebook decoration. The opening screen shows a thin accessible brand/status header, the real camera, confidence-gated reference anatomy, and a short collapsed dock (Body Region, Layers, Pause, Adjustments, nonmedical disclosure). Detailed reference text opens only on a deliberate **Study** action in Folio IV. A medium-height **Anatomy Folio** opens directly to usable system/section controls: a single short title, segmented Systems/Sections selector, then truthful runtime model state and rows.
+
+**Reduced chrome, not reduced clarity:** large explanations about licensing, Solo/multi-select, and the meaning of 3D section clipping belong in native disclosure groups **after** the controls. In native Accessibility Dynamic Type sizes the folio opens at a **large detent** and remains scrollable. Do not truncate critical status or scientific limitations to achieve a target camera percentage.
+
+**Functional truth:** Selected means a registered model is both ready and enabled; unavailable models are locked, and the illustrative proxy remains the fallback. A surface clip is NOT a volumetric anatomical cross-section. The existence of a design control does not guarantee a redistributable atlas is installed. Active source branches/CI and asset rights must be rechecked on every change.
+
+**QA gate:** the user should see the first meaningful layer/section choice in the medium detent without scrolling at ordinary iPhone text size. VoiceOver must read actionable controls, availability and scientific limitations logically. Verify on an actual iPhone; Xcode Simulator build-for-testing only proves compilation of app and test target.
+
 ## 1. Product contract and design intent
 
 **MagicMirror shows an automatically aligned, translucent, educational reference skeleton on a live image of one person and makes the structure follow their movement.**
 
-The user should be able to open the installed phone app, allow camera use once, aim the **rear camera** at someone with shoulders and hips visible, and see the illustrative skeleton appear without an account, cloud processing, desktop companion, physical marker or manual calibration wizard.
+The user should be able to open the installed phone app, allow camera use once, aim the **rear camera** at one person (a visible arm/shoulder span can support partial reference tracking; a stable shoulder-and-hip anchor is required for a torso-aligned reference), and see the illustrative skeleton appear without an account, cloud processing, desktop companion, physical marker or manual calibration wizard.
 
 The app is **not** an X-ray, personal internal-bone scan, posture diagnosis, clinical measurement tool or fictional-character filter. The initial on-device experience uses an **illustrative volumetric proxy**, not the yet-unshipped fully reviewed Z-Anatomy model.
 
@@ -38,7 +50,7 @@ The following is **present in main at the time of authoring**, not an endorsemen
 | One-screen iOS app | Mobile/iOS/MagicMirror/App/MagicMirrorApp.swift and MirrorScreen.swift | Improve the existing live camera screen; **do not introduce an unsupported three-tab app shell**. |
 | Full-bleed rear-camera image | Camera/CameraPreview.swift and Camera/CameraPosePipeline.swift | Maintain full-frame stage and preserve aspect-fill / source geometry. |
 | Native on-device pose tracking | CameraPosePipeline.swift with MediaPipe Tasks Vision LIVE_STREAM | Explain searching/tracking states; do not show synthetic landmarks before detection. |
-| Single person, 33 estimated landmarks | Tracking/PoseGeometry.swift | Only show overlays with sufficient observed shoulders/hips and confidence. |
+| Single person, 33 estimated landmarks | Tracking/PoseGeometry.swift | Display only reliable visible segments for partial tracking; require stronger torso anchors for torso-aligned anatomy. |
 | Semi-transparent volumetric proxy via Metal | Rendering/MetalSkeletonOverlay.swift and VolumetricBoneMesh.swift | Treat the proxy as educational material and never label it a real bone mesh. |
 | Focus selection | AnatomyFocus: Whole / Arms / Legs | Preserve these actual focus modes; do not invent a bone/muscle/organ switch. |
 | Opacity control | MirrorViewModel.opacity, current range 0.15…0.90 | A lower-priority, accessible adjustment, not the dominant screen element. |
@@ -609,3 +621,39 @@ take priority over the nominal camera occupancy estimate.
 GitHub CI performs Xcode build-for-testing, not necessarily executed
 unit tests. Real-world multi-system compositing, device interaction and
 licensed Z-Anatomy asset quality remain a separate hardware/review gate.
+
+## Folio disclosure hierarchy and screen-state redlines (2026-11-09)
+
+### Anatomy Folio — priority order
+
+1. **Native navigation title and Done** (close remains discoverable).
+2. **One lightweight folio signature:** short historical label + compact serif title; decorative Folio II mark is VoiceOver-hidden.
+3. **Systems / Sections picker** immediately reachable, before any long paragraph.
+4. **Contextual state:** *Reference proxy on camera* / *Reviewed systems selected*, truthful ready count and Reset only if applicable.
+5. **Actual controls:** proxy, skeleton, muscles, organs, vessels, nerves, joints/ligaments; available system rows can toggle, Solo and adjust opacity; planned rows remain visibly locked.
+6. **Optional study explanation** in a collapsed native DisclosureGroup after the controls, plus the nonmedical disclaimer. The default medium sheet must not be consumed by a marketing-style intro paragraph.
+
+The Sections tab follows the same compact hierarchy: short capability status; axial, sagittal and coronal rows; position/center controls only if a legitimate sectionable GPU-skinned atlas is active; a collapsed *What do section planes show?* explanation after the interactive area. It never claims closed cross-section caps, tissue reconstruction, or imaging of the person's internal anatomy.
+
+### Native sheet behavior and responsive rules
+
+| Context | Layout behavior | Acceptance method |
+| --- | --- | --- |
+| Standard Dynamic Type, medium iPhone | Medium detent opens to short title, picker, live state and first meaningful row; scroll for remaining systems | iPhone screenshot + tap test, not CSS mock |
+| Accessibility Dynamic Type | Sheets default to large detent and scroll; controls, title and disclaimers wrap | Test accessibility text sizes / VoiceOver |
+| Compact-width iPhone | Dynamic title remains readable, long explanations stay below controls, portrait camera remains focal | Test narrow portrait viewport with zh-Hans |
+| Lost pose or no reviewed atlas | Locked rows cannot be enabled; reference proxy is the explicitly described fallback, not an unverified skeleton | Unit-test UI state + hardware tracking loss |
+| Multiple reviewed systems | Selected/Ready/Locked are text plus icon, Solo isolates one; live count reflects actual ready-and-enabled models | Runtime-gated integration test, asset-rights review |
+| Section surface clipping | Show signed shoulder-width-relative offset and Center, hide/disable when no actual mesh clip is possible | Real mesh evidence + device QA |
+| Study detail open | Educational note is stable, user closes the sheet; live camera data is not saved or replaced | Source/UX test |
+
+### Accessibility rules carried across all folios
+
+- Keep native 44 pt or greater hit targets, readable adaptive SwiftUI text and no illegible pseudo-handwriting on controls.
+- Use ink on parchment for paragraph text; copper ink for small labels; copper rules are purely decoration. Moving video status uses an opaque-enough dark scrim.
+- Explanatory disclosure is collapsed by default but remains fully available to VoiceOver and touch. Do not hide essential safety copy solely inside a disclosure.
+- Use English/Chinese localized interface strings. Historical Latin lines are short decorative branding; do not announce them as task instructions.
+- Respect Reduce Motion for dock expansion; never animate interface chrome on every pose frame. Keep the camera/capture identity unchanged while opening sheets.
+- Do not invent model names, Latin terms or tissue labels from a visual mockup; these require reviewed source data.
+
+**Implementation status:** This section describes native SwiftUI design changes on PR #49. Its CI and merge status are not evidence of actual on-device layout compliance. Source-rights and native mesh registration are separate release gates.
