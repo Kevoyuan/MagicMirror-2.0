@@ -2,6 +2,7 @@ import { coverageFor, type Coverage, type Focus } from "./pose";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
+import { educationFor } from "./education";
 import type { LocalAtlasViewer } from "./atlas-viewer";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
@@ -49,6 +50,16 @@ root.innerHTML = `
       </div>
 
       <div id="guidance" class="guidance" hidden>将相机对准一人；双肩和髋部可见时能获得更完整的参考。</div>
+      <aside id="part-note" class="part-note" aria-label="局部解剖学习卡片" hidden>
+        <div class="part-note-head">
+          <span class="part-note-kicker">ANATOMIA · LEARNING NOTE</span>
+          <button id="close-part-note" aria-label="关闭解剖学习卡片" type="button">×</button>
+        </div>
+        <h3 id="part-title">人体参考区域</h3>
+        <span id="part-subtitle" class="part-note-subtitle"></span>
+        <p id="part-description"></p>
+        <small>教学示意 ≠ 真实骨骼扫描 · 非医疗诊断</small>
+      </aside>
 
       <div class="stage-corner-note" aria-hidden="true">
         <span>ANATOMICAL STUDY</span><span>NOT MEDICAL IMAGING</span>
@@ -77,7 +88,7 @@ root.innerHTML = `
         <button id="stop" class="action-button" type="button" disabled>关闭摄像头</button>
         <button id="layers" class="action-button secondary-action" type="button">解剖图层 <span aria-hidden="true">↗</span></button>
       </div>
-      <div class="disclaimer"><span aria-hidden="true">ⓘ</span> <strong>3D 示意模型</strong> · 跟随体表估算姿态，不是你的真实骨骼、X 光或医学诊断。</div>
+      <div class="disclaimer"><span aria-hidden="true">ⓘ</span> <strong>3D 示意模型</strong> · 点击骨骼参考段学习基础解剖；并非真实骨骼、X 光或医学诊断。</div>
     </section>
     <footer class="footer-links">
       <span>OPEN-SOURCE RESEARCH / THE LEONARDO FOLIO</span>
@@ -150,6 +161,10 @@ const overlayButton = element<HTMLButtonElement>("#toggle-overlay");
 const switchButton = element<HTMLButtonElement>("#switch-camera");
 const emptyState = element<HTMLElement>("#empty-state");
 const guidance = element<HTMLElement>("#guidance");
+const noteCard = element<HTMLElement>("#part-note");
+const noteTitle = element<HTMLElement>("#part-title");
+const noteSubtitle = element<HTMLElement>("#part-subtitle");
+const noteDescription = element<HTMLElement>("#part-description");
 const metric = element<HTMLElement>("#frame-metric");
 const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
@@ -191,6 +206,7 @@ function setStatus(text: string, kind: StatusKind): void {
   }
   status.className = `status-pill is-${kind}`;
 }
+function hideNote(): void { noteCard.hidden = true; }
 function showGuidance(text: string | null): void {
   guidance.hidden = !text;
   if (text) guidance.textContent = text;
@@ -227,6 +243,7 @@ function stopCamera(message = "相机已关闭"): void {
   overlayPaused = false;
   overlayButton.textContent = "暂停叠加";
   proxy?.hide();
+  hideNote();
   setCameraButtons(false);
   showGuidance(null);
   metric.textContent = "本地推理 · 尚未运行";
@@ -319,6 +336,7 @@ function handlePoseFrame(frame: InferenceFrame): void {
   if (frame.frameId <= lastReceivedFrameId) return;
   if (!freshResult(frame, session, now, staleMs)) {
     proxy.hide();
+    hideNote();
     previousCoverage = "none";
     setStatus("检测结果过期，正在重新识别", "ready");
     showGuidance("当前设备处理较慢，已隐藏不可靠的叠加模型。");
@@ -341,6 +359,7 @@ function handlePoseFrame(frame: InferenceFrame): void {
   previousCoverage = coverage;
   if (!points || coverage === "none") {
     proxy.hide();
+    hideNote();
     setStatus("寻找人体姿态", "ready");
     showGuidance("将一个人移入画面；上半身或可见手臂均可尝试。");
     return;
@@ -367,6 +386,7 @@ function tick(now: number): void {
   animationFrame = requestAnimationFrame(tick);
   if (now - lastFoundAt > staleMs && previousCoverage !== "none") {
     proxy.hide();
+    hideNote();
     previousCoverage = "none";
     setStatus("姿态已丢失 · 自动重新识别", "ready");
     showGuidance("请保持关键部位可见，或调整取景。");
@@ -375,6 +395,22 @@ function tick(now: number): void {
   runner.submit(video, now, session);
 }
 
+canvas.addEventListener("click", (event) => {
+  if (!active || overlayPaused || !proxy) return;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+  const result = proxy.pickAt(event.clientX - rect.left, event.clientY - rect.top);
+  const note = result ? educationFor(result.fromIndex, result.toIndex) : null;
+  if (!note) {
+    hideNote();
+    return;
+  }
+  noteTitle.textContent = note.titleZh;
+  noteSubtitle.textContent = note.titleEn;
+  noteDescription.textContent = note.descriptionZh;
+  noteCard.hidden = false;
+});
+element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
 startButton.addEventListener("click", () => void startCamera());
 stopButton.addEventListener("click", () => stopCamera());
 snapshotButton.addEventListener("click", () => {
