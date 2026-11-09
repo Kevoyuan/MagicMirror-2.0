@@ -403,3 +403,23 @@ rights. Typechecking alone is not a shipped MVP.
   source FBX import/units, skinning, performance,
   privacy and component copyright in physical devices.
   Headless CI is not hardware acceptance.
+
+## W2k · Two-engine original-demo browser integration (BROWSER CI PASS)
+
+- [x] Reuse real W2j browser E2E in **desktop Chromium**
+  and **mobile/touch-enabled iPhone 13 Linux WebKit emulation**.
+- [x] Both browser engines run the actual source code-generated
+  original GLB exporter/loader/WebGL pipeline, user chain
+  controls, local frame replay, source SHA JSON rejection
+  and safe reimport. No camera usage or external anatomy assets.
+- [x] Pin GitHub's opt-in browser job to Ubuntu 24.04 and
+  install both Playwright engines only when manually
+  dispatched or a `browser-smoke` feature PR requests
+  the heavy check; ordinary source CI remains fast.
+- [x] **6/6 real browser E2E PASS** (3 desktop Chromium,
+  3 Linux WebKit with iPhone-size viewport/touch)
+  https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+- [ ] Physical iPhone Safari (camera permission, WebGL on
+  actual Apple GPU, viewport/orientation, thermal/GPU
+  performance, local large FBX import and source assets),
+  plus legal/privacy approval, remains independently blocked.

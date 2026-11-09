@@ -495,3 +495,21 @@ https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
 Use this as an integration confidence signal **only**; none of
 the restricted release, physical iPhone Safari, real camera or
 original anatomical asset gates are changed or cleared.
+
+## 19. W2k WebKit iPhone-sized engine emulation (2026-11-09)
+
+The same original model-only Playwright E2E suite now runs on
+**desktop Chromium** and on **Linux WebKit with iPhone 13
+viewport, mobile emulation and touch**. Both execute the
+original three-box GLB exporter/loader, WebGL scene, manual
+virtual-chain UI, keyframe replay, and SHA-locked local
+JSON downloads/import rejection. The opt-in PR browser
+workflow completed **6/6 tests passed** on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+
+This DOES NOT certify actual iOS Safari, a physical phone's
+GPU/camera permission handling, thermals, device pixels,
+original Z-Anatomy FBX assets, clinical anatomy or
+distribution rights. Do not remove the remaining W0/W2
+hardware, model-license or third-party Google weights
+privacy/release blockers on the basis of WebKit emulation.

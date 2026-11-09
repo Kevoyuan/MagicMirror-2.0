@@ -182,3 +182,17 @@ Playwright tests or uploaded as CI artifacts.
 Never claim these software-WebGL results
 validate iPhone camera tracking, FBX provenance,
 live joint retargeting or commercial licensing.
+
+## Two-engine opt-in browser checks (W2k)
+
+Install both Chromium and WebKit and run
+`npm run test:browser` to cover the original
+GLB study, desktop and iPhone-sized touch UI.
+The first GitHub hosted two-engine run passed
+6/6 scenarios (run 42652358053). WebKit
+on Linux is a browser-engine/viewport test,
+not authentic Safari on iPhone hardware.
+Still obtain owner-supplied physical camera,
+orientation, FPS, thermal, permissions,
+licensed actual source model and accessibility
+evidence before any release claim.
