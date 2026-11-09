@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizedPartQuery, searchAtlasParts, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
+import { effectivePartVisibility, normalizedPartQuery, searchAtlasParts, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
 
 const fixtures: AtlasPart[] = [
   { id: 0, name: "Femur_L", path: "Skeleton / Left / Femur_L", triangles: 120, visible: true },
@@ -21,6 +21,12 @@ describe("LOCAL anatomy part search and visibility", () => {
     expect(r.matches).toHaveLength(2);
     expect(r.truncated).toBe(true);
     expect(searchAtlasParts(fixtures, "no matching source").matches).toHaveLength(0);
+  });
+  it("restores individual visibility after temporary isolate mode", () => {
+    expect(effectivePartVisibility(false, 0, null)).toBe(false);
+    expect(effectivePartVisibility(false, 0, 0)).toBe(true);
+    expect(effectivePartVisibility(true, 0, 1)).toBe(false);
+    expect(effectivePartVisibility(true, 0, null)).toBe(true);
   });
   it("normalizes user query while keeping exact source filenames stored", () => {
     expect(normalizedPartQuery("  FＥＭＵＲ  ")).toBe("femur");
