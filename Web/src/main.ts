@@ -1,5 +1,6 @@
-import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
-import { coverageFor, type Coverage, type Focus, type PosePoint } from "./pose";
+import { coverageFor, type Coverage, type Focus } from "./pose";
+import { LivePoseInference } from "./inference";
+import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
@@ -130,7 +131,8 @@ try {
   console.error("Three.js initialization failed", error);
 }
 
-let landmarker: PoseLandmarker | undefined;
+let runner: LivePoseInference | undefined;
+const processing = new ProcessingWindow();
 let stream: MediaStream | undefined;
 let session = 0;
 let animationFrame = 0;
@@ -140,11 +142,9 @@ let active = false;
 let overlayPaused = false;
 let focus: Focus = "whole";
 let opacity = 0.65;
-let previousVideoTime = -1;
-let lastInferenceAt = -Infinity;
 let lastFoundAt = -Infinity;
 let previousCoverage: Coverage = "none";
-const frameSpacingMs = 75; // ~13Hz inference. detectForVideo is synchronous and can block UI.
+let lastReceivedFrameId = 0;
 const staleMs = 350;
 
 type StatusKind = "ready" | "active" | "error";
@@ -171,32 +171,20 @@ function modelUrl(path: string): string {
   return new URL(`${import.meta.env.BASE_URL}${path}`, document.baseURI).toString();
 }
 
-async function getLandmarker(): Promise<PoseLandmarker> {
-  if (landmarker) return landmarker;
-  const wasmURL = modelUrl("wasm").replace(/\/$/, "");
-  const fileset = await FilesetResolver.forVisionTasks(wasmURL);
-  const instance = await PoseLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: modelUrl("models/pose_landmarker_lite.task"), delegate: "CPU" },
-    runningMode: "VIDEO",
-    numPoses: 1,
-    minPoseDetectionConfidence: 0.5,
-    minPosePresenceConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
-  landmarker = instance;
-  return instance;
-}
 
 function stopCamera(message = "相机已关闭"): void {
   session++;
   active = false;
   if (animationFrame) cancelAnimationFrame(animationFrame);
   animationFrame = 0;
+  runner?.close();
+  runner = undefined;
   stream?.getTracks().forEach((track) => track.stop());
   stream = undefined;
   video.pause();
   video.srcObject = null;
-  previousVideoTime = -1;
+  processing.reset();
+  lastReceivedFrameId = 0;
   lastFoundAt = -Infinity;
   previousCoverage = "none";
   overlayPaused = false;
@@ -233,15 +221,40 @@ async function startCamera(): Promise<void> {
       return;
     }
     stream = opened;
+    opened.getVideoTracks().forEach((track) => {
+      track.addEventListener("ended", () => {
+        if (currentSession === session) {
+          stopCamera("摄像头设备已断开，请重新开启");
+          showGuidance("设备断开或权限被撤销，请检查摄像头权限后重试。");
+        }
+      }, { once: true });
+    });
     video.srcObject = opened;
     const actualFacing = opened.getVideoTracks()[0]?.getSettings().facingMode;
     mirrored = actualFacing === "user" || (!actualFacing && preferredFacing === "user");
     video.classList.toggle("mirror-video", mirrored);
     await video.play();
     setStatus("加载本地模型…", "ready");
-    await getLandmarker();
-    if (currentSession !== session) return;
+    const engine = new LivePoseInference({
+      modelURL: modelUrl("models/pose_landmarker_lite.task"),
+      wasmURL: modelUrl("wasm").replace(/\/$/, ""),
+      onFrame: handlePoseFrame,
+      onFatal: (error) => {
+        console.error("Pose engine failed", error);
+        if (currentSession !== session) return;
+        stopCamera("姿态引擎发生错误");
+        showGuidance("请重新开启摄像头；若多次失败，请检查 WASM/模型文件和浏览器兼容性。");
+      },
+    });
+    runner = engine;
+    const mode = await engine.initialize();
+    if (currentSession !== session) {
+      engine.close();
+      return;
+    }
     active = true;
+    metric.textContent = mode === "worker"
+      ? "Worker 推理 · 等待首帧" : "主线程降级 · 等待首帧";
     setCameraButtons(true);
     showGuidance("请将一人移入镜头。局部手臂或腿部也可开始识别。");
     setStatus("寻找人体姿态", "ready");
@@ -261,8 +274,57 @@ async function startCamera(): Promise<void> {
   }
 }
 
+function handlePoseFrame(frame: InferenceFrame): void {
+  if (!active || !proxy || !runner) return;
+  const now = performance.now();
+  if (frame.frameId <= lastReceivedFrameId) return;
+  if (!freshResult(frame, session, now, staleMs)) {
+    proxy.hide();
+    previousCoverage = "none";
+    setStatus("检测结果过期，正在重新识别", "ready");
+    showGuidance("当前设备处理较慢，已隐藏不可靠的叠加模型。");
+    return;
+  }
+  lastReceivedFrameId = frame.frameId;
+  processing.record({
+    observedAtMs: now,
+    inferenceMs: frame.inferredInMs,
+    deliveryMs: now - frame.capturedAtMs,
+  });
+  const p = processing.summary();
+  metric.textContent = `${runner.mode === "worker" ? "Worker" : "主线程"} ·
+    ${p.outputHz.toFixed(1)} 结果/秒 ·
+    推理 p95 ${p.inferenceP95Ms.toFixed(0)}ms ·
+    交付 p95 ${p.deliveryP95Ms.toFixed(0)}ms`.replace(/\s+/g, " ").trim();
+
+  const points = frame.landmarks ?? undefined;
+  const coverage = coverageFor(points);
+  previousCoverage = coverage;
+  if (!points || coverage === "none") {
+    proxy.hide();
+    setStatus("寻找人体姿态", "ready");
+    showGuidance("将一个人移入画面；上半身或可见手臂均可尝试。");
+    return;
+  }
+  lastFoundAt = now;
+  if (overlayPaused) {
+    proxy.hide();
+    setStatus("参考叠加已暂停", "ready");
+  } else {
+    const visible = proxy.draw(
+      points, frame.width, frame.height, focus, opacity, mirrored
+    );
+    setStatus(visible > 0
+      ? coverage === "torso" ? "已识别 · 躯干稳定" : "已识别 · 局部姿态"
+      : "当前区域不可见", visible > 0 ? "active" : "ready");
+  }
+  showGuidance(coverage === "partial"
+    ? "局部参考已启动。双肩与髋部可见时才有完整躯干参考。"
+    : null);
+}
+
 function tick(now: number): void {
-  if (!active || !proxy || !landmarker) return;
+  if (!active || !proxy || !runner) return;
   animationFrame = requestAnimationFrame(tick);
   if (now - lastFoundAt > staleMs && previousCoverage !== "none") {
     proxy.hide();
@@ -270,49 +332,8 @@ function tick(now: number): void {
     setStatus("姿态已丢失 · 自动重新识别", "ready");
     showGuidance("请保持关键部位可见，或调整取景。");
   }
-  if (now - lastInferenceAt < frameSpacingMs ||
-      video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
-      video.currentTime <= previousVideoTime) {
-    return;
-  }
-  // Source video element and its inferred landmarks share the same frame
-  // read. The preview itself can advance before the next inference result;
-  // this is NOT exact photon-to-motion registration.
-  lastInferenceAt = now;
-  previousVideoTime = video.currentTime;
-  try {
-    const result = landmarker.detectForVideo(video, now);
-    const points = result.landmarks[0] as PosePoint[] | undefined;
-    const coverage = coverageFor(points);
-    previousCoverage = coverage;
-    if (!points || coverage === "none") {
-      proxy.hide();
-      setStatus("寻找人体姿态", "ready");
-      showGuidance("将一个人移入画面；上半身或可见手臂均可尝试。");
-      return;
-    }
-    lastFoundAt = now;
-    if (overlayPaused) {
-      proxy.hide();
-      setStatus("参考叠加已暂停", "ready");
-    } else {
-      const visible = proxy.draw(
-        points, video.videoWidth, video.videoHeight, focus, opacity, mirrored
-      );
-      setStatus(visible > 0
-        ? coverage === "torso" ? "已识别 · 躯干稳定" : "已识别 · 局部姿态"
-        : "当前区域不可见", visible > 0 ? "active" : "ready");
-    }
-    showGuidance(coverage === "partial"
-      ? "局部参考已启动。双肩与髋部可见时才有完整躯干参考。"
-      : null);
-    metric.textContent = `本地姿态更新 · 上限约 ${Math.round(1000 / frameSpacingMs)} 次/秒（非屏幕 FPS）`;
-  } catch (error) {
-    console.error("Pose detection failed", error);
-    stopCamera();
-    setStatus("姿态检测失败，请重试", "error");
-    showGuidance("本地推理发生错误；请重新打开摄像头或检查模型资源。");
-  }
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+  runner.submit(video, now, session);
 }
 
 startButton.addEventListener("click", () => void startCamera());
@@ -365,7 +386,7 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pagehide", () => {
   stopCamera("页面已离开");
   observer.disconnect();
-  landmarker?.close();
-  landmarker = undefined;
+  runner?.close();
+  runner = undefined;
   proxy?.dispose();
 });
