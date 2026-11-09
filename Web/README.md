@@ -135,3 +135,35 @@ mirrored/cropped camera and the current Three.js proxy, marked
 "Illustrative 3D proxy / NOT X-ray". It is opt-in and stored only
 when a user explicitly downloads it. Do not use these images for
 medical decisions. No remote snapshot or recording API exists.
+
+## W2a: Explore a LOCAL Z-Anatomy FBX or GLB (2026-11-09)
+
+Click **解剖图层 → 导入本地 FBX / GLB 解剖模型**.
+Choose a file already on *your* computer (for example, the
+source-pinned `SkeletalSystem100.fbx` fetched separately from its
+original rights-holder). This model is **not** uploaded or
+automatically distributed. A separate static 3D viewer opens while
+the camera is stopped:
+
+- Drag to rotate, scroll/pinch to zoom, tap a mesh to inspect its
+  actual source hierarchy/name; the mesh/triangle count is measured.
+- Show/hide wireframe, vary opacity and move a true GPU clipping plane
+  along **X/Y/Z of the original model frame**. The labels are
+  visual study controls, *not verified medical anatomical planes*.
+- Look at the report's **SkinnedMesh** and actual authored joint
+  counts. An unrigged Z-Anatomy source may show zero. It cannot
+  follow your body in this state.
+
+File bounds: 1–75MB, FBX or self-contained GLB, ≤2M triangles.
+A very large FBX may hang a slow phone while parsing; desktop Chrome
+is recommended for first investigation. Textures requiring external
+files are intentionally replaced with a local placeholder instead
+of silently making network requests.
+
+**Licensing:** you choose your own copy of an anatomy file.
+The project does not provide, automatically download, bundle, share,
+sublicense or publish that file. A personal local inspection does
+not grant redistribution rights; an actual public anatomy overlay
+remains gated by per-component source licenses, human-reviewed
+joint hierarchy, real rig/weights, camera/pose registration,
+occlusion and mobile performance.

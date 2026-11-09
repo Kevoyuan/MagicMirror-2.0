@@ -529,3 +529,17 @@ and Field Notes on a compact and large iPhone, with VoiceOver and
 accessibility Dynamic Type. Confirm that XcodeGen includes both `.lproj`
 resources. Static source parity and Simulator compilation are necessary
 but not substitutes for a real iPhone localization/contrast inspection.
+
+## Web-first Leonardo local research folio (2026-11-09)
+
+The active Web interface includes a separate **Folio II** modal
+for *user-chosen local* static anatomy study. It is intentionally
+distinct from the live camera/procedural mirror:
+- Opens via Layers → local FBX/GLB viewer, leaving the camera stopped.
+- Provides static Three.js orbit, actual imported mesh metadata,
+  part-name inspection, opacity, wireframe and model-axis clipping.
+- The camera remains the main default Web screen. Do not inflate
+  the banner/dock or introduce a distracting dashboard.
+- Unreviewed static models and model-space slices are **not**
+  marketed as real-time anatomical reconstruction, licensed
+  bundled anatomy layers or clinically calibrated body sections.

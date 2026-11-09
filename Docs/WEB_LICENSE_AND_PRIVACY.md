@@ -62,3 +62,15 @@ browser; the application itself has no recording, automatic saving,
 analytics or upload endpoint. Downloaded files are subsequently
 managed by the user's browser/device. Google MediaPipe SDK network
 metrics obligations remain a distinct public-release review topic.
+
+## User-chosen local anatomy models (W2a)
+
+The browser File API is used only after a user picks a local FBX
+or GLB. The app parses it in memory and deliberately prevents
+model-provided external resource URLs from fetching third-party
+texture files. The static inspector stops the active camera while
+the dialog is open. No model geometry or file data is sent to
+a server by the MagicMirror source and nothing is automatically
+written to disk. These are privacy protections, NOT a source
+license, authorization to redistribute or a guarantee about
+malicious browsers/third-party extensions.

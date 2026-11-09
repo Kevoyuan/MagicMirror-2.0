@@ -144,3 +144,28 @@ camera calibration.
 verification + required source rights for any published release.**
 Build success alone is NOT release, hardware success or anatomical
 precision.
+
+## 6. W2 local-only anatomy study workflow (2026-11-09)
+
+The Web interface now supports **user-selected LOCAL .fbx and .glb
+inspection** in a separate Three.js model study dialog with OrbitControls,
+mesh part picking, wireframe, transparency, and model-axis clipping. This
+is a static viewer, **not** an installed Z-Anatomy layer or rigged AR model.
+
+- No FBX, GLB, or derivative third-party assets may be committed,
+  downloaded automatically, staged or deployed without a separate
+  verified redistribution/license review. The importer operates
+  solely on a user-selected browser File's in-memory ArrayBuffer.
+- The local model belongs to its original author. An MIT code license
+  does not relicense files the user selects.
+- The model is **NOT** retargeted to human pose; a raw original source
+  may have no authored skinning. Display actual mesh, triangle,
+  skinned-mesh and skeleton joint counts without inventing weights.
+- Keep import ≤75MB and ≤2M triangles, limit texture URLs via a
+  local-only loading manager, clear/stop GPU rendering on close and
+  avoid remote background asset fetch. On desktop-heavy FBX prefer
+  offline optimization before mobile viewing.
+- Slice planes are oriented to **source/model axes**; do not call
+  them medically validated body planes. The W2 real anatomy overlay
+  remains blocked until actual mesh-by-mesh license, rigging,
+  camera calibration and correct real-device performance evidence.
