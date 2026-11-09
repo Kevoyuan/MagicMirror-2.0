@@ -77,6 +77,15 @@ export class LocalAtlasViewer {
     triangles: number;
     skinnedMeshes: number;
     authoredJoints: number;
+    rigSamples?: {
+      sampledVertices: number;
+      unweightedVertices: number;
+      invalidWeightSamples: number;
+      invalidJointReferences: number;
+      suspiciousWeightSums: number;
+      skinnedMeshesWithoutWeightAttributes: number;
+      previewableAnimationClips: number;
+    };
   } | null = null;
   private previousPointer?: { x: number; y: number };
   onPartSelected: ((part: AtlasPart) => void) | undefined;
@@ -484,6 +493,15 @@ export class LocalAtlasViewer {
       fileName: file.name, fileSizeBytes: file.size, sourceSHA256,
       importedMeshes, triangles, skinnedMeshes,
       authoredJoints: jointNames.size,
+      rigSamples: {
+        sampledVertices: rigSampledVertices,
+        unweightedVertices: rigUnweightedSamples,
+        invalidWeightSamples: rigInvalidWeightSamples,
+        invalidJointReferences: rigInvalidJointReferences,
+        suspiciousWeightSums: rigSuspiciousWeightSums,
+        skinnedMeshesWithoutWeightAttributes,
+        previewableAnimationClips: validClips.length,
+      },
     };
     this.resetView();
     return {
