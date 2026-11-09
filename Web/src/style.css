@@ -750,3 +750,72 @@ a { color: inherit; }
   .atlas-rigid-controls button { flex: 1 1 auto; font-size: 11px; }
   .atlas-rigid-range { flex-basis: calc(100% - 55px); }
 }
+
+/* W2g: bounded, user-authored virtual source mesh chains in Folio II.
+   Golden wire ghosts show movement; the original anatomical source stays put. */
+.atlas-chain-panel {
+  margin: 12px 0 8px; padding: 10px;
+  border: 1px solid #b1a182; border-radius: 9px;
+  background: #e9dfc9; color: #334e41;
+}
+.atlas-chain-panel h4 {
+  margin: 0 0 5px; font: 600 15px/1.35 Georgia, "Songti SC", serif;
+}
+.atlas-chain-panel > p {
+  margin: 5px 0 10px; font: 11px/1.55 system-ui,sans-serif;
+  color: #766a50;
+}
+.atlas-chain-actions {
+  display: flex; align-items: end; gap: 7px; flex-wrap: wrap;
+}
+.atlas-chain-actions button,
+.atlas-chain-pose button {
+  min-height: 38px; border-radius: 6px;
+  border: 1px solid #a7a58a; color: #315646;
+  background: #e2e8d7; padding: 7px 10px;
+  font-size: 11px; font-weight: 600;
+}
+.atlas-chain-actions button:disabled,
+.atlas-chain-pose button:disabled { opacity: .47; cursor: not-allowed; }
+.atlas-chain-actions label,
+.atlas-chain-pose label {
+  flex: 1 1 160px; display: grid; gap: 5px;
+  color: #6b755f; font-size: 11px;
+}
+.atlas-chain-actions select, .atlas-chain-pose select {
+  width: 100%; min-height: 38px; padding: 6px;
+  border: 1px solid #b1a58a; border-radius: 6px;
+  color: #335447; background: #f5efdf;
+}
+.atlas-chain-list {
+  margin: 10px 0; padding: 7px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  background: #d6d5bd8a; border-radius: 7px;
+  min-height: 30px; max-height: 125px; overflow: auto;
+}
+.atlas-chain-node {
+  max-width: min(280px,100%); overflow: hidden; text-overflow: ellipsis;
+  border: 1px solid #adad92; border-radius: 6px;
+  background: #f6f0db; color: #45614d;
+  min-height: 36px; padding: 6px 10px; font-size: 11px;
+  text-align: left;
+}
+.atlas-chain-node[aria-current="true"] {
+  color: #f7e7bb; background: #315d49; border-color: #315d49;
+}
+.atlas-chain-pose {
+  display: flex; align-items: end; gap: 8px; flex-wrap: wrap;
+}
+.atlas-chain-pose input[type=range] {
+  width: 100%; min-height: 34px; accent-color: #396b52;
+}
+.atlas-chain-pose output {
+  min-width: 40px; text-align: center; line-height: 38px;
+  color: #3f6d54; font: 600 13px ui-monospace,Consolas,monospace;
+}
+#atlas-chain-status { font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+@media (max-width:620px) {
+  .atlas-chain-panel { padding: 8px; }
+  .atlas-chain-actions button { flex: 1 1 auto; }
+  .atlas-chain-pose label { flex-basis: 140px; }
+}
