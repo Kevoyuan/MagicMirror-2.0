@@ -1346,6 +1346,7 @@ atlasChainAdd.addEventListener("click", () => {
   const points = id !== null ? atlasAnchors.get(id) : undefined;
   if (id === null || atlasChainIds.size >= 12 || !points ||
       !atlasMappings.has(id) || !atlasViewer?.canRigidPreview(id, points)) return;
+  clearStudyTimeline();
   atlasChainIds.add(id);
   atlasChainParents.set(id, null);
   atlasChainAngles.set(id, { axis: "z", degrees: 0 });
@@ -1354,6 +1355,7 @@ atlasChainAdd.addEventListener("click", () => {
 atlasChainRemove.addEventListener("click", () => {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasChainIds.has(id)) return;
+  clearStudyTimeline();
   atlasChainIds.delete(id);
   atlasChainParents.delete(id);
   atlasChainAngles.delete(id);
@@ -1372,6 +1374,7 @@ atlasChainParent.addEventListener("change", () => {
   atlasChainParents.set(id, nextParent);
   try {
     if (atlasChainIds.size >= 2) chainNodesForCurrentStudy();
+    if (old !== nextParent) clearStudyTimeline();
     atlasChainStatus.textContent = locale === "en"
       ? "Manual source hierarchy updated. Not a human anatomical joint tree."
       : "已更新人工来源部件父子关系，尚非真实人体解剖关节层级。";
@@ -1393,6 +1396,7 @@ atlasChainStart.addEventListener("click", () => {
       ? `Virtual chain active: ${nodes.length} ghost meshes, ${gaps} disconnected-looking source endpoints. Original source unchanged. NOT medical tracking.`
       : `已预览 ${nodes.length} 个虚拟网格，其中 ${gaps} 个父子端点距离偏大。原模型未更改，非人体骨骼追踪。`;
     refreshAtlasRigidControls();
+    refreshStudyTimelineControls();
   } catch (error) {
     atlasChainStatus.textContent = locale === "en"
       ? `Cannot preview: ${String(error)}` : `无法预览：${String(error)}`;
@@ -1402,6 +1406,7 @@ atlasChainStart.addEventListener("click", () => {
 atlasChainStop.addEventListener("click", () => {
   stopLocalStudyChain();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 });
 function applyStudyJointAngle(): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
@@ -1416,6 +1421,8 @@ function applyStudyJointAngle(): void {
     refreshAtlasChainControls();
     return;
   }
+  const previously = atlasChainAngles.get(id);
+  if (previously && previously.axis !== axis) clearStudyTimeline();
   atlasChainAngles.set(id, { axis, degrees });
   atlasChainDegrees.textContent = `${degrees}°`;
   atlasChainStatus.textContent = locale === "en"
@@ -1436,6 +1443,7 @@ atlasChainZero.addEventListener("click", () => {
 
 atlasTimelineCapture.addEventListener("click", () => {
   if (!atlasViewer?.getChainPreviewActive()) return;
+  pauseStudyTimeline();
   try {
     const atMs = Number(atlasTimelineTime.value);
     const frame = studyFrameAt(chainNodesForCurrentStudy(), atMs);
@@ -1780,8 +1788,18 @@ function initializeOriginalDemoStudy(): void {
   atlasInfo.textContent = locale === "en"
     ? "Original procedural training fixture (3 generated source meshes). No external anatomy data or download."
     : "原创程序生成的训练示例（3 个来源网格），没有外部解剖资源、无需下载。";
+  studyTimelineFrames = [
+    studyFrameAt(nodes.map(node => ({ ...node, degrees: 0 })), 0),
+    studyFrameAt(nodes, 1500),
+    studyFrameAt(nodes.map(node => ({ ...node, degrees: 0 })), 3000),
+  ];
+  atlasTimelineTime.value = "1500";
+  atlasTimelineStatus.textContent = locale === "en"
+    ? "The ORIGINAL demo includes 3 synthetic keyframes. Press Loop to see motion."
+    : "原创示例已配置 3 个合成角度关键帧，点击循环播放即可观察运动。";
   refreshAtlasParts();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 }
 atlasFile.addEventListener("change", () => {
   const file = atlasFile.files?.[0];
@@ -1853,7 +1871,14 @@ document.addEventListener("visibilitychange", () => {
     stopCamera("页面进入后台，已关闭摄像头");
   }
 });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    pauseStudyTimeline();
+    refreshStudyTimelineControls();
+  }
+});
 window.addEventListener("pagehide", () => {
+  pauseStudyTimeline();
   stopCamera("页面已离开");
   observer.disconnect();
   runner?.close();
