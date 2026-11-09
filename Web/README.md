@@ -201,3 +201,39 @@ educational cards using local UI strings, with no translation
 server or camera data upload. The visible model source filenames
 and mesh names remain unchanged. Some long-form/debug messages
 still require manual translation QA before public release.
+
+## W2b: Browse, isolate and export ORIGINAL anatomy source parts
+
+Inside **解剖图层 / Anatomy layers → 导入本地 FBX / GLB**,
+select a locally stored model. After import, the **Original meshes
+and hierarchy / 原始部件与层级** panel shows each *actual* imported
+mesh, its original hierarchy path and its triangle count.
+
+- Search the imported source file's own mesh names and parent
+  hierarchy paths. Initially show up to 60 matching meshes;
+  **Show more** pages through matching parts without rendering
+  thousands of DOM rows at once.
+- Click a mesh name to inspect/highlight it; toggle its checkbox
+  to hide or show, use **◎** to isolate the part, and **⌕** to
+  focus the orbit camera on its actual geometry.
+- **Exit isolate** restores per-part visibility preferences.
+  **Show all** enables all source meshes; **Reset view**
+  restores the whole-model camera without changing the model.
+- **Export source inventory JSON** is an explicit local download,
+  with original selected model file SHA-256, byte size and all
+  imported mesh hierarchy/triangle/skinning statistics. It
+  contains **no geometry**, and every mesh's rights remain
+  `commercialReuseReviewed: false`,
+  `licenseEvidence: null`, with overall
+  `rightsStatus: NOT_REVIEWED`.
+
+This inventory is useful to start a real human provenance,
+copyright and authoring/rigging audit. It **does not grant
+commercial rights** or clear a source FBX for redistribution.
+The software neither hosts nor auto-downloads local models.
+A signed, reviewed 3D anatomy overlay remains later work.
+
+Current file limits: ≤75 MB, ≤2 million triangles and ≤5,000
+source meshes. Desktop browsers are recommended for original
+large FBX study; no actual Z-Anatomy import/device FPS
+performance is claimed until separately measured.
