@@ -14,6 +14,12 @@
       coordinate transform and front-camera mirror semantics.
 - [x] Camera-first Leonardo layout, focus, opacity, camera switch,
       overlay pause, contextual privacy/asset and disabled layer info.
+- [x] Web UI Leonardo v2 source refinement: safe-area header, on-demand
+      opacity/diagnostics/study explanation, 44px controls, responsive
+      mobile parchment sheets and proxy-first honest layer content.
+- [x] Add bilingual disclosure copy and synthetic localization test coverage.
+- [ ] Verify real Safari/Chrome layout, text zoom, keyboard/dialog focus,
+      70% camera-stage composition target and overlapping status/notes.
 - [x] Keep third-party mesh/model binaries out of Git; stage pinned
       developer model and package WASM with hash/byte checks.
 - [x] Author synthetic pose/crop tests and GitHub Web CI source build.
