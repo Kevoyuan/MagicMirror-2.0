@@ -10,6 +10,7 @@ import { inspectLocalAtlasFile, normalizeSlice, sliceNormal,
 import { effectivePartVisibility, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
 import { buildLocalAtlasInventory, type AtlasInventory } from "./atlas-inventory";
 import { inspectRigSamples, usableAnimationStudyClip, type AnimationStudyClip } from "./rig-diagnostics";
+import { validSourcePoint, type AnchorEndpoint, type SourcePoint3 } from "./atlas-anchors";
 
 interface LocalMeshEntry {
   readonly id: number;
@@ -69,6 +70,7 @@ export class LocalAtlasViewer {
   private parts: LocalMeshEntry[] = [];
   private isolatedPartId: number | null = null;
   private selectedPartId: number | null = null;
+  private anchorPickTarget: { id: number; endpoint: AnchorEndpoint } | null = null;
   private sourceIdentity: {
     fileName: string;
     fileSizeBytes: number;
@@ -89,6 +91,11 @@ export class LocalAtlasViewer {
   } | null = null;
   private previousPointer?: { x: number; y: number };
   onPartSelected: ((part: AtlasPart) => void) | undefined;
+  onAnchorPicked: ((sample: {
+    sourceMeshId: number;
+    endpoint: AnchorEndpoint;
+    originalRootLocalPoint: SourcePoint3;
+  }) => void) | undefined;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({
@@ -150,6 +157,7 @@ export class LocalAtlasViewer {
 
   cancelPendingLoad(): void {
     this.loadGeneration++;
+    this.anchorPickTarget = null;
   }
 
   setWireframe(enabled: boolean): void {
@@ -206,6 +214,22 @@ export class LocalAtlasViewer {
   }
 
   getIsolatedPartId(): number | null { return this.isolatedPartId; }
+  getSelectedPartId(): number | null { return this.selectedPartId; }
+
+  /**
+   * Purely local click-based model-space reference point selection.
+   * Does not generate joints, skin weights, rest-pose truth or camera calibration.
+   */
+  beginAnchorPick(id: number, endpoint: AnchorEndpoint): boolean {
+    const entry = this.findPart(id);
+    if (!entry || !entry.mesh.visible || this.animationPlaying ||
+        (endpoint !== "start" && endpoint !== "end")) return false;
+    this.anchorPickTarget = { id, endpoint };
+    this.selectPart(id);
+    return true;
+  }
+
+  cancelAnchorPick(): void { this.anchorPickTarget = null; }
 
   getAnimationClips(): AnimationStudyClip[] {
     return this.animationClips.map((clip, id) => ({
@@ -533,6 +557,21 @@ export class LocalAtlasViewer {
     for (const hit of intersections) {
       const entry = this.parts.find((part) => part.mesh === hit.object);
       if (!entry || !entry.mesh.visible) continue;
+      if (this.anchorPickTarget) {
+        // Explicitly avoid choosing a point on a DIFFERENT source mesh,
+        // which could silently corrupt the manually authored relation.
+        if (entry.id !== this.anchorPickTarget.id || !this.lastLoaded) continue;
+        this.lastLoaded.updateWorldMatrix(true, false);
+        const local = this.lastLoaded.worldToLocal(hit.point.clone());
+        const xyz: SourcePoint3 = [local.x, local.y, local.z];
+        if (!validSourcePoint(xyz)) return;
+        const pick = this.anchorPickTarget;
+        this.anchorPickTarget = null;
+        this.onAnchorPicked?.({
+          sourceMeshId: pick.id, endpoint: pick.endpoint,
+          originalRootLocalPoint: xyz,
+        });
+      }
       const selected = this.selectPart(entry.id);
       if (selected) this.onPartSelected?.(selected);
       break;
@@ -542,6 +581,7 @@ export class LocalAtlasViewer {
   private render(): void { this.renderer.render(this.scene, this.camera); }
 
   private clearModel(): void {
+    this.anchorPickTarget = null;
     this.animationPlaying = false;
     this.activeAnimation = undefined;
     this.animationMixer?.stopAllAction();
