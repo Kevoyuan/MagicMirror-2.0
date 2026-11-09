@@ -1411,6 +1411,7 @@ atlasChainStop.addEventListener("click", () => {
 function applyStudyJointAngle(): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasChainIds.has(id)) return;
+  pauseStudyTimeline();
   const axis = atlasChainAxis.value as SourceAxis;
   const degrees = Number(atlasChainAngle.value);
   if (!atlasViewer?.setChainJoint(id, axis, degrees)) {
@@ -1425,6 +1426,7 @@ function applyStudyJointAngle(): void {
   if (previously && previously.axis !== axis) clearStudyTimeline();
   atlasChainAngles.set(id, { axis, degrees });
   atlasChainDegrees.textContent = `${degrees}°`;
+  refreshStudyTimelineControls();
   atlasChainStatus.textContent = locale === "en"
     ? `Source #${id}: ${axis.toUpperCase()} ${degrees}°. Descendant ghost geometry follows its parent. No skinning or camera retargeting.`
     : `来源节点 #${id}：${axis.toUpperCase()} ${degrees}°。子部件虚拟网格继承父部件运动；无皮肤权重或摄像头动作映射。`;
@@ -1811,7 +1813,10 @@ atlasDemoButton.addEventListener("click", () => {
     ? "Generating an original, self-contained local GLB in this browser…"
     : "正在浏览器内生成原创独立 GLB 示例…";
   void createOriginalStudyDemoFile().then(file => {
-    if (!atlasDialog.open) return;
+    if (!atlasDialog.open) {
+      atlasDemoButton.disabled = false;
+      return;
+    }
     loadAtlasFile(file, true);
   }).catch(error => {
     atlasDemoButton.disabled = false;
