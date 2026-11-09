@@ -450,3 +450,47 @@ retargeting, a human joint motion log,
 a licensed bone or a medical scan.
 Run a real browser interaction test
 before considering it hardware verified.
+
+
+## W2j: Optional real Chromium browser integration test
+
+For an actual desktop-browser runtime smoke of
+the ORIGINAL three-box tutorial (no webcam, no
+external anatomical geometry or Google task
+model weights):
+
+```bash
+cd Web
+npm install --legacy-peer-deps
+npx playwright install chromium
+npm run test:browser
+```
+
+Playwright opens a local Vite server; it checks
+the exact production study UI, GLB exporter/loader,
+software WebGL, virtual multi-part chain and
+keyframe replay, explicit local SHA-bound JSON
+download, forged-source rejection and valid
+re-import. Tests never press the webcam button.
+
+Ordinary GitHub Web CI still does only the
+fast TS/Vitest/build/release-denial checks.
+Run `Web-first MVP` manually via GitHub Actions
+or open a PR branch containing `browser-smoke`
+to opt into the heavier Chromium job in the
+**same workflow**. Browser smoke is not a
+publicly deployable release, not Z-Anatomy
+usage permission and **not physical iPhone Safari
+or real camera acceptance**.
+
+Browser CI pins **Ubuntu 24.04** for Playwright's supported Chromium
+runtime; ordinary source checks continue on the current GitHub
+default runner. The browser smoke is specifically software WebGL,
+not an iPhone/physical GPU performance or medical anatomy acceptance.
+
+**First verified browser smoke (2026-11-09):** all **3/3**
+Playwright tests passed on GitHub-hosted Ubuntu 24.04
+Chromium with software WebGL and no webcam permission:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+This is real browser execution of the original generated GLB,
+not a confirmation of Safari/iPhone or original Z-Anatomy FBX behavior.

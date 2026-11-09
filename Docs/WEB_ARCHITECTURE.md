@@ -403,3 +403,30 @@ recording, author bone-weight change,
 physical 3D camera calibration, real
 human pose animation or public model
 distribution is authorized by these frames.
+
+
+## W2j opt-in actual browser smoke environment
+
+`Web/playwright.config.ts` starts the unmodified Vite
+development server at `localhost:5173`; headless Chromium
+with a software WebGL renderer opens the same DOM and lazy
+Three.js source loader as a regular end-user.
+`Web/tests/browser/original-demo.spec.ts` uses the
+original THREE.js generated GLB from `study-demo.ts`,
+rather than any actual third-party anatomical FBX
+or Google task model. It exercises page state,
+source GLB parsing, virtual ghost preview, timeline
+loop, user-initiated JSON download and rejection
+of falsified model SHA, entirely without a camera
+request. This validates selected browser integration
+behavior, NOT a certified anatomical visualization,
+mobile Safari, actual source performance, live
+pose tracking, medical calibration or distribution
+rights.
+
+The existing `.github/workflows/web-mvp.yml`
+runs fast source/unit tests on ordinary Web
+changes. Its extra Chromium job is opt-in for
+manual workflow runs or PR branches with
+`browser-smoke` in the name. The source build
+and public release guard stay unchanged.
