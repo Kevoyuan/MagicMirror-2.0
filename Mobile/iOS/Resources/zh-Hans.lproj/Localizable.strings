@@ -186,3 +186,7 @@
 "Reset the section plane to its center" = "将剖切平面重置到中心";
 "Reviewed anatomy visible" = "已显示审核通过的解剖模型";
 "Reference proxy visible" = "正在显示参考骨架";
+"How anatomy layers work" = "解剖图层如何使用";
+"Surface clipping available" = "三维表面裁剪已可用";
+"Requires registered 3D anatomy" = "需要已配准的三维解剖模型";
+"What do section planes show?" = "剖面功能说明";
