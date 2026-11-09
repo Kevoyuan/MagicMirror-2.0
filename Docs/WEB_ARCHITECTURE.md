@@ -570,8 +570,9 @@ shoulder is not visible, the observed forearm is drawn as an INDEPENDENT
 segment (`hierarchyAttached: false`, `parentRelativeRadians: null`) with no
 fabricated shoulder or elbow parent.
 
-`LiveRigTracker` owns only bounded transform history: an angle map and the
-last pivot. `reset()` invalidates session/frame ordering (camera stop,
+`LiveRigTracker` owns only bounded transform history: a filtered JOINT
+position map and the raw observation angle map used for discontinuity
+detection. `reset()` invalidates session/frame ordering (camera stop,
 restart, page hidden, flip, mode switch), `clearTransforms()` keeps ordering
 but drops history (worker fallback, tracking loss, stabilization toggle,
 stale result), and `pause()`/`resume()` guard overlay pause. Angle wrapping
@@ -580,6 +581,31 @@ uses `wrapRadians`/`shortestAngleDelta`; a sample farther than
 of being smoothed into a fabricated intermediate bone. Pivot interpolation
 is ABSOLUTE (`previous + alpha * (current - previous)`), never accumulated,
 so there is no positional drift.
+
+**Coherent filtered-pose contract (review fix).** Stabilization is applied
+to JOINT POSITIONS (shoulder / elbow / wrist), never to an angle in
+isolation. Every field of the returned `RigFrame` — segment start/end,
+lengthPx, angleRadians, parentRelativeRadians, hierarchyAttached,
+`arms.*.elbow`/`wrist` and the torso pivot — is derived from that ONE
+filtered joint set, so `OriginalArticulatedRig` reconstructs exactly the
+joints the frame declares. The only difference from the raw observation is
+an INTENTIONAL, BOUNDED display lag: each joint is an absolute interpolation
+between the last displayed joint and the new observation, capped at
+`RIG_MAX_LAG_LENGTH_RATIO` (0.25) × the shortest observed segment on that
+arm. The lag decays geometrically for a stationary pose and is dropped (not
+interpolated) on a camera flip, session change, pause, tracking loss, angle
+discontinuity or a gap ≥ `RIG_DISCONTINUITY_WINDOW_MS`, so no intermediate
+bone is invented. Discontinuity is judged in OBSERVATION space (raw angle
+vs previous raw angle), not in lagged display space, so fast-but-valid
+motion is not mistaken for a teleport.
+
+**Controller fail-closed session contract (review fix).** `LiveRigOverlay`
+tracks its own `contextSession`: when a NEWER authoritative camera context
+arrives, the controller itself clears any previously visible stale A
+geometry BEFORE any B frame is drawn — even if `main.ts` forgot to call
+`reset()`. An OLDER context is a late callback and must NOT remove geometry
+already accepted for B. A stale frame within the current context is rejected
+without touching the already-accepted newer state.
 
 ### Three.js ownership and the single renderer
 
@@ -625,21 +651,32 @@ live rig scene and no runtime hook accepts injected landmarks.
 
 ### Tests and their limits
 
-- `pose-to-rig.test.ts` (30): deterministic geometry, flexion/extension,
+- `pose-to-rig.test.ts` (31): deterministic geometry, flexion/extension,
   pivot continuity, mirror, unequal aspect ratios, partial poses,
   occlusion, confidence, nonfinite/degenerate/stale/old-session/
-  out-of-order frames, pause/resume, flip, restart, fallback and toggles.
+  out-of-order frames, pause/resume, flip, restart, fallback, toggles and
+  hierarchy metadata consistency when a parent is angle-rejected.
+- `motion-coherence.test.ts` (5): two consecutive moving frames → tracker
+  bounded whole-pose stabilization → `OriginalArticulatedRig.apply` → real
+  Three.js `getWorldPosition` / `localToWorld`. Asserts declared joints,
+  segment endpoints and GPU world positions are IDENTICAL; bounds the
+  display lag and verifies geometric decay without drift; covers cover/mirror
+  and stabilization-disabled paths; renders a surviving forearm independently
+  when its parent is rejected.
 - `original-rig.test.ts` (12): hierarchy/wrist-tip continuity, parent-
   relative rotation, no drift, geometry/material reuse, one-arm loss,
   independent forearm, hide/dispose and opacity clamping. No WebGL context.
-- `rig-controller.test.ts` (7): default proxy, single attach, session
-  rejection, pause/hide/reset, dispose and fallback ordering with a fake
-  structural host.
-- `tests/browser/live-original-rig.spec.ts`: opt-in Chromium + iPhone-sized
-  WebKit ENGINE emulation. Test-only dynamic source imports inside
-  `page.evaluate` drive a deterministic 33-point fixture; the production
-  bundle has no injection hook. Camera stays off, one stage canvas, no
-  MediaPipe weights or third-party meshes.
+- `rig-controller.test.ts` (9): default proxy, single attach, session
+  rejection, **A→B stale geometry clearing**, **late A frame cannot remove B**,
+  pause/hide/reset, dispose and fallback ordering with a fake structural host.
+- `tests/browser/live-original-rig.spec.ts` (3 tests × 2 engines): opt-in
+  Chromium + iPhone-sized WebKit ENGINE emulation. Test-only dynamic source
+  imports inside `page.evaluate` drive deterministic 33-point fixtures; the
+  production bundle has no injection hook. Camera stays off, one stage
+  canvas, no MediaPipe weights or third-party meshes. The third test mounts
+  the rig through the REAL `ProxySkeletonRenderer` (shared WebGL host),
+  feeds two consecutive frames and asserts the shared renderer actually
+  produced readable pixels and coherent world joints.
 
 These prove source correctness, numerical reproducibility and real browser
 engine integration for the ORIGINAL screen-aligned rig. They do NOT prove

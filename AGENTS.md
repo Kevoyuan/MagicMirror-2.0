@@ -645,6 +645,27 @@ covers worker fallback/tracking loss/toggle changes, `pause()`/`resume()`
 cover overlay pause; stale, old-session, out-of-order and nonfinite
 frames MUST hide rather than reuse a prior pose.
 
+**Coherent filtered-pose contract (review fix).** Stabilization MUST be
+applied to JOINT POSITIONS (shoulder / elbow / wrist), never to an angle in
+isolation. Every field of the returned `RigFrame` — segment start/end,
+lengthPx, angleRadians, parentRelativeRadians, hierarchyAttached, and the
+torso pivot — is derived from that ONE filtered joint set. The displayed
+lag is bounded by `RIG_MAX_LAG_LENGTH_RATIO` (0.25) × the shortest observed
+segment on that arm; it decays geometrically and is dropped (not
+interpolated) on discontinuity, flip, session change, pause, tracking loss
+or a gap ≥ `RIG_DISCONTINUITY_WINDOW_MS`. Discontinuity is judged in
+OBSERVATION space (raw angle vs previous raw angle), not in lagged display
+space. A forearm whose parent upper arm is angle-rejected MUST report
+`hierarchyAttached: false` and `parentRelativeRadians: null`.
+
+**Controller fail-closed session contract (review fix).** `LiveRigOverlay`
+tracks its own `contextSession`: a NEWER authoritative context MUST clear
+previously visible stale geometry BEFORE any newer frame is drawn — even if
+`main.ts` forgot to call `reset()`. An OLDER context is a late callback and
+MUST NOT remove geometry already accepted for the current session. A stale
+frame within the current context is rejected without touching already-
+accepted newer state.
+
 **Preserved invariants.** One `getUserMedia` stream, one overlay WebGL
 context, no always-running second renderer or RAF loop; camera
 start/stop/flip, mirror, cover crop, partial-body tracking, confidence
@@ -655,10 +676,14 @@ part in live retargeting. Do NOT add a production pose-injection
 backdoor: deterministic browser fixtures may use test-only source imports
 inside `page.evaluate`, never a runtime hook.
 
-**Tests.** `pose-to-rig.test.ts` (pure geometry/lifecycle),
+**Tests.** `pose-to-rig.test.ts` (pure geometry/lifecycle + hierarchy
+metadata consistency), `motion-coherence.test.ts` (two consecutive moving
+frames → tracker → Three.js world joints),
 `original-rig.test.ts` (hierarchy/matrix/resource), `rig-controller.test.ts`
-(fail-closed host contract), `i18n.test.ts`, and opt-in
-`tests/browser/live-original-rig.spec.ts` on Chromium desktop and
+(fail-closed host contract + session transition tests),
+`i18n.test.ts`, and opt-in
+`tests/browser/live-original-rig.spec.ts` (3 tests × 2 engines, including
+a shared WebGL host integration test) on Chromium desktop and
 iPhone-sized WebKit ENGINE emulation. Browser checks never start a
 camera and never load restricted binaries. WebKit emulation is NOT real
 iPhone Safari, GPU, camera permission, thermal or device acceptance.

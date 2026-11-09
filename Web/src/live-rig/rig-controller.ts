@@ -57,10 +57,13 @@ export class LiveRigOverlay {
   private mode: OverlayMode = "proxy";
   private rig?: OriginalArticulatedRig;
   private readonly tracker = new LiveRigTracker();
+  /** Last AUTHORITATIVE camera context accepted by this controller. */
+  private contextSession: number | undefined;
 
   constructor(private readonly host: OverlayRenderHost) {}
 
   get currentMode(): OverlayMode { return this.mode; }
+  get authoritativeSession(): number | undefined { return this.contextSession; }
 
   /** Returns false when the experimental renderer could not be created. */
   setMode(next: OverlayMode): boolean {
@@ -98,6 +101,26 @@ export class LiveRigOverlay {
   /** One validated inference frame -> pure gate -> articulated rig -> render. */
   apply(frame: InferenceFrame, context: RigFrameContext): RigFrameOutcome {
     if (this.mode !== "rig" || !this.rig) return inactive(["PROXY_MODE"]);
+
+    // Review fix (P1): the controller's OWN fail-closed session contract.
+    // `context.session` is the authoritative camera session owned by main.ts.
+    // A NEWER context must clear previously visible A geometry BEFORE any B
+    // frame is drawn, even if main.ts forgot to call reset(). An OLDER context
+    // is a late callback and must NOT remove geometry already accepted for B.
+    // A stale frame within the current context is rejected without touching
+    // the already accepted newer state either.
+    if (this.contextSession !== undefined) {
+      if (context.session < this.contextSession) {
+        return inactive(["OLD_SESSION_CONTEXT"]);
+      }
+      if (context.session > this.contextSession) {
+        this.reset();
+        this.contextSession = context.session;
+      }
+    } else {
+      this.contextSession = context.session;
+    }
+
     if (frame.session !== context.session) return inactive(["OLD_SESSION"]);
     this.tracker.setStabilization(context.stabilizing);
     const viewport = this.host.viewport();
@@ -158,6 +181,7 @@ export class LiveRigOverlay {
     this.tracker.reset();
     this.disposeRig();
     this.mode = "proxy";
+    this.contextSession = undefined;
   }
 
   private disposeRig(): void {

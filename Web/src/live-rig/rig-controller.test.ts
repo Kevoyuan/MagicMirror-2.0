@@ -129,6 +129,64 @@ describe("W3a LiveRigOverlay opt-in controller", () => {
     expect(host.counts.render).toBe(before);
   });
 
+  it("clears stale A geometry as soon as the authoritative session moves A -> B", () => {
+    const host = fakeHost();
+    const overlay = new LiveRigOverlay(host);
+    overlay.setMode("rig");
+    expect(overlay.apply(frame({ session: 1, frameId: 1 }), context({ session: 1 }))
+      .visibleSegments).toBe(4);
+    expect(visibleMeshCount(host.attached[0])).toBeGreaterThan(0);
+    expect(overlay.authoritativeSession).toBe(1);
+
+    // A NEW authoritative context arrives carrying a still-stale A frame.
+    // The controller (not main.ts) must clear A before anything else is drawn.
+    const rendersBefore = host.counts.render;
+    const outcome = overlay.apply(
+      frame({ session: 1, frameId: 2 }), context({ session: 2 })
+    );
+    expect(outcome).toMatchObject({ active: false, reasons: ["OLD_SESSION"] });
+    expect(overlay.authoritativeSession).toBe(2);
+    expect(visibleMeshCount(host.attached[0])).toBe(0);
+    expect(host.counts.render).toBeGreaterThan(rendersBefore);
+
+    // A real B frame then starts cleanly from frame id 1.
+    const accepted = overlay.apply(
+      frame({ session: 2, frameId: 1 }), context({ session: 2 })
+    );
+    expect(accepted.visibleSegments).toBe(4);
+    expect(visibleMeshCount(host.attached[0])).toBeGreaterThan(0);
+  });
+
+  it("never lets a late A frame remove geometry already accepted for B", () => {
+    const host = fakeHost();
+    const overlay = new LiveRigOverlay(host);
+    overlay.setMode("rig");
+    overlay.apply(frame({ session: 1, frameId: 1 }), context({ session: 1 }));
+    expect(overlay.apply(
+      frame({ session: 2, frameId: 1 }), context({ session: 2 })
+    ).visibleSegments).toBe(4);
+    const meshes = visibleMeshCount(host.attached[0]);
+    const renders = host.counts.render;
+    expect(meshes).toBeGreaterThan(0);
+
+    // (a) Entirely old callback: old authoritative context AND old frame.
+    const lateContext = overlay.apply(
+      frame({ session: 1, frameId: 99 }), context({ session: 1 })
+    );
+    expect(lateContext).toMatchObject({
+      active: false, reasons: ["OLD_SESSION_CONTEXT"],
+    });
+    // (b) A stale A frame delivered under the current B context.
+    const lateFrame = overlay.apply(
+      frame({ session: 1, frameId: 99 }), context({ session: 2 })
+    );
+    expect(lateFrame).toMatchObject({ active: false, reasons: ["OLD_SESSION"] });
+
+    expect(overlay.authoritativeSession).toBe(2);
+    expect(visibleMeshCount(host.attached[0])).toBe(meshes);
+    expect(host.counts.render).toBe(renders); // no hide/clear was drawn for B
+  });
+
   it("hides every experimental mesh on pause, tracking loss and reset", () => {
     const host = fakeHost();
     const overlay = new LiveRigOverlay(host);

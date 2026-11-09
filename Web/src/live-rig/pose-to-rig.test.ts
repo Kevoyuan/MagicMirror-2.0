@@ -330,6 +330,30 @@ describe("W3a pose-to-rig: detection quality and fail-closed inputs", () => {
     expect(frame.arms.left.upper!.lengthPx).toBeCloseTo(0.15 * SRC_W, 6);
   });
 
+  it("reports a surviving forearm as INDEPENDENT when its parent arm is angle-rejected", () => {
+    const tracker = new LiveRigTracker({ stabilizationAlpha: 0 });
+    expect(tracker.update(observation()).status).toBe("tracking");
+    // The upper arm teleports by pi while the forearm keeps its 0 rad angle.
+    // Only the upper arm is rejected; the forearm must NOT keep stale
+    // hierarchyAttached / parentRelativeRadians metadata from the raw frame.
+    const detached: ArmCoords = {
+      shoulder: [0.30, 0.40], elbow: [0.15, 0.40], wrist: [0.30, 0.40],
+    };
+    const next = tracker.update(observation({
+      landmarks: withArm(blank(), "left", detached),
+      frameId: 2, capturedAtMs: 1_080, nowMs: 1_180,
+    }));
+    expect(next.reasons).toContain("left:upperArm:ANGLE_DISCONTINUITY");
+    expect(next.arms.left.upper).toBeNull();
+    const fore = next.arms.left.fore!;
+    expect(fore).not.toBeNull();
+    expect(fore.hierarchyAttached).toBe(false);
+    expect(fore.parentRelativeRadians).toBeNull();
+    expect(fore.start.x).toBeCloseTo(0.15 * SRC_W, 6);
+    expect(fore.end.x).toBeCloseTo(0.30 * SRC_W, 6);
+    expect(next.arms.left.visibleSegments).toBe(1);
+  });
+
   it("hides impossibly discontinuous angle samples instead of smoothing a teleport", () => {
     const tracker = new LiveRigTracker({ stabilizationAlpha: 0 });
     const first = tracker.update(observation());

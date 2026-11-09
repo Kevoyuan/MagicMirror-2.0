@@ -669,7 +669,7 @@ content; they are NOT evidence of live tracking or device acceptance.
 cd Web
 npm install
 npm run typecheck           # clean
-npm test                    # 143/143 Vitest tests pass
+npm test                    # 151/151 Vitest tests pass
 npm run build:code          # source build only; NOT a public release
 npm run stage:assets && npm run check:assets
 npm run test:browser        # opt-in; needs Playwright Chromium + WebKit
@@ -677,13 +677,15 @@ npm run test:browser        # opt-in; needs Playwright Chromium + WebKit
 
 `tests/browser/live-original-rig.spec.ts` is part of the existing
 opt-in browser suite (manual dispatch or a `browser-smoke` PR branch).
-It uses a deterministic numerical 33-point fixture through test-only
+It uses deterministic numerical 33-point fixtures through test-only
 source imports inside `page.evaluate`; the production build has NO pose
 injection hook. Camera stays off and no restricted binary is loaded.
-Locally **10/10 passed**: 5 desktop Chromium + 5 iPhone-sized WebKit
+Locally **12/12 passed**: 6 desktop Chromium + 6 iPhone-sized WebKit
 ENGINE emulation checks, including the three preserved W2 tests on each
-engine. WebKit emulation is NOT physical iPhone Safari, Apple GPU,
-camera permission or thermal acceptance.
+engine. The third W3a test mounts the rig through the REAL
+`ProxySkeletonRenderer` (shared WebGL host) and verifies coherent world
+joints across two consecutive frames. WebKit emulation is NOT physical
+iPhone Safari, Apple GPU, camera permission or thermal acceptance.
 
 `releaseApproved` remains FALSE. Real-browser webcam validation on
 physical devices, per-mesh rights review, MediaPipe weight

@@ -29,6 +29,12 @@ export const RIG_DEFAULT_MAX_ANGLE_STEP = 1.15;
 export const RIG_DEFAULT_STABILIZATION = 0.35;
 export const RIG_MIN_SEGMENT_PX = 4;
 export const RIG_DISCONTINUITY_WINDOW_MS = 250;
+/**
+ * Review fix (P1): a displayed joint may lag a VALID observation by at most
+ * this fraction of the shortest observed segment on that arm. The lag is
+ * intentional and decays geometrically; it is never an invented bone position.
+ */
+export const RIG_MAX_LAG_LENGTH_RATIO = 0.25;
 
 export type RigSide = "left" | "right";
 export type RigPart = "upperArm" | "forearm";
@@ -126,6 +132,42 @@ export function shortestAngleDelta(from: number, to: number): number {
 
 export function displayDirection(start: RigPoint, end: RigPoint): number {
   return Math.atan2(end.y - start.y, end.x - start.x);
+}
+
+/**
+ * ABSOLUTE interpolation (never an accumulated delta). `alpha` is the fraction
+ * of the NEW observation applied this frame: 0 or 1 both mean "no lag", while
+ * intermediate values produce the bounded display lag documented below.
+ */
+export function blendRigPoint(
+  previous: RigPoint, observed: RigPoint, alpha: number
+): RigPoint {
+  return {
+    x: previous.x + alpha * (observed.x - previous.x),
+    y: previous.y + alpha * (observed.y - previous.y),
+  };
+}
+
+/**
+ * Review fix (P1): cap the display lag so a smoothed joint can never wander a
+ * bone-length away from the observation it claims to represent. The result is
+ * still an absolute point on the previous -> observed ray, so no drift builds.
+ */
+function boundedJoint(
+  previous: RigPoint | undefined,
+  observed: RigPoint,
+  alpha: number,
+  maxLagPx: number,
+  stabilizing: boolean
+): RigPoint {
+  if (!stabilizing || !previous || alpha <= 0 || alpha >= 1) return { ...observed };
+  const blended = blendRigPoint(previous, observed, alpha);
+  const dx = blended.x - observed.x;
+  const dy = blended.y - observed.y;
+  const distance = Math.hypot(dx, dy);
+  if (!Number.isFinite(distance) || distance <= maxLagPx) return blended;
+  const scale = maxLagPx / distance;
+  return { x: observed.x + dx * scale, y: observed.y + dy * scale };
 }
 
 function resolveOptions(options: RigOptions, observation?: RigObservation): ResolvedOptions {
@@ -344,6 +386,28 @@ export function computeRigFrame(
 /**
  * Bounded, optional stabilization with explicit reset semantics.
  * Owns ONLY transform history: camera/inference ownership stays in main.ts.
+ *
+ * COHERENT FILTERED-POSE CONTRACT (review P1 fix)
+ * ------------------------------------------------
+ * Stabilization is applied to JOINT POSITIONS (shoulder / elbow / wrist),
+ * never to an angle in isolation. Every field of the returned RigFrame -
+ * segment start/end, lengthPx, angleRadians, parentRelativeRadians,
+ * hierarchyAttached, arms.*.elbow/wrist and the torso pivot - is derived from
+ * that ONE filtered joint set. `OriginalArticulatedRig` therefore reconstructs
+ * exactly the joints the frame declares: displayed elbow/wrist world positions
+ * can no longer diverge from the frame's own endpoints.
+ *
+ * The only difference from the raw observation is an INTENTIONAL, BOUNDED
+ * display lag: each joint is an absolute interpolation between the last
+ * displayed joint and the new observation, capped at
+ * RIG_MAX_LAG_LENGTH_RATIO * shortest observed segment on that arm. The lag
+ * decays geometrically for a stationary pose and is dropped (not interpolated)
+ * on a camera flip, session change, pause, tracking loss, angle discontinuity
+ * or a gap >= RIG_DISCONTINUITY_WINDOW_MS, so no intermediate bone is invented.
+ *
+ * Discontinuity is judged in OBSERVATION space (raw angle vs previous raw
+ * angle), not in lagged display space, so fast-but-valid motion is not
+ * mistaken for a teleport.
  */
 export class LiveRigTracker {
   private session = -1;
@@ -352,8 +416,8 @@ export class LiveRigTracker {
   private paused = false;
   private mirrored: boolean | undefined;
   private stabilizationEnabled = true;
-  private readonly angleHistory = new Map<string, number>();
-  private pivotHistory: RigPoint | null = null;
+  private readonly jointHistory = new Map<string, RigPoint>();
+  private readonly observationAngles = new Map<string, number>();
   private readonly options: ResolvedOptions;
 
   constructor(options: RigOptions = {}) {
@@ -373,8 +437,8 @@ export class LiveRigTracker {
   /** Drop transform history without breaking frame/session ordering. */
   clearTransforms(): void {
     this.lastAcceptedAtMs = -Infinity;
-    this.angleHistory.clear();
-    this.pivotHistory = null;
+    this.jointHistory.clear();
+    this.observationAngles.clear();
   }
 
   pause(): void {
@@ -450,62 +514,108 @@ export class LiveRigTracker {
     const withinContinuityWindow = Number.isFinite(dt) && dt >= 0 &&
       dt < RIG_DISCONTINUITY_WINDOW_MS;
     const alpha = this.stabilizationEnabled ? this.options.stabilizationAlpha : 0;
+    const smoothing = withinContinuityWindow && alpha > 0 && alpha < 1;
 
-    const stabilize = (
-      side: RigSide, part: RigPart, segment: RigSegmentState | null
-    ): RigSegmentState | null => {
-      const key = `${side}:${part}`;
-      if (!segment) {
-        // Only this segment's history is dropped; the other arm stays stable.
-        this.angleHistory.delete(key);
-        return null;
-      }
-      const previous = this.angleHistory.get(key);
-      let angle = segment.angleRadians;
-      if (previous !== undefined && withinContinuityWindow) {
-        const delta = shortestAngleDelta(previous, angle);
-        if (Math.abs(delta) > this.options.maxAngleStepRadians) {
-          // An impossible jump is hidden for this frame, not smoothed into
-          // an invented intermediate bone position.
-          this.angleHistory.delete(key);
-          reasons.push(`${key}:ANGLE_DISCONTINUITY`);
-          return null;
-        }
-        if (alpha > 0) angle = wrapRadians(previous + alpha * delta);
-      }
-      this.angleHistory.set(key, angle);
-      return { ...segment, angleRadians: angle };
-    };
+    const nextJoints = new Map<string, RigPoint>();
+    const nextAngles = new Map<string, number>();
 
     const buildSide = (side: RigSide): RigArmState => {
       const arm = raw.arms[side];
-      const upper = stabilize(side, "upperArm", arm.upper);
-      const fore = stabilize(side, "forearm", arm.fore);
-      const attachedFore = fore && upper && fore.hierarchyAttached
-        ? {
-          ...fore,
-          parentRelativeRadians: shortestAngleDelta(
-            upper.angleRadians, fore.angleRadians
-          ),
+      const lengths = [arm.upper, arm.fore]
+        .filter((segment): segment is RigSegmentState => segment !== null)
+        .map((segment) => segment.lengthPx);
+      const maxLagPx = lengths.length
+        ? Math.max(2, RIG_MAX_LAG_LENGTH_RATIO * Math.min(...lengths))
+        : 0;
+
+      // 1) Discontinuity is judged on RAW observation angles. A rejected part
+      //    drops only its own angle history, matching the fail-closed rule.
+      const rejectedParts = new Set<RigPart>();
+      const acceptedAngles = new Map<RigPart, number>();
+      for (const [part, segment] of [
+        ["upperArm", arm.upper], ["forearm", arm.fore],
+      ] as const) {
+        if (!segment) continue;
+        const key = `${side}:${part}`;
+        const previous = this.observationAngles.get(key);
+        const jump = previous === undefined ? 0
+          : Math.abs(shortestAngleDelta(previous, segment.angleRadians));
+        if (previous !== undefined && withinContinuityWindow &&
+          jump > this.options.maxAngleStepRadians) {
+          reasons.push(`${key}:ANGLE_DISCONTINUITY`);
+          rejectedParts.add(part);
+        } else {
+          acceptedAngles.set(part, segment.angleRadians);
         }
-        : fore;
-      const visible = (upper ? 1 : 0) + (attachedFore ? 1 : 0);
+      }
+      for (const [part, angle] of acceptedAngles) {
+        nextAngles.set(`${side}:${part}`, angle);
+      }
+      // Never interpolate ANY joint of a teleporting arm into an invented
+      // intermediate position, even when only one of its segments is rejected.
+      const keepHistory = rejectedParts.size === 0;
+      const filterThisSide = smoothing && keepHistory;
+
+      // 2) ONE filtered joint set for the whole side. Everything below is
+      //    derived from it, so the renderer cannot disagree with the frame.
+      const joint = (
+        name: "shoulder" | "elbow" | "wrist", value: RigPoint | null
+      ): RigPoint | null => {
+        if (!value) return null;
+        const key = `${side}:${name}`;
+        const filtered = keepHistory
+          ? boundedJoint(
+            this.jointHistory.get(key), value, alpha, maxLagPx, filterThisSide
+          )
+          : { ...value };
+        if (keepHistory) nextJoints.set(key, filtered);
+        return filtered;
+      };
+      const shoulder = joint("shoulder", arm.shoulder);
+      const elbow = joint("elbow", arm.elbow);
+      const wrist = joint("wrist", arm.wrist);
+
+      // 3) Rebuild segments from the filtered joints. `makeSegment` derives
+      //    length/angle/scale AND sets hierarchyAttached=false +
+      //    parentRelativeRadians=null when no real parent exists (review P2).
+      let upper: RigSegmentState | null = null;
+      let fore: RigSegmentState | null = null;
+      if (arm.upper && shoulder && elbow && !rejectedParts.has("upperArm")) {
+        upper = makeSegment(
+          side, "upperArm", shoulder, elbow, arm.upper.confidence,
+          observation, this.options, null, reasons
+        );
+      }
+      if (arm.fore && elbow && wrist && !rejectedParts.has("forearm")) {
+        fore = makeSegment(
+          side, "forearm", elbow, wrist, arm.fore.confidence,
+          observation, this.options, upper, reasons
+        );
+      }
+      const visibleSegments = (upper ? 1 : 0) + (fore ? 1 : 0);
       return {
-        ...arm, upper, fore: attachedFore, visibleSegments: visible,
+        side, shoulder, elbow, wrist, upper, fore, visibleSegments,
         reasons: [...arm.reasons],
       };
     };
     const arms = { left: buildSide("left"), right: buildSide("right") };
 
-    let pivot = raw.pivot;
-    if (pivot && this.pivotHistory && withinContinuityWindow && alpha > 0) {
-      // Absolute interpolation, never accumulated: no positional drift.
-      pivot = {
-        x: this.pivotHistory.x + alpha * (pivot.x - this.pivotHistory.x),
-        y: this.pivotHistory.y + alpha * (pivot.y - this.pivotHistory.y),
-      };
-    }
-    this.pivotHistory = pivot ? { ...pivot } : null;
+    // The torso pivot uses the SAME filtered shoulders; no second smoothing
+    // path can drift away from the displayed joints.
+    const shoulders = [arms.left.shoulder, arms.right.shoulder].filter(
+      (point): point is RigPoint => point !== null
+    );
+    const pivot: RigPoint | null = shoulders.length === 2
+      ? {
+        x: (shoulders[0].x + shoulders[1].x) / 2,
+        y: (shoulders[0].y + shoulders[1].y) / 2,
+      }
+      : shoulders.length === 1 ? { ...shoulders[0] } : null;
+
+    this.jointHistory.clear();
+    for (const [key, value] of nextJoints) this.jointHistory.set(key, value);
+    this.observationAngles.clear();
+    for (const [key, value] of nextAngles) this.observationAngles.set(key, value);
     this.lastFrameId = observation.frameId;
     this.lastAcceptedAtMs = observation.nowMs;
 
