@@ -64,12 +64,12 @@ jobs:
           echo 'No physical webcam, WebGL, Safari, HTTPS, media model binary, or third-party model redistribution rights validated.'
 
   # Opt-in only: no new workflow and no Chromium installation on ordinary
-  # pushes/PRs. Run manually, or name a test branch "*browser-smoke*" or "*chromium-demo-smoke*".
+  # pushes/PRs. Run manually, or name a test PR branch "*browser-smoke*" or "*chromium-demo-smoke*".
   # Tests only MagicMirror's original generated 3-box GLB. No webcam/task
   # model, Z-Anatomy assets, user uploads or public release distribution.
   browser-demo-smoke:
     name: Original 3D demo browser smoke (manual, Chromium WebGL)
-    if: github.event_name == 'workflow_dispatch' || ((github.event_name == 'pull_request' || github.event_name == 'push') && (contains(github.head_ref, 'browser-smoke') || contains(github.head_ref, 'chromium-demo-smoke') || contains(github.ref_name, 'browser-smoke') || contains(github.ref_name, 'chromium-demo-smoke')))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (contains(github.head_ref, 'browser-smoke') || contains(github.head_ref, 'chromium-demo-smoke')))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
