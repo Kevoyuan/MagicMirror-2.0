@@ -79,6 +79,7 @@ export function inventoryDownloadName(originalFileName: string): string {
     .replace(/\.[^.]+$/, "")
     .normalize("NFKC")
     .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "")
     .slice(0, 55);
   return `MagicMirror-${name || "local_atlas"}-source-inventory.json`;
 }
