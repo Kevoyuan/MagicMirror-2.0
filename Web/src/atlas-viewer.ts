@@ -292,16 +292,25 @@ export class LocalAtlasViewer {
     this.render();
   }
 
+  /** Preview is intentionally denied for ANY authored clip or skinned mesh. */
+  canRigidPreview(id: number, points: {
+    start: SourcePoint3 | null;
+    end: SourcePoint3 | null;
+  }): boolean {
+    const entry = this.findPart(id);
+    return Boolean(entry && entry.mesh.visible && this.lastLoaded &&
+      !(entry.mesh as import("three").SkinnedMesh).isSkinnedMesh &&
+      this.animationClips.length === 0 && !this.animationPlaying &&
+      validRigidSource(points.start, points.end));
+  }
+
   /** Only ONE non-skinned, unanimated original mesh can be previewed. */
   beginRigidPreview(id: number, points: {
     start: SourcePoint3 | null;
     end: SourcePoint3 | null;
   }): boolean {
-    const entry = this.findPart(id);
-    if (!entry || !entry.mesh.visible || !this.lastLoaded ||
-        (entry.mesh as import("three").SkinnedMesh).isSkinnedMesh ||
-        this.animationClips.length > 0 || this.animationPlaying ||
-        !validRigidSource(points.start, points.end)) return false;
+    if (!this.canRigidPreview(id, points)) return false;
+    const entry = this.findPart(id)!;
     this.resetRigidPreview();
     const mesh = entry.mesh;
     mesh.updateWorldMatrix(true, false);
