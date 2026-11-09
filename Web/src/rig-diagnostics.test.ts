@@ -5,7 +5,7 @@ describe("only genuinely authored skinning is eligible for rig diagnostics", () 
   it("recognizes valid authored joint weights using bounded samples", () => {
     const r = inspectRigSamples({
       vertexCount: 3, jointCount: 2, influenceSlots: 4,
-      readWeight: (v, s) => (s === 0 ? 0.75 : s === 1 ? 0.25 : 0),
+      readWeight: (_v, s) => (s === 0 ? 0.75 : s === 1 ? 0.25 : 0),
       readJoint: (_v, s) => s === 1 ? 1 : 0,
     });
     expect(r).toMatchObject({
