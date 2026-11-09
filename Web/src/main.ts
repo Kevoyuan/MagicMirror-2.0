@@ -5,7 +5,7 @@ import { captureLocalPNG } from "./snapshot";
 import { educationFor, type EducationNote } from "./education";
 import { translate, translateStaticDOM, type Locale } from "./i18n";
 import { TemporalPoseStabilizer } from "./smoothing";
-import type { LocalAtlasViewer } from "./atlas-viewer";
+import type { LocalAtlasViewer, LocalAtlasStats } from "./atlas-viewer";
 import { searchAtlasParts, type AtlasPart } from "./atlas-catalog";
 import { inventoryDownloadName } from "./atlas-inventory";
 import type { SliceOrientation } from "./atlas-source";
@@ -491,6 +491,11 @@ element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNot
 languageButton.addEventListener("click", () => {
   setLocale(locale === "zh" ? "en" : "zh");
   if (atlasViewer) refreshAtlasParts();
+  if (lastAtlasRigStats) renderAtlasRigInfo();
+  if (atlasClipSelect.disabled && atlasClipSelect.options.length) {
+    atlasClipSelect.options[0].textContent = locale === "en"
+      ? "No authored animation clips" : "无模型内置动画";
+  }
 });
 setLocale("zh");
 
@@ -580,6 +585,19 @@ const atlasOpacity = element<HTMLInputElement>("#atlas-opacity");
 const atlasWireframe = element<HTMLInputElement>("#atlas-wireframe");
 let atlasViewer: LocalAtlasViewer | undefined;
 let atlasInit: Promise<LocalAtlasViewer> | undefined;
+let lastAtlasRigStats: LocalAtlasStats | null = null;
+
+function renderAtlasRigInfo(): void {
+  const stats = lastAtlasRigStats;
+  if (!stats) return;
+  atlasRigInfo.textContent = stats.skinnedMeshes === 0
+    ? (locale === "en"
+      ? "No authored SkinnedMesh found: a source model without rig weights cannot follow a body. Static study remains available."
+      : "未发现已绑定的 SkinnedMesh：没有实际顶点权重的原始模型无法随人体动作。仍可静态研究。")
+    : (locale === "en"
+      ? `${stats.skinnedMeshes} bound meshes, ${stats.authoredJoints} joints. Sampled ${stats.rigSampledVertices} vertices: ${stats.rigUnweightedSamples} without weights, ${stats.rigInvalidWeightSamples} invalid weights, ${stats.rigInvalidJointReferences} invalid joint indices, ${stats.rigSuspiciousWeightSums} suspicious sums, ${stats.skinnedMeshesWithoutWeightAttributes} meshes missing attributes. Sample only—not complete rig approval.`
+      : `已绑定网格 ${stats.skinnedMeshes} 个、关节 ${stats.authoredJoints} 个。采样检查 ${stats.rigSampledVertices} 顶点：无权重 ${stats.rigUnweightedSamples}、异常权重 ${stats.rigInvalidWeightSamples}、越界关节 ${stats.rigInvalidJointReferences}、权重和异常 ${stats.rigSuspiciousWeightSums}、缺少权重属性网格 ${stats.skinnedMeshesWithoutWeightAttributes}。仅为抽样诊断，非绑定验收。`);
+}
 
 async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
   if (atlasViewer) return atlasViewer;
@@ -785,13 +803,8 @@ atlasFile.addEventListener("change", () => {
     atlasPauseAnimation.disabled = true;
     if (clips.length) atlasViewer?.selectAnimation(clips[0].id);
 
-    atlasRigInfo.textContent = stats.skinnedMeshes === 0
-      ? (locale === "en"
-        ? "No authored SkinnedMesh found: a source model without rig weights cannot follow a body. Static study remains available."
-        : "未发现已绑定的 SkinnedMesh：没有实际顶点权重的原始模型无法随人体动作。仍可静态研究。")
-      : (locale === "en"
-        ? `${stats.skinnedMeshes} bound meshes, ${stats.authoredJoints} joints. Sampled ${stats.rigSampledVertices} vertices: ${stats.rigUnweightedSamples} without weights, ${stats.rigInvalidWeightSamples} invalid weights, ${stats.rigInvalidJointReferences} invalid joint indices, ${stats.rigSuspiciousWeightSums} suspicious sums, ${stats.skinnedMeshesWithoutWeightAttributes} meshes missing attributes. Sample only—not complete rig approval.`
-        : `已绑定网格 ${stats.skinnedMeshes} 个、关节 ${stats.authoredJoints} 个。采样检查 ${stats.rigSampledVertices} 顶点：无权重 ${stats.rigUnweightedSamples}、异常权重 ${stats.rigInvalidWeightSamples}、越界关节 ${stats.rigInvalidJointReferences}、权重和异常 ${stats.rigSuspiciousWeightSums}、缺少权重属性网格 ${stats.skinnedMeshesWithoutWeightAttributes}。仅为抽样诊断，非绑定验收。`);
+    lastAtlasRigStats = stats;
+    renderAtlasRigInfo();
     atlasSearch.disabled = false;
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
