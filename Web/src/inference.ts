@@ -22,7 +22,9 @@ export class LivePoseInference {
   private closed = false;
   private ready = false;
   private workerBootTimer?: ReturnType<typeof setTimeout>;
+  private abortWorkerBoot?: () => void;
   private workerDeadline?: ReturnType<typeof setTimeout>;
+  private recovering = false;
   private pendingFrameId = 0;
   mode: InferenceMode = "main";
   droppedFrames = 0;
@@ -45,6 +47,14 @@ export class LivePoseInference {
       }
     }
     if (this.closed) throw new Error("Camera session stopped");
+    await this.initializeMainTask();
+    this.mode = "main";
+    this.ready = true;
+    return this.mode;
+  }
+
+  private async initializeMainTask(): Promise<void> {
+    if (this.closed) throw new Error("Camera session stopped");
     const wasm = await FilesetResolver.forVisionTasks(this.options.wasmURL);
     const localTask = await PoseLandmarker.createFromOptions(wasm, {
       baseOptions: { modelAssetPath: this.options.modelURL, delegate: "CPU" },
@@ -59,9 +69,6 @@ export class LivePoseInference {
       throw new Error("Camera session stopped");
     }
     this.task = localTask;
-    this.mode = "main";
-    this.ready = true;
-    return this.mode;
   }
 
   private async openWorker(): Promise<void> {
@@ -84,8 +91,14 @@ export class LivePoseInference {
       };
       const cleanup = () => {
         if (this.workerBootTimer) clearTimeout(this.workerBootTimer);
+        this.workerBootTimer = undefined;
+        this.abortWorkerBoot = undefined;
         worker.removeEventListener("message", onMessage);
         worker.removeEventListener("error", onError);
+      };
+      this.abortWorkerBoot = () => {
+        cleanup();
+        reject(new Error("Camera stopped during worker initialization"));
       };
       worker.addEventListener("message", onMessage);
       worker.addEventListener("error", onError);
@@ -205,6 +218,24 @@ export class LivePoseInference {
     if (this.workerDeadline) clearTimeout(this.workerDeadline);
     this.workerDeadline = undefined;
     this.gate.settle();
+    if (this.mode === "worker" && !this.recovering) {
+      // A Worker can initialize successfully yet fail to ingest a
+      // video ImageBitmap on Safari. Recover locally once, without
+      // silently keeping a stale pose on screen.
+      this.recovering = true;
+      void this.initializeMainTask().then(() => {
+        if (this.closed) return;
+        this.mode = "main";
+        this.ready = true;
+        this.recovering = false;
+        console.warn("Pose worker failed; resumed throttled main-thread inference", error);
+      }).catch((fallbackError: unknown) => {
+        if (this.closed) return;
+        this.recovering = false;
+        this.options.onFatal(asError(fallbackError));
+      });
+      return;
+    }
     this.options.onFatal(error);
   }
 
@@ -212,6 +243,7 @@ export class LivePoseInference {
     if (this.closed) return;
     this.closed = true;
     this.ready = false;
+    this.abortWorkerBoot?.();
     if (this.workerBootTimer) clearTimeout(this.workerBootTimer);
     if (this.workerDeadline) clearTimeout(this.workerDeadline);
     this.worker?.terminate();
