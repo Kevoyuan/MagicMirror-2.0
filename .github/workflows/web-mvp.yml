@@ -70,7 +70,7 @@ jobs:
   browser-demo-smoke:
     name: Original 3D demo browser smoke (manual, Chromium WebGL)
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (contains(github.head_ref, 'browser-smoke') || contains(github.head_ref, 'chromium-demo-smoke')))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
