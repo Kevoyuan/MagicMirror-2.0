@@ -595,3 +595,81 @@ fatal). Web CI must additionally assert that `vite build` emits a
 real Chrome/Safari webcam, WASM/ImageBitmap, GPU or latency
 measurements; the public release gate stays FALSE and all rights,
 cross-browser and physical-device QA remain open.
+
+
+## 22. W3a live pose-driven original articulated rig (2026-11-09)
+
+**Web-first open source remains active; iOS is frozen, Android canceled.**
+This milestone closes the narrow engineering gap between live MediaPipe
+observations and a coherent hierarchical 3D demonstration chain, using
+ONLY completely ORIGINAL procedural geometry. It is explicitly an
+experimental **2.5D / screen-aligned articulation** milestone. It is NOT
+validated anatomical AR, NOT a person's bones, NOT skinning, NOT inverse
+kinematics, and NOT physical camera-space 3D registration.
+
+**Layers UI.** `Reference Proxy` MUST remain the default. `Live Original
+Rig (Experimental)` is an explicit opt-in radio; all new visible strings
+and dynamic status copy MUST have original 简体中文 / EN text in
+`Web/src/i18n.ts` (no translation service). The experimental renderer
+MUST fail closed to `Reference Proxy` if it cannot be constructed.
+
+**Required module split.** `Web/src/live-rig/pose-to-rig.ts` is a PURE
+module: no DOM, Worker, MediaPipe, camera or Three.js side effects. It
+consumes exactly 33 finite landmarks, session/frame/timestamp, source and
+viewport dimensions, mirror, focus and confidence; reuses `usable`,
+`mapImageToViewport` and `freshResult`; and returns an explicitly
+supported two-arm display-space frame. `Web/src/live-rig/original-rig.ts`
+owns all Three.js objects; `Web/src/live-rig/rig-controller.ts` is the
+ONLY bridge from `InferenceFrame` to the rig. `Web/src/main.ts` MUST stay
+an orchestrator: camera/session ownership, mode switching and status
+only, never rig math or per-frame transform state. `Web/src/scene.ts`
+implements `OverlayRenderHost` (`attach`/`detach`/`hideProxy`/`render`/
+`renderForCapture`/`viewport`) so the rig reuses the EXISTING
+`WebGLRenderer`, `Scene` and `OrthographicCamera`.
+
+**Mathematical honesty.** Normalized MediaPipe `z` is checked for
+finiteness ONLY and NEVER interpreted as measured camera depth. Use
+object-fit:cover display projection and mirroring consistent with the
+existing proxy. Upper-arm angle is absolute `atan2(dy, dx)`; an attached
+forearm stores a PARENT-RELATIVE `shortestAngleDelta`. Wrap across ±π,
+hide samples exceeding `maxAngleStepRadians` instead of interpolating an
+invented bone, and write ABSOLUTE transforms from immutable authored
+geometry so there is no cumulative drift. Anatomical left/right are the
+person's own sides (11/13/15 and 12/14/16) and MUST NOT be swapped by a
+display mirror. Do not require a full body: a forearm without a visible
+shoulder is drawn as an INDEPENDENT observed segment, never parented to
+a fabricated joint. `focus === "legs"` rejects with
+`REGION_NOT_SUPPORTED`; no leg bones are invented. `LiveRigTracker`
+`reset()` covers camera stop/restart/hidden page/flip, `clearTransforms()`
+covers worker fallback/tracking loss/toggle changes, `pause()`/`resume()`
+cover overlay pause; stale, old-session, out-of-order and nonfinite
+frames MUST hide rather than reuse a prior pose.
+
+**Preserved invariants.** One `getUserMedia` stream, one overlay WebGL
+context, no always-running second renderer or RAF loop; camera
+start/stop/flip, mirror, cover crop, partial-body tracking, confidence
+hiding, worker fallback, overlay pause, local-only explicit PNG capture,
+latency metrics and privacy behavior stay unchanged. Opening the FBX/GLB
+study dialog MUST still stop the camera; imported models MUST NOT take
+part in live retargeting. Do NOT add a production pose-injection
+backdoor: deterministic browser fixtures may use test-only source imports
+inside `page.evaluate`, never a runtime hook.
+
+**Tests.** `pose-to-rig.test.ts` (pure geometry/lifecycle),
+`original-rig.test.ts` (hierarchy/matrix/resource), `rig-controller.test.ts`
+(fail-closed host contract), `i18n.test.ts`, and opt-in
+`tests/browser/live-original-rig.spec.ts` on Chromium desktop and
+iPhone-sized WebKit ENGINE emulation. Browser checks never start a
+camera and never load restricted binaries. WebKit emulation is NOT real
+iPhone Safari, GPU, camera permission, thermal or device acceptance.
+
+**Explicitly NOT established by W3a:** camera-space 3D registration or
+calibrated extrinsics; real skeletal mesh rigging/skin weights; anatomical
+accuracy or medical review; redistribution approval for Z-Anatomy/
+BodyParts3D meshes or PoseLandmarker weights; MediaPipe SDK metrics
+privacy sign-off; physical-device acceptance; hosted public release.
+`Web/release-clearance.json` MUST stay `releaseApproved: false`. CI green,
+synthetic tests and headless browser tests are source evidence only.
+The exact next engineering milestone remains a separately reviewed,
+rights-cleared anatomical rest rig plus camera registration; neither is
+implied by this experimental screen-aligned demonstration.

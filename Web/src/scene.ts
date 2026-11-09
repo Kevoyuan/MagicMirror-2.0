@@ -1,7 +1,7 @@
 import {
   AmbientLight, Color, CylinderGeometry, DirectionalLight,
   Mesh, MeshStandardMaterial, OrthographicCamera, Scene, SphereGeometry,
-  Vector3, WebGLRenderer,
+  Vector3, WebGLRenderer, type Object3D,
 } from "three";
 import {
   mapImageToViewport, visibleSegments,
@@ -142,10 +142,25 @@ export class ProxySkeletonRenderer {
     return i;
   }
 
-  /** Draw on explicit capture so the immediately sampled back buffer is current. */
-  renderForCapture(): void {
-    this.renderer.render(this.scene, this.camera);
+  /**
+   * W3a: the experimental articulated rig attaches to THIS scene/camera and
+   * reuses THIS WebGLRenderer. No second renderer or always-running loop.
+   */
+  attach(object: Object3D): void { this.scene.add(object); }
+
+  detach(object: Object3D): void { this.scene.remove(object); }
+
+  hideProxy(): void { this.hide(); }
+
+  render(): void { this.renderer.render(this.scene, this.camera); }
+
+  /** Exact display-space size of this overlay's orthographic camera. */
+  viewport(): { width: number; height: number } {
+    return { width: this.width, height: this.height };
   }
+
+  /** Draw on explicit capture so the immediately sampled back buffer is current. */
+  renderForCapture(): void { this.render(); }
 
   pickAt(x: number, y: number): PickableSegment | null {
     return pickSegment(x, y, this.pickables, 24);

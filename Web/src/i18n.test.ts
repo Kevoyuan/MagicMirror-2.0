@@ -26,4 +26,18 @@ describe("Web bilingual presentation", () => {
       .toContain("atomic restore");
     expect(translate("导出研究会话", "zh")).toBe("导出研究会话");
   });
+  it("translates every W3a experimental-mode control and status", () => {
+    expect(translate("实时叠加模式", "en")).toBe("Live overlay mode");
+    expect(translate("参考骨架 / Reference Proxy", "en")).toBe("Reference Proxy");
+    expect(translate("实时原创铰接模型（实验） / Live Original Rig (Experimental)", "en"))
+      .toBe("Live Original Rig (Experimental)");
+    expect(translate("实验模式的边界", "en")).toBe("Limits of the experimental mode");
+    expect(translate("实验模式 · 铰接跟随", "en"))
+      .toBe("Experimental · Articulated tracking");
+    expect(translate("实验模式 · 本帧已隐藏", "en"))
+      .toBe("Experimental · Frame hidden");
+    expect(translate("实时叠加模式", "zh")).toBe("实时叠加模式");
+    expect(translate("实验模式只使用 MagicMirror 原创程序化几何，把可见的肩—肘—腕组成屏幕对齐的 2.5D 铰接链，前臂继承上臂枢轴。它不是真实骨骼、解剖配准、相机空间 3D 重建或医学成像；导入的 FBX / GLB 模型不会参与实时跟随。", "en"))
+      .toContain("camera-space 3D reconstruction");
+  });
 });

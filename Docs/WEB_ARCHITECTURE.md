@@ -528,3 +528,121 @@ asserts that `vite build` emits a `pose.worker-*.js` chunk containing
 `detectForVideo`. None of this executes WASM, a real ImageBitmap
 transfer, WebGL or Safari; it is a compilation/state-machine check, not
 a latency, camera-quality or hardware acceptance result.
+
+
+## W3a live rig: pure gate -> original hierarchy -> shared overlay host
+
+W3a adds ONE opt-in overlay mode without changing the camera or inference
+pipeline. `Web/src/inference.ts` is untouched: `LivePoseInference` still
+owns the single `getUserMedia` stream, the latest-only frame budget, worker
+inference and the main-thread fallback. `Web/src/main.ts` remains the
+orchestrator (camera session, mode selection and status text); it holds no
+rig math and no per-frame Three.js transform state.
+
+### Data flow (one inference frame)
+
+```text
+video -> LivePoseInference -> InferenceFrame (33 landmarks | null)
+  -> main.ts handlePoseFrame(): frameId / session / freshResult guard
+  -> LiveRigOverlay.apply(frame, RigFrameContext)
+       -> LiveRigTracker.update(RigObservation)
+            -> computeRigFrame()  [PURE]
+                 mapImageToViewport(cover + mirror), usable(confidence)
+                 upper arm: absolute atan2(dy, dx)
+                 forearm: shortestAngleDelta(parentAngle, foreAngle)
+                 guards: finite meta, 33 finite landmarks, legs rejection,
+                         degenerate segments, angle discontinuity, stale,
+                         old session, out-of-order frame, no pose
+       -> OriginalArticulatedRig.apply(frame, opacity)
+            shoulderPivot -> elbowPivot -> attachedFore  [REAL hierarchy]
+       -> OverlayRenderHost.render()  [EXISTING WebGLRenderer]
+```
+
+`Web/src/live-rig/pose-to-rig.ts` imports only `pose.ts` (`PosePoint`,
+`Focus`, `usable`, `mapImageToViewport`) and `telemetry.ts` (`CapturedFrame`,
+`freshResult`). It has no DOM, Worker, MediaPipe, camera or Three.js
+dependency. MediaPipe `z` is validated as finite and NEVER used as camera
+depth; the rig lives in the same object-fit:cover, mirrored DISPLAY-PIXEL
+space as the W0 proxy. Anatomical left/right identity is the person's own
+(11/13/15, 12/14/16); a display mirror flips x only. `focus === "legs"`
+returns `REGION_NOT_SUPPORTED` rather than inventing a leg chain. When a
+shoulder is not visible, the observed forearm is drawn as an INDEPENDENT
+segment (`hierarchyAttached: false`, `parentRelativeRadians: null`) with no
+fabricated shoulder or elbow parent.
+
+`LiveRigTracker` owns only bounded transform history: an angle map and the
+last pivot. `reset()` invalidates session/frame ordering (camera stop,
+restart, page hidden, flip, mode switch), `clearTransforms()` keeps ordering
+but drops history (worker fallback, tracking loss, stabilization toggle,
+stale result), and `pause()`/`resume()` guard overlay pause. Angle wrapping
+uses `wrapRadians`/`shortestAngleDelta`; a sample farther than
+`maxAngleStepRadians` from its predecessor is hidden for that frame instead
+of being smoothed into a fabricated intermediate bone. Pivot interpolation
+is ABSOLUTE (`previous + alpha * (current - previous)`), never accumulated,
+so there is no positional drift.
+
+### Three.js ownership and the single renderer
+
+`Web/src/live-rig/original-rig.ts` is the only module that allocates
+meshes: cylinder/sphere/box geometries and three shared
+`MeshStandardMaterial`s. Geometry and materials are created once in the
+constructor and reused; `apply()` writes ABSOLUTE positions, rotations and
+scales from the immutable authored rest geometry, then calls
+`updateMatrixWorld(true)`. Tests verify that the attached forearm's world
+tip equals the observed wrist and that repeated absolute writes produce an
+identical matrix (no cumulative rotation/position drift). `hide()` clears
+every visible mesh on tracking loss; `dispose()` detaches and releases all
+GPU resources.
+
+`Web/src/scene.ts` now implements the structural `OverlayRenderHost`
+interface (`attach`, `detach`, `hideProxy`, `render`, `renderForCapture`,
+`viewport`). `ProxySkeletonRenderer` therefore continues to own the only
+`WebGLRenderer`, `Scene` and `OrthographicCamera`; the rig's `Group` is
+simply added to that scene. `LiveRigOverlay.setMode("rig")` attaches it once,
+fails closed to `"proxy"` if construction throws, and never starts a second
+camera stream, renderer or `requestAnimationFrame` loop. `viewport()` is the
+exact orthographic display size, so the rig and proxy always share the same
+projection. Explicit PNG capture still calls `renderForCapture()` once.
+
+### Lifecycle integration in main.ts
+
+`hideOverlay()` routes every hide to the ACTIVE mode: in rig mode it calls
+`LiveRigOverlay.hide()`, which hides both the rig and the proxy through the
+shared host. Stale results, missing poses, `tick()` tracking loss, overlay
+pause, focus changes, stabilization changes and `stopCamera()` all use this
+path; `stopCamera()` additionally calls `rigOverlay.reset()`. A detected
+`runner.mode` change (worker → main fallback) calls `clearTransforms()`.
+The rig path deliberately uses RAW `frame.landmarks` (the rig owns its own
+bounded stabilization) while the proxy path keeps the existing
+`TemporalPoseStabilizer` output, so enabling the checkbox does not
+double-smooth either path. Learning-note picking stays bound to W0
+independent proxy segments only.
+
+The FBX/GLB study dialog remains isolated: opening it calls `stopCamera()`
+exactly as before and sets an honest status line stating that imported
+models are never camera-retargeted. No imported mesh is attached to the
+live rig scene and no runtime hook accepts injected landmarks.
+
+### Tests and their limits
+
+- `pose-to-rig.test.ts` (30): deterministic geometry, flexion/extension,
+  pivot continuity, mirror, unequal aspect ratios, partial poses,
+  occlusion, confidence, nonfinite/degenerate/stale/old-session/
+  out-of-order frames, pause/resume, flip, restart, fallback and toggles.
+- `original-rig.test.ts` (12): hierarchy/wrist-tip continuity, parent-
+  relative rotation, no drift, geometry/material reuse, one-arm loss,
+  independent forearm, hide/dispose and opacity clamping. No WebGL context.
+- `rig-controller.test.ts` (7): default proxy, single attach, session
+  rejection, pause/hide/reset, dispose and fallback ordering with a fake
+  structural host.
+- `tests/browser/live-original-rig.spec.ts`: opt-in Chromium + iPhone-sized
+  WebKit ENGINE emulation. Test-only dynamic source imports inside
+  `page.evaluate` drive a deterministic 33-point fixture; the production
+  bundle has no injection hook. Camera stays off, one stage canvas, no
+  MediaPipe weights or third-party meshes.
+
+These prove source correctness, numerical reproducibility and real browser
+engine integration for the ORIGINAL screen-aligned rig. They do NOT prove
+camera-space 3D registration, anatomical accuracy, skinning, model rights,
+SDK privacy clearance, physical iPhone Safari acceptance or public release.
+`Web/release-clearance.json` remains `releaseApproved: false`.

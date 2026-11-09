@@ -607,3 +607,89 @@ only, and Web CI checks that `vite build` produces the
 real Chrome/Safari WASM loading, ImageBitmap transfer, worker crash
 recovery, GPU behaviour and measured latency on physical devices
 remain unverified. The public release gate stays FALSE.
+
+
+## W3a: opt-in LIVE ORIGINAL articulated rig (experimental 2.5D)
+
+Open **Anatomy layers** and you will find a new **Live overlay mode**
+radio group. **Reference Proxy** is the DEFAULT and remains the
+independent-line-segment skeleton from W0. Selecting
+**Live Original Rig (Experimental)** switches the same camera overlay to
+a completely ORIGINAL, procedurally generated Three.js articulated
+demonstration: a visible shoulder → upper arm → elbow pivot → attached
+forearm chain for each observed arm, plus an optional shoulder-to-shoulder
+torso reference. No FBX/GLB, Z-Anatomy/BodyParts3D mesh, Google weight,
+camera image or personal data is used to build it.
+
+What actually works:
+
+- One camera stream and ONE existing WebGL overlay context are reused.
+  There is no second renderer, canvas or always-running render loop.
+- Live 33-landmark observations are projected into the same
+  object-fit:cover, mirrored DISPLAY-PIXEL space as the proxy. The
+  forearm is a CHILD of the upper-arm pivot, so the elbow stays coherent
+  when the arm bends; every frame writes absolute transforms from
+  immutable authored geometry (no cumulative drift).
+- Partial body is fine: only confidently visible shoulder/elbow/wrist
+  segments are drawn. A forearm with no visible shoulder is shown as an
+  INDEPENDENT segment; no hidden joint is invented. Whole/Arms work;
+  Legs deliberately shows nothing because no original leg chain exists.
+- Stale, out-of-order, old-session, nonfinite or discontinuous frames
+  hide the rig instead of freezing or reusing a previous pose. Camera
+  stop/restart, flip, background tab, worker fallback, overlay pause,
+  focus/stabilization/opacity changes all reset only the relevant state.
+- All existing behavior stays available: camera start/stop/flip, mirror,
+  partial-body tracking, confidence hiding, overlay pause, local-only
+  explicit PNG capture, latency diagnostics and privacy behavior.
+  New status/label copy is written locally in both 简体中文 and EN.
+- The local FBX/GLB study dialog is unchanged and still STOPS the
+  camera. Imported models are static research objects and are NEVER
+  live-retargeted by this experimental mode.
+
+What this is NOT: anatomical AR, a person's real bones, calibrated
+camera-space 3D registration, depth measurement, skinning/skin weights,
+inverse kinematics, clinical geometry, or redistribution approval for
+any third-party anatomy asset or PoseLandmarker weight. MediaPipe `z`
+is only checked for finiteness; it is never treated as camera depth.
+The rig is explicitly labelled "Experimental · Uncalibrated".
+
+Two ORIGINAL, camera-free UI screenshots of the explicit opt-in are kept
+in `Docs/images/` for reviewers. They show only the locally generated
+Leonardo interface, with the camera OFF, no pose data and no third-party
+content; they are NOT evidence of live tracking or device acceptance.
+
+| Locale | Screenshot |
+| --- | --- |
+| 简体中文 | `Docs/images/w3a-live-original-rig-mode-zh.png` |
+| English | `Docs/images/w3a-live-original-rig-mode-en.png` |
+
+### Verification
+
+```bash
+cd Web
+npm install
+npm run typecheck           # clean
+npm test                    # 143/143 Vitest tests pass
+npm run build:code          # source build only; NOT a public release
+npm run stage:assets && npm run check:assets
+npm run test:browser        # opt-in; needs Playwright Chromium + WebKit
+```
+
+`tests/browser/live-original-rig.spec.ts` is part of the existing
+opt-in browser suite (manual dispatch or a `browser-smoke` PR branch).
+It uses a deterministic numerical 33-point fixture through test-only
+source imports inside `page.evaluate`; the production build has NO pose
+injection hook. Camera stays off and no restricted binary is loaded.
+Locally **10/10 passed**: 5 desktop Chromium + 5 iPhone-sized WebKit
+ENGINE emulation checks, including the three preserved W2 tests on each
+engine. WebKit emulation is NOT physical iPhone Safari, Apple GPU,
+camera permission or thermal acceptance.
+
+`releaseApproved` remains FALSE. Real-browser webcam validation on
+physical devices, per-mesh rights review, MediaPipe weight
+redistribution clearance, SDK metrics privacy review, a reviewed
+anatomical rest rig, real skeletal skinning and camera-space 3D
+registration all remain separate blocked milestones. The exact next
+engineering milestone is a rights-cleared, reviewed anatomical rest rig
+with verified camera registration — not an extension of this
+screen-aligned original demonstration.
