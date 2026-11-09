@@ -108,6 +108,70 @@ const en: Record<string, string> = {
     "No unreviewed Z-Anatomy meshes are shipped",
   "。真实解剖模型及其署名将按资产来源逐项审核。":
     "Real anatomy models and attribution require source-by-source review.",
+  "绑定与动画诊断": "Rig and authored animation diagnostics",
+  "尚未载入骨骼模型。仅检查模型内实际存在的关节、顶点权重及动画，不进行人体实时跟随。":
+    "No rigged model loaded. Only genuine imported joints, vertex weights and animation clips are inspected; no live body retargeting.",
+  "模型内置动画": "Authored model animation",
+  "无可预览动画": "No previewable animation",
+  "播放": "Play",
+  "暂停": "Pause",
+  "仅播放导入文件自带的动作；不是 MediaPipe 身体动作驱动，也不是已校准的解剖骨骼绑定。":
+    "Only original clips from the imported model are played. This is not MediaPipe body-motion tracking or calibrated anatomy rigging.",
+  "人工姿态映射草稿 · 非实际骨骼绑定": "Manual pose segment mapping · No bone rig",
+  "请根据原始网格名称与实际模型，自行标记对应的 MediaPipe 体表参考段。映射未经过解剖、骨骼绑定或相机校准审核。":
+    "Assign each source mesh to a coarse MediaPipe surface-reference segment yourself. This is not anatomically reviewed, rigged or camera calibrated.",
+  "未映射任何原始网格": "No source meshes mapped",
+  "导出映射草稿": "Export mapping draft",
+  "导入本地映射 JSON": "Import local mapping JSON",
+  "清空映射": "Clear mappings",
+  "直接体验原创 3D 三连杆示例（无需下载文件）":
+    "Try an ORIGINAL 3-part 3D demo (no downloads needed)",
+  "此示例由 MagicMirror 在浏览器内临时生成，包含三个简单方块及预设参考点；不是 Z-Anatomy、真实骨骼或人体摄像头追踪。":
+    "This original MagicMirror example generates three simple bars and predefined reference points inside the browser. It is NOT Z-Anatomy, actual human bones or live camera tracking.",
+  "离线关键帧与循环回放": "Local angle keyframes & loop replay",
+  "仅对当前原创或本地来源的虚拟运动链记录角度，不包含摄像头画面或真实人体骨骼。每帧绑定原始文件哈希、人工网格父子关系和模型空间端点。":
+    "Record only test angles for an original/local virtual chain, never camera footage or actual human bones. Each frame is bound to original file hash, manually authored hierarchy and model-space points.",
+  "时间轴（毫秒）": "Timeline (milliseconds)",
+  "记录当前角度": "Capture current angles",
+  "删除此关键帧": "Delete this keyframe",
+  "循环播放": "Loop playback",
+  "清空帧": "Clear keyframes",
+  "导出本地动作草稿": "Export local motion draft",
+  "导入动作草稿 JSON": "Import motion JSON",
+  "请先预览 2–12 个原始网格，然后记录两个不同时间的关键帧；不执行真实人体追踪。":
+    "Preview 2–12 original meshes, then capture at least two distinct keyframes; no actual human pose recording.",
+  "多部件运动链 · 原模型虚拟预览": "Multi-mesh virtual chain · Original-model study",
+  "选择至少两个已标记 A/B 的普通来源网格，手动指定父部件。运动以独立金色线框副本呈现，原始网格完全不修改。模型坐标轴和端点未经过医学、相机或真实关节校准。":
+    "Select at least two original plain meshes with A/B points and manually assign parents. Gold wireframe ghosts move while all source geometry stays unchanged. Model axes and clicked points are NOT medically, camera or joint calibrated.",
+  "加入选中部件": "Add selected mesh",
+  "移除选中部件": "Remove selected mesh",
+  "当前选中部件的父节点": "Parent of selected source mesh",
+  "无父节点": "No parent",
+  "预览运动链": "Preview virtual chain",
+  "停止并恢复": "Stop and restore",
+  "当前节点旋转轴": "Selected node rotation axis",
+  "当前节点角度": "Selected node angle",
+  "所有角度归零": "Zero all angles",
+  "请选择真实来源网格建立 2–12 节人工运动链；不执行人体追踪。":
+    "Choose 2–12 real source meshes for a manual virtual chain; no human pose tracking.",
+  "单部件刚体旋转实验 · 本地预览": "Single-mesh rigid rotation · Local experiment",
+  "选择已映射且有 A/B 端点的普通网格，以原始模型的 A 点为支点，绕模型 X/Y/Z 轴旋转。B 点仅表示运动参考方向；不生成骨骼关节、权重或人体实时动画。带 SkinnedMesh 或内置动画的模型不可使用此模式。":
+    "Select a mapped, ordinary mesh with A/B endpoints. Rotate around A using the SOURCE model X/Y/Z axis. B is a movement reference, not a bone joint. No rig, weights or human-driven animation is generated. Models containing SkinnedMesh or authored clips are excluded.",
+  "开启局部运动预览": "Start local rigid preview",
+  "原模型旋转轴": "Source-model rotation axis",
+  "旋转角度": "Rotation angle",
+  "恢复原始姿态": "Restore original pose",
+  "未开始。需要一个普通可见网格、人工映射和两个不同的模型空间端点。":
+    "Not started. Select a visible ordinary mesh with manual mapping and two distinct original-model points.",
+  "模型空间端点草稿": "Original model-space point drafts",
+  "先在部件列表中选定并映射一个网格，再点“标记起点/终点”，最后在 3D 视图中点击同一网格表面。遮挡时请先独显。坐标来自原始模型，并非解剖关节、已校准姿态或动态骨骼。":
+    "First select and map a source mesh, then choose Mark A/B and click the SAME source mesh in the 3D viewer. Isolate if occluded. These are original-model coordinates, not anatomical joints, calibrated pose or a live skeletal rig.",
+  "标记起点 A": "Mark point A",
+  "标记终点 B": "Mark point B",
+  "清除此网格端点": "Clear selected points",
+  "导出端点草稿": "Export point draft",
+  "导入端点 JSON": "Import point JSON",
+  "尚未标记任何模型空间端点": "No original model-space points marked",
   "原始部件与层级": "Original meshes and hierarchy",
   "尚未导入模型": "No model loaded",
   "按原始网格名称或层级路径搜索": "Search original mesh names or hierarchy paths",
@@ -155,7 +219,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value"
+      "#tracking-status,#guidance,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);

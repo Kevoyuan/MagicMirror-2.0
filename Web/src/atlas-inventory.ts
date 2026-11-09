@@ -13,6 +13,15 @@ export interface AtlasInventoryInput {
   readonly triangles: number;
   readonly skinnedMeshes: number;
   readonly authoredJoints: number;
+  readonly rigSamples?: {
+    readonly sampledVertices: number;
+    readonly unweightedVertices: number;
+    readonly invalidWeightSamples: number;
+    readonly invalidJointReferences: number;
+    readonly suspiciousWeightSums: number;
+    readonly skinnedMeshesWithoutWeightAttributes: number;
+    readonly previewableAnimationClips: number;
+  };
   readonly parts: readonly AtlasPart[];
 }
 export interface AtlasInventory {
@@ -26,6 +35,16 @@ export interface AtlasInventory {
     readonly totalTriangles: number;
     readonly skinnedMeshCount: number;
     readonly authoredJointCount: number;
+  };
+  readonly rigSampleDiagnostics: {
+    readonly samplingOnly: true;
+    readonly sampledVertices: number;
+    readonly unweightedVertices: number;
+    readonly invalidWeightSamples: number;
+    readonly invalidJointReferences: number;
+    readonly suspiciousWeightSums: number;
+    readonly skinnedMeshesWithoutWeightAttributes: number;
+    readonly previewableAnimationClips: number;
   };
   readonly perMesh: ReadonlyArray<{
     readonly sourceIndex: number;
@@ -60,6 +79,17 @@ export function buildLocalAtlasInventory(input: AtlasInventoryInput): AtlasInven
       skinnedMeshCount: input.skinnedMeshes,
       authoredJointCount: input.authoredJoints,
     },
+    rigSampleDiagnostics: {
+      samplingOnly: true,
+      sampledVertices: input.rigSamples?.sampledVertices ?? 0,
+      unweightedVertices: input.rigSamples?.unweightedVertices ?? 0,
+      invalidWeightSamples: input.rigSamples?.invalidWeightSamples ?? 0,
+      invalidJointReferences: input.rigSamples?.invalidJointReferences ?? 0,
+      suspiciousWeightSums: input.rigSamples?.suspiciousWeightSums ?? 0,
+      skinnedMeshesWithoutWeightAttributes:
+        input.rigSamples?.skinnedMeshesWithoutWeightAttributes ?? 0,
+      previewableAnimationClips: input.rigSamples?.previewableAnimationClips ?? 0,
+    },
     perMesh: input.parts.map(part => ({
       sourceIndex: part.id,
       originalMeshName: part.name,
@@ -69,7 +99,7 @@ export function buildLocalAtlasInventory(input: AtlasInventoryInput): AtlasInven
       commercialReuseReviewed: false,
     })),
     rightsStatus: "NOT_REVIEWED",
-    warning: "Automatically extracted geometry only. No author identities, per-mesh licenses, redistribution rights, bone mappings or physical pose registration have been verified. This document MUST NOT be presented as a rights clearance.",
+    warning: "Automatically extracted geometry and sampled authored-weight metadata only. No author identities, per-mesh licenses, redistribution rights, complete skinning correctness, animation retargeting, bone mappings or physical pose registration have been verified. This document MUST NOT be presented as a rights or rig clearance.",
   };
 }
 

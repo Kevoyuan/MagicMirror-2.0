@@ -271,3 +271,278 @@ Current file limits: ≤75 MB, ≤2 million triangles and ≤5,000
 source meshes. Desktop browsers are recommended for original
 large FBX study; no actual Z-Anatomy import/device FPS
 performance is claimed until separately measured.
+
+## W2c: Test authored bone weights and file-contained animation locally
+
+Inside the **local-only anatomy study** dialog, the
+**Rig and authored animation diagnostics / 绑定与动画诊断**
+panel reports the actual imported model's SkinnedMesh and
+joint count. If the model contains weight attributes, it
+**samples** vertices (does not exhaustively audit all vertices)
+for missing weights, invalid weight values, out-of-range joint
+references, and suspicious influence sums.
+
+With a rigged model containing **its own authored animation**,
+choose an animation from the file and press Play/Pause. This
+plays only the source model's authored clips in the separate
+static inspector; it does **not** reflect your body motion.
+Imported models with no valid clips display a disabled player.
+No animation autoplays by opening or granting camera access.
+
+The local **Export source inventory JSON** also records the
+rig-sample diagnostic, explicitly `samplingOnly: true`,
+and overall original-mesh rights remain `NOT_REVIEWED`.
+For an original unrigged Z-Anatomy skeleton FBX the
+expected diagnostics may show *zero* authored skinned meshes
+and *no* compatible clips: **this does not mean the camera
+prototype is rigged or a medical observation**.
+
+Actual GPU skin deformations and clip playback still need
+physical browser validation. A real tracked anatomical
+skeleton requires an independently authored cohesive rig,
+pose-to-joint retargeter, anatomical camera registration,
+per-part rights signoff and measured performance.
+
+## W2d: Manually map original source meshes to pose segments
+
+In **Anatomy layers → Load local FBX / GLB → Original meshes and
+hierarchy**, each imported source mesh row now has a dropdown:
+**Unassigned** (default), or one of the **12 visible
+MediaPipe surface-reference segments** (upper arms, forearms,
+thighs, shins, torso/shoulder/hip spans). This is a manual
+study draft; several source parts may share a segment.
+
+Choose mappings explicitly, then click **Export mapping draft**
+to save local JSON. Later, after choosing the *identical*
+original model, use **Import local mapping JSON**. The importer
+checks original source SHA-256, file size, actual mesh list
+count, original source names, hierarchy paths, triangle counts,
+valid segments, duplicates and forged approval fields.
+A failure leaves existing assignments unchanged. The local
+mapping can be cleared at any time.
+
+The JSON includes **no original vertices, no camera images, no
+source assets, and no redistribution/license grant**.
+Every entry is `USER_DRAFT_UNCALIBRATED`; overall model-space,
+retargeting and commercial clearance remain
+`UNVERIFIED / NOT_READY / NOT_REVIEWED`. This is a foundation
+for proper rig authoring, not an active real-time Z-Anatomy
+skeleton overlay and not validated physical anatomy.
+
+## W2e: Click actual source-model reference points
+
+**Local model study → Source-part list → choose a real mesh and
+its manual surface segment → Mark point A / Mark point B.**
+For each endpoint, click the **SAME visible source mesh**
+in the separate 3D study canvas. Isolate the part if
+other meshes hide it. The viewer saves the user's own
+clicked **original model-root local 3D coordinates**,
+not coordinates from the person's camera image.
+
+The control shows how many source parts have both
+distinct points, and how many are still incomplete.
+**Export point draft** produces explicit local JSON;
+**Import point JSON** only accepts matching original
+source SHA-256, size, source mesh IDs/paths/triangles
+and the currently manually chosen pose segment.
+A mapping edit, mapping re-import or new original
+model invalidates earlier points.
+
+These are user-selected source-model **reference
+points only**. No actual anatomical rest pose,
+skinned joint transform, MediaPipe-to-bone live
+retargeting, camera extrinsics, calibrated slice,
+model redistribution or medical validation is
+implied. Pause authored animation before picking;
+positions on an already-deformed paused model
+are not necessarily rest coordinates. The JSON
+includes no source geometry or camera images
+and explicitly marks calibration and rights
+as **NOT READY / NOT REVIEWED**.
+
+The real original Z-Anatomy FBX and mobile Safari
+performance still require physical browser QA.
+
+## W2f: Reversible local single-part motion experiment
+
+Inside the PRIVATE **Anatomy study** viewer:
+
+1. Import a user-owned original FBX/GLB. Select a
+   visible **ordinary non-skinned mesh** and manually
+   assign it to a MediaPipe 2D surface-reference
+   segment in the source parts list.
+2. Mark two different original-root points A and B
+   on that SAME part (W2e). **A** acts as the pivot;
+   **B** is a movement reference (not a biological joint).
+3. Click **Start local rigid preview** in the new
+   **Single-mesh rigid rotation** panel. Choose a
+   **SOURCE X/Y/Z axis** and move the ±90° slider.
+   Only that source mesh rotates; a B marker follows
+   its synthetic rigid movement.
+4. Click **Restore original pose**, select a
+   different mesh or close the viewer to reset the
+   original matrix exactly. No animated or changed
+   source FBX/GLB is exported.
+
+This experiment does **not** support an already skinned
+mesh or a model containing authored animation clips;
+such files should continue to use the separate
+authored-animation player. There is **no live
+MediaPipe-to-mesh retargeting**, whole-skeleton rig,
+physiological range-of-motion calibration, camera
+registration or model redistribution grant.
+
+The W2f code has synthetic pure matrix tests and
+source compilation checks. Real original FBX on
+desktop/iPhone browsers, GPU latency, exact
+reference orientation and multi-bone rig quality
+require actual hardware and human anatomy review.
+
+
+## W2g: Study a manual multi-mesh movement chain (not actual anatomy AR)
+
+In the PRIVATE source-model study dialog, import your own FBX/GLB,
+select a **plain** original mesh, map it to a MediaPipe
+surface-reference segment and click A/B on that actual
+mesh. Repeat for at least two and at most twelve parts.
+
+Select each source mesh and click **Add selected mesh**
+in the **Multi-mesh virtual chain** panel. For a child,
+choose another selected mesh as its **manual parent**.
+The app rejects cycles and invalid/unaligned identities;
+far-apart endpoints are reported as a geometric warning.
+Click **Preview virtual chain**, then click a node
+in the small chain list and use the X/Y/Z ±90° slider.
+Child **golden wireframe ghost geometry** follows the parent
+while original FBX/GLB mesh geometry and transforms stay
+unchanged. **Zero all angles**, Stop, a source/mapping
+change or closing the dialog ends the study. Nothing is
+uploaded, saved automatically or rendered over the live
+camera as actual internal anatomy.
+
+Source models with authored animation clips or selected
+SkinnedMesh are not eligible; use the separate authored
+animation inspector. This does not create a rig,
+generate skinning or reconstruct a patient skeleton.
+Real hardware/Safari tests, actual source permissions,
+rest-pose semantics and camera space are still open.
+
+
+## One-click ORIGINAL demo (no Z-Anatomy source needed)
+
+Open **Anatomy layers → Local FBX/GLB viewer** and
+choose **Try an ORIGINAL 3-part 3D demo**. MagicMirror
+generates three simple box-like parts in this browser
+and imports its own tiny self-contained GLB. It
+prefills a three-part tutorial-only source mesh
+mapping, reference A/B points and an example
+parent/child chain, then shows the gold wireframe
+ghost pose. Click node chips to select one segment,
+adjust model-space X/Y/Z angle, Zero all or Stop.
+You can still inspect the original mesh list and
+try local JSON source inventory export.
+
+This generated scene consists of **three simple
+rectangular bars**, NOT bones or organs, NOT a
+clinical atlas, NOT Z-Anatomy, and NOT a webcam
+or true pose retargeting feature. No third-party
+FBX is automatically downloaded or distributed.
+Full GLB export/import and WebGL interaction
+must still be verified in real Chrome/Safari.
+
+
+## W2i local keyframe editor and loop
+
+Start a W2g virtual 2–12 source-mesh chain. In
+**Local angle keyframes & loop replay** choose
+a time on the 0–6s slider (up to 10s for
+imported drafts), set per-node angles in the
+virtual chain panel, then click **Capture
+current angles**. Capture another pose at a
+different time. **Loop playback** interpolates
+the TEST ANGLES only, **Pause** stops,
+and dragging the timeline scrubs a static
+virtual pose. Frame chips jump to authored
+positions. You can delete a frame, clear
+them all, or explicitly download/reimport
+a model-hash-bound JSON draft.
+
+The original three-box demo already includes
+three synthetic training frames at 0s,
+1.5s and 3.0s. It never captures camera
+frames. All source file SHA/size, original
+mesh identity, parent chain, A/B points
+and rotation axes must match to import
+old keyframes. Import rejects any false
+medical/camera or rights signoff. Editing
+the parent structure or an axis invalidates
+the old frames; hidden tabs/closing the
+viewer pause replay.
+
+This is **NOT** live MediaPipe motion
+retargeting, a human joint motion log,
+a licensed bone or a medical scan.
+Run a real browser interaction test
+before considering it hardware verified.
+
+
+## W2j: Optional real Chromium browser integration test
+
+For an actual desktop-browser runtime smoke of
+the ORIGINAL three-box tutorial (no webcam, no
+external anatomical geometry or Google task
+model weights):
+
+```bash
+cd Web
+npm install --legacy-peer-deps
+npx playwright install chromium webkit
+npm run test:browser
+```
+
+Playwright opens a local Vite server; it checks
+the exact production study UI, GLB exporter/loader,
+software WebGL, virtual multi-part chain and
+keyframe replay, explicit local SHA-bound JSON
+download, forged-source rejection and valid
+re-import. Tests never press the webcam button.
+
+Ordinary GitHub Web CI still does only the
+fast TS/Vitest/build/release-denial checks.
+Run `Web-first MVP` manually via GitHub Actions
+or open a PR branch containing `browser-smoke`
+to opt into the heavier Chromium job in the
+**same workflow**. Browser smoke is not a
+publicly deployable release, not Z-Anatomy
+usage permission and **not physical iPhone Safari
+or real camera acceptance**.
+
+Browser CI pins **Ubuntu 24.04** for Playwright's supported Chromium
+runtime; ordinary source checks continue on the current GitHub
+default runner. The browser smoke is specifically software WebGL,
+not an iPhone/physical GPU performance or medical anatomy acceptance.
+
+**First verified browser smoke (2026-11-09):** all **3/3**
+Playwright tests passed on GitHub-hosted Ubuntu 24.04
+Chromium with software WebGL and no webcam permission:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+This is real browser execution of the original generated GLB,
+not a confirmation of Safari/iPhone or original Z-Anatomy FBX behavior.
+
+### W2k: Original-demo mobile-browser engine coverage
+
+The opt-in suite now runs **six** real browser checks:
+three on desktop Chromium and the same three on
+Linux WebKit using an **iPhone 13 viewport and touch
+emulation**. GitHub-hosted Ubuntu 24.04 verified
+**6/6 passed** for the original generated GLB,
+model-space ghost chain, timeline replay and
+source-locked local JSON on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+
+This is meaningful desktop/mobile browser-engine
+integration confidence, but **not** a physical
+iPhone Safari camera/WebGL performance result.
+Real Z-Anatomy licensing, original FBX import,
+medical/camera calibration and public release
+review are not cleared by these tests.

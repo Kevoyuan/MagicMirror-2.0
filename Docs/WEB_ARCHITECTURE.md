@@ -201,3 +201,253 @@ The study model limits remain ≤75 MB selected file, ≤2,000,000
 triangles and ≤5,000 source meshes; large input may still impose
 significant in-memory parsing costs, so actual device profiling
 is an open acceptance requirement.
+
+## W2c rig diagnostics and animation study pipeline
+
+`Web/src/rig-diagnostics.ts` performs pure, bounded sample-level
+checks on **real imported** `skinWeight` and `skinIndex`
+attributes from a user-selected FBX/GLB `SkinnedMesh`.
+These are reported in the separate **static Folio II** along
+with actual authored skeleton joint and skinned-mesh counts.
+The local source inventory exports the sampling counts with
+`samplingOnly=true` and independently keeps
+`rightsStatus=NOT_REVIEWED`; it is not a license, a complete
+weight audit or a clinical correctness result.
+
+FBXLoader's source `object.animations` and GLTFLoader's
+`gltf.animations` are inspected as source-authored
+`AnimationClip` objects. Safe, previewable clips are limited
+to the first 40 candidates, with individual duration at most
+600 seconds and track count at most 10,000. The user must
+explicitly select/play these clips. Three.js AnimationMixer
+updates only the **local static study model** in a bounded
+requestAnimationFrame loop; close/pause/replace cleans up actions.
+No animation data is inferred from camera landmarks, sent to
+a server or shipped as a licensed asset.
+
+This does **NOT** change the separate camera pipeline:
+MediaPipe's live procedural proxy still follows 2D observed
+surface points, without a reviewed Z-Anatomy skinning rig.
+
+## W2d editable, source-hash-bound mesh-to-segment mapping
+
+`Web/src/atlas-mapping.ts` defines 12 *existing, observed*
+MediaPipe shoulder/elbow/wrist/hip/knee/ankle and torso segment
+pairs. The Folio II **static** source part browser lets a user
+manually annotate each actual imported mesh with a coarse
+`PoseSegmentId`; no automatic Z-Anatomy bone classifier is
+used or implied. The user can explicitly download or select
+a local mapping JSON containing **no mesh geometry**.
+
+Every draft is bound to the current original source file's
+SHA-256, byte size and real original mesh metadata. Incoming
+JSON is strongly schema validated and must still declare
+`USER_DRAFT_UNCALIBRATED`, `sourceCoordinateFrame=UNVERIFIED`,
+`retargetingStatus=NOT_READY`, and
+`commercialReuseStatus=NOT_REVIEWED`. Unknown fields, fake
+review approvals, duplicate mesh IDs, altered hierarchy paths,
+and different original source files reject the import entirely.
+Nothing is automatically transmitted to a server, written to
+browser storage, or distributed with the Web bundle.
+
+This maps an *artist/researcher hypothesis* of which parts
+belong near an **observed surface segment**. It is NOT a
+kinematic hierarchy, skinning, real joint-local orientation,
+3D rest-pose calibration, verified physical bone position,
+rights evidence, camera registration or animated AR model.
+
+## W2e explicit original-root point authoring
+
+Folio II uses the same Three.js source mesh raycaster to
+select two **user-clicked** original model-space reference
+points per explicitly mapped source mesh. The user
+chooses an endpoint, then clicks *that same source mesh*;
+hits on different objects cannot mark it. Each
+`hit.point` (world space) is converted with the
+imported source root's `worldToLocal()`, recording
+original-root local coordinates rather than normalized
+renderer positions. Real model asset file origin and
+rest pose remain unvalidated; paused authored animations
+can still have non-rest transforms, so these points are
+**not** a certified joint or model rig.
+
+`Web/src/atlas-anchors.ts` validates original source
+file SHA-256, byte size, mesh name/path/count/triangle
+identity, exact current W2d segment mapping and
+distinct finite source-space endpoint coordinates.
+Every accepted JSON must state uncalibrated,
+unretargeted, original-frame-unverified and
+NOT_REVIEWED licensing, with no forged approval fields.
+Only the explicit user click downloads this JSON;
+it contains no mesh vertices, camera frames,
+source asset bytes or automatic recording.
+A changed mapping or model invalidates stale points,
+and importing another model's JSON fails closed.
+
+## W2f source-space single rigid part experiment
+
+The PRIVATE Folio II now supports a reversible source-mesh
+rotation experiment. After a human chooses an actual imported
+`Mesh` (never a `SkinnedMesh`), manually provides a
+surface-segment mapping and A/B source-root positions,
+`Web/src/rigid-preview.ts` computes a rigid 4×4 source
+matrix around **A** using an explicitly chosen source
+X/Y/Z axis. It bounds the angle to ±90° and rejects
+nonfinite/singular frames, missing/overlapping points
+and unrecognized axes.
+
+On each slider update, the original mesh's immutable
+baseline WORLD matrix is transformed in the imported
+original-root frame, then converted back into the actual
+mesh-parent frame; the Three.js object uses a reversible
+`matrixAutoUpdate=false` preview matrix. No geometry,
+weights, material or original source file are changed.
+The user can restore the exact original matrix/auto-update
+setting; changing selected mesh, hiding the part, replacing
+source, or closing the dialog also restores the original.
+The B reference marker moves along with the rigid
+reference end; A remains the pivot.
+
+A model containing any previewable source animation clips
+or a selected `SkinnedMesh` is rejected deliberately;
+the experiment does not mix with authored AnimationMixer
+motion. This is not a articulated/weighted anatomical
+rig, not an anatomically verified bone hinge, not a
+person-specific camera transform or patient X-ray.
+The public model rights and SDK privacy release gates
+remain unchanged and unapproved.
+
+
+## W2g virtual KINEMATIC STUDY graph, not a real anatomical rig
+
+`Web/src/kinematic-chain.ts` holds a testable bounded
+manual DAG of SOURCE mesh IDs, original model-local A/B
+points, explicit parent source IDs, X/Y/Z model axes
+and angle values. It validates graph structure and
+topologically propagates parent SOURCE-root transforms:
+`D_child_total = D_parent_total * T(A_child) *
+R_local(axis,angle) * T(-A_child)`.
+The source remains unverified for real joint placement
+or anatomy classification. No MediaPipe observations enter
+this module.
+
+`LocalAtlasViewer.beginChainPreview` leaves every original
+Mesh untouched, creates at most twelve temporary gold
+wireframe ghost meshes reusing geometry, stores immutable
+source mesh WORLD matrices, and applies
+`M_ghost = RootWorld * D_total * inverse(RootWorld) * M_source_original`.
+A child ghost follows its parent transform without modifying
+the original imported hierarchy, skins, material or
+any underlying FBX/GLB asset. All chain errors are fail
+closed; changing model/mapping/anchor or closing the dialog
+tears down the transient ghost study. The explicit
+per-mesh parent editor and slider are in Folio II.
+
+This is a local, ORIGINAL-model coordinate preview.
+No camera extrinsics, 3D pose identity, bone proportions,
+medical skeletal joint axes, retarget weights or
+redistribution rights have been reviewed.
+
+
+## W2h original GLB demonstration as an onboarding/QA fixture
+
+`Web/src/study-demo.ts` owns three original MIT-app
+thin 3D box meshes and explicit sample geometry
+positions, manually-authored A/B reference endpoints,
+source mesh identifiers and a 3-node virtual chain.
+On explicit user interaction, the Three.js
+GLTFExporter serializes the generated scene as
+a self-contained in-memory GLB `File`. The app
+routes that file through the SAME local GLTFLoader,
+original source SHA-256 generation, part inspection,
+mapping, point annotations and W2g wireframe ghost
+viewer as a user-provided file. No third-party
+mesh, body data, original anatomical source or
+network resource is included in the fixture.
+
+This is an internal original 3D spatial/math
+demo, **NOT** a medical anatomical model,
+a MediaPipe tracking demonstration, an auto-rigger
+or confirmation that the Z-Anatomy FBX works
+with skinning/animation. The tutorial helps
+reviewers exercise the UI without needing to
+acquire restricted source assets first.
+
+
+## W2i offline source-keyframe playback engine
+
+`Web/src/study-timeline.ts` is the pure, bounded,
+camera-free angle timeline: up to 32 manually
+selected source-angle frames across 0–10 s,
+original source/root graph SHA + mesh identity,
+per-node fixed axes and ±90° angles. Interpolation
+is deterministic and linear, with a neutral
+first/last hold outside the authored interval.
+Imported JSON MUST match original model SHA-256,
+file size, mesh count, exact W2g manually authored
+parent graph and W2e source anchor coordinates.
+All source model rights/retarget states stay
+NOT_REVIEWED/not calibrated.
+
+The Folio II user can capture keyframes at a
+time slider, delete/clear, import/export local
+JSON and explicitly Play/Pause a loop.
+`LocalAtlasViewer.setChainPose` applies all
+joint values to 2–12 separate THREE.js ghost
+meshes in one update pass; original source
+geometry and camera frames remain untouched.
+The finite requestAnimationFrame loop stops
+on hidden document, study modal close or
+source mapping change. No cloud or auto
+recording, author bone-weight change,
+physical 3D camera calibration, real
+human pose animation or public model
+distribution is authorized by these frames.
+
+
+## W2j opt-in actual browser smoke environment
+
+`Web/playwright.config.ts` starts the unmodified Vite
+development server at `localhost:5173`; headless Chromium
+with a software WebGL renderer opens the same DOM and lazy
+Three.js source loader as a regular end-user.
+`Web/tests/browser/original-demo.spec.ts` uses the
+original THREE.js generated GLB from `study-demo.ts`,
+rather than any actual third-party anatomical FBX
+or Google task model. It exercises page state,
+source GLB parsing, virtual ghost preview, timeline
+loop, user-initiated JSON download and rejection
+of falsified model SHA, entirely without a camera
+request. This validates selected browser integration
+behavior, NOT a certified anatomical visualization,
+mobile Safari, actual source performance, live
+pose tracking, medical calibration or distribution
+rights.
+
+The existing `.github/workflows/web-mvp.yml`
+runs fast source/unit tests on ordinary Web
+changes. Its extra Chromium job is opt-in for
+manual workflow runs or PR branches with
+`browser-smoke` in the name. The source build
+and public release guard stay unchanged.
+
+## W2k browser engine and phone-viewport regression coverage
+
+The opt-in browser job in the existing Web workflow
+now installs pinned Playwright Chromium AND WebKit on
+Ubuntu 24.04. The exact same `original-demo.spec.ts`
+runs in two projects: real desktop Chromium with software
+WebGL and Linux WebKit using iPhone 13 mobile viewport
+and touch emulation. 6 of 6 E2E checks completed on
+GitHub-hosted Actions (2026-11-09, run 42652358053).
+It exercises a real browser engine in place of a
+pure mathematical unit test, without any camera
+permissions, third-party meshes or model weights.
+
+Linux WebKit/iPhone viewport emulation does not have
+the same OS sandbox, media devices, graphics/thermal
+stack or actual screen orientation as hardware
+Apple Safari. Physical Safari remains W0 acceptance
+work; this result must not unlock model-weight
+redistribution, camera-to-bone 3D registration,
+Z-Anatomy rig validity or public hosting.

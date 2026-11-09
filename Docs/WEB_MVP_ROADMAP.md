@@ -181,3 +181,251 @@ rights. Typechecking alone is not a shipped MVP.
 - [ ] Carry out full human source-by-source copyright/license
   evidence review; create a **real** authored mobile rig and
   camera registration before enabling live anatomy overlays.
+
+## W2c · Source rig quality sampling & authored animation (SOURCE IMPLEMENTED)
+
+- [x] Inspect actual imported `SkinnedMesh`, skeleton joint UUIDs,
+  authored `skinWeight`/`skinIndex` data, and model-authored
+  `AnimationClip` objects. Do **not** create missing Z-Anatomy
+  weights or claim this is a complete anatomical rig.
+- [x] Bound vertex-weight sampling per mesh; report actual
+  missing/unweighted/invalid joint references and suspicious
+  influence sums, marked clearly as **sampled only**.
+- [x] Preview independently authored FBX/GLB clips with user-click
+  Play/Pause, no autoplay and no MediaPipe body-pose retargeting.
+  Ignore malformed or extreme source clips and cap list to 40
+  previewable candidates.
+- [x] Include sampled diagnostics in the user-initiated
+  local JSON inventory while leaving the full rights status
+  `NOT_REVIEWED` and all original per-mesh license fields blank.
+- [x] Pure tests for valid/malformed weighted vertices and bounded
+  animation sanity, strict TS + CI build.
+- [ ] Verify actual animated, rigged GLB/FBX playback and joint
+  deformations in desktop Chrome and iPhone Safari; source test
+  does not prove WebGL skinning runtime correctness.
+- [ ] Review original Z-Anatomy FBX's real missing weights and
+  author an independent cohesive rig using Blender before any
+  live human-motion retargeting; add camera-space calibration,
+  semantic source-part mapping, occlusion and per-part rights.
+
+## W2d · Manual original-mesh ↔ MediaPipe surface-segment draft
+
+- [x] Define the 12 actually observed MediaPipe limb/torso
+  segment pairs; do not equate the reference surface graph
+  with a true skeletal/bone hierarchy.
+- [x] Add a manual (unassigned by default) pose-segment dropdown
+  for each original mesh in the local source browser. Multiple
+  source components may reference one segment.
+- [x] Explicitly save/load local SHA-256 and byte-size-bound
+  JSON drafts; validate exact source mesh count, path, name,
+  triangle count, unique source indices, supported segment
+  and non-approved rights/retargeting/calibration flags.
+- [x] Reject model mismatches and import all assignments
+  atomically (no partial corruption); never persist mappings
+  without the user's explicit download.
+- [x] Strict TS + synthetic Vitest invalid/replay/tamper
+  tests; no third-party models committed or newly hosted.
+- [ ] Run manual import/export, source model swap, browser
+  camera and animation tests on actual Chrome/Safari.
+- [ ] Build a separately reviewed true anatomical rig,
+  rest-pose anchors, camera/model-space registration and
+  real-time skeletal retargeting before any true atlas overlay.
+
+## W2e · Original-source mesh point selection (SOURCE IMPLEMENTED)
+
+- [x] Let users explicitly choose **start/end** model-local
+  sample points on the SAME visible original mesh by 3D
+  raycasting, only after a manual W2d surface-segment
+  assignment. Warn when a mesh is hidden/occluded or
+  its authored animation is still playing.
+- [x] Keep user coordinates in original source-root local
+  space, not normalized renderer/view/camera space; do
+  not call arbitrary clicks verified anatomical joints.
+- [x] Show per-source point A/B and complete-pair progress.
+  Clear when the mesh's surface mapping changes, model
+  is replaced or the mapping draft is imported afresh.
+- [x] SHA-256 + original mesh metadata + exact current
+  pose-segment assignment-locked user-triggered local
+  JSON export/import. Reject forged approval flags,
+  invalid/overlapping/non-finite points, source mismatch
+  and duplicates with all-or-nothing import.
+- [x] Strict TS, pure synthetic endpoint validation,
+  anti-tamper tests and Web source build in CI.
+- [ ] Run original pinned Z-Anatomy desktop FBX and
+  known rigged GLB through actual raycast anchor picks.
+  Evaluate model root origin, FBX units/orientation,
+  accuracy and mobile Safari memory/performance.
+- [ ] Author a real, coherent anatomical rig/rest
+  hierarchy, explicit geometry-to-joint association,
+  physical camera extrinsics and retargeting acceptance.
+  Neither W2d nor W2e enables true live model AR.
+
+## W2f · Single source-mesh rigid pivot preview (SOURCE IMPLEMENTED; real browser QA OPEN)
+
+- [x] Restrict to **one user-selected non-skinned original
+  mesh** with exact W2d original-mesh mapping and two
+  distinct W2e user-chosen A/B local model points.
+- [x] User-driven start, choose **source-model X/Y/Z**
+  rotation axis, bounded ±90° angle slider, and
+  **Restore original pose** (no autoplay, live tracking,
+  camera input, saved geometry, or model redistribution).
+- [x] Use immutable source original root/parent/world
+  matrix baselines; each angle applies a fresh pivot
+  delta around manually selected A, preserving geometry
+  and making reset exact. Move the B reference marker
+  along with the rigid source part.
+- [x] Fail closed for `SkinnedMesh`, authored
+  `AnimationClip` models, invisible or unselected
+  parts, missing/overlapping endpoints, or invalid
+  transform data. Invalidate preview when W2d mapping,
+  W2e anchors, model source or study modal changes.
+- [x] Pure deterministic unit tests for pivot invariance,
+  transformed parent frames, source-geometry identity,
+  reset, extreme angles and no accumulated drift.
+- [ ] Real local Z-Anatomy FBX / known rigged GLB
+  physical-browser WebGL and camera-space validation
+  on desktop Chrome and mobile Safari.
+- [ ] Distinct future work: actual whole-rig skeleton
+  hierarchy authoring, joint limits, mesh/skin weights,
+  MediaPipe **3D** pose calibration, multi-joint
+  retargeting and exact source-frame synchronized AR,
+  with independent per-original-mesh rights evidence.
+
+
+## W2g · Bounded manually-authored virtual source-mesh hierarchy (SOURCE IMPLEMENTED)
+
+- [x] Build a strict model-root-space transform graph for
+  **2–12** explicitly selected non-skinned source meshes with
+  user-selected parent references and distinct original A/B points.
+- [x] Reject cycles, duplicates, unselected parents, malformed
+  source points/angles and excessive inputs before changing display.
+- [x] Propagate parent transforms to child source parts while
+  computing all matrices from immutable rest transforms.
+  Warn when an authored parent/child endpoint gap exceeds
+  20% of the parent's source-space segment length.
+- [x] Render independent golden wireframe **ghost** geometry,
+  preserving the original source meshes, their exact matrices,
+  skin weights, materials and underlying shared geometry.
+- [x] Source browser provides Add/Remove, manual parent
+  editor, start/stop, per-node X/Y/Z ±90° angle controls
+  and reset all angles. Valid source mapping/anchors required.
+- [x] Existing generated local model and privacy/release rights
+  gates remain unchanged. No third-party geometry added to Git.
+- [x] Pure tests for multi-generation movement, parent-first
+  ordering, cycles, malformed source graphs, singular matrices
+  and no accumulated drift. Web source CI typecheck/unit/build.
+- [ ] Hardware verification of actual model FBX/GLB geometry,
+  ghost rendering, mobile GPU memory and touch targets.
+- [ ] Author a reviewed 3D human bone hierarchy and
+  anatomical rest joints, genuine per-mesh rigging,
+  MediaPipe world-frame/camera calibration and physical
+  body motion retargeting; these remain separately blocked.
+
+
+## W2h · One-click original 3D self-contained tutorial (SOURCE IMPLEMENTED)
+
+- [x] Create a 3-piece nonmedical bar/box GLB *entirely
+  in the browser* from authored MagicMirror geometry,
+  with no external source files or model-rights ambiguity.
+- [x] Use the real existing local GLB loader, original
+  mesh names/positions, SHA-256 and user-only study viewer.
+- [x] Explicitly label the synthetic source as **NOT
+  Z-Anatomy, NOT a human bone, NOT camera retargeting**.
+- [x] Preconfigure original source-anchored W2d mapping
+  reference, W2e A/B positions and W2g three-node
+  virtual parent chain for a working tutorial.
+- [x] Existing camera/real model release/privacy
+  gates remain fail-closed; no original anatomy assets
+  are added to Git, model uploads or analytics.
+- [x] Synthetic tests cover authored original names,
+  unique geometry anchors, 3-level graph and gap bounds.
+- [ ] Run the full GLTFExporter→GLTFLoader→WebGL
+  desktop Chrome and iPhone Safari interaction path
+  on actual browsers; compile/unit tests alone do
+  not establish runtime or mobile touch success.
+
+
+## W2i · Source-hash-bound offline angle timeline (SOURCE IMPLEMENTED)
+
+- [x] Deterministic, bounded original-root virtual
+  chain angle keyframes (1–32, 0–10 seconds,
+  per-node source axis and ±90° angles).
+- [x] Human-keyframe capture, delete, scrub,
+  play/pause/loop, clear and one-click local-only
+  JSON export/import with **no webcam frames**.
+- [x] Explicit source SHA/size/count plus exact
+  manual node hierarchy, source-root A/B anchors
+  and fixed axes; strict false rights/retargeting
+  claims, unknown fields and invalid data rejected.
+- [x] Atomic THREE.js batch source ghost
+  transforms per frame; no cumulative drift
+  or changes to imported model geometry.
+- [x] Seed three synthetic frames in the ORIGINAL
+  three-box onboarding demo so new users can
+  immediately try deterministic virtual movement.
+- [x] Pause requestAnimationFrame on source
+  change, hidden tab, model study close or
+  user stop; source or graph edit invalidates
+  stale keyframe draft.
+- [x] Synthetic tests for interpolation, boundaries,
+  altered model, parent/point/axis mismatch,
+  duplicate times and forged license claims.
+- [ ] Confirm Chromium and Safari real-frame
+  playback, touch smoothness, GPU budget and
+  source GLB chain orientation on real devices.
+- [ ] Review anatomical original sources,
+  author 3D joint/rest hierarchy, skinning
+  weights, camera/world landmark registration,
+  pose retargeting and privacy/rights signoff
+  before advertising true anatomical AR.
+
+
+## W2j · Original-demo browser integration smoke
+
+- [x] Add real Chromium browser tests for UI navigation
+  without camera permission, EN locale switch and close.
+- [x] Exercise the original generated, self-contained
+  3-box GLB through real GLTFExporter/GLTFLoader,
+  Chromium WebGL, source-part list, bounded manual
+  chain and local keyframe loop controls.
+- [x] Download source-SHA-bound timeline JSON, verify
+  rights status remains NOT_REVIEWED, reject a forged
+  source SHA, and re-import valid local data without
+  changing original geometry or camera state.
+- [x] Install Playwright only for opt-in smoke; preserve
+  fast source CI and existing default-denied public
+  deployment. Use the same `Web-first MVP` workflow,
+  with manual dispatch or a `browser-smoke` PR branch,
+  no additional workflow.
+- [x] Verified the exact opt-in PR workflow on GitHub-hosted
+  Chromium/WebGL: **3/3 Playwright E2E tests passed**,
+  including real generated GLB/WebGL, live timeline
+  controls, bad-source rejection and good JSON reimport.
+  Evidence: https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+  Ordinary Web pushes still skip Chromium installation;
+  browser-smoke PR branches and manual dispatch opt in.
+- [ ] Independently test actual camera permission,
+  iPhone Safari portrait/landscape, real Z-Anatomy
+  source FBX import/units, skinning, performance,
+  privacy and component copyright in physical devices.
+  Headless CI is not hardware acceptance.
+
+## W2k · Two-engine original-demo browser integration (BROWSER CI PASS)
+
+- [x] Reuse real W2j browser E2E in **desktop Chromium**
+  and **mobile/touch-enabled iPhone 13 Linux WebKit emulation**.
+- [x] Both browser engines run the actual source code-generated
+  original GLB exporter/loader/WebGL pipeline, user chain
+  controls, local frame replay, source SHA JSON rejection
+  and safe reimport. No camera usage or external anatomy assets.
+- [x] Pin GitHub's opt-in browser job to Ubuntu 24.04 and
+  install both Playwright engines only when manually
+  dispatched or a `browser-smoke` feature PR requests
+  the heavy check; ordinary source CI remains fast.
+- [x] **6/6 real browser E2E PASS** (3 desktop Chromium,
+  3 Linux WebKit with iPhone-size viewport/touch)
+  https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+- [ ] Physical iPhone Safari (camera permission, WebGL on
+  actual Apple GPU, viewport/orientation, thermal/GPU
+  performance, local large FBX import and source assets),
+  plus legal/privacy approval, remains independently blocked.

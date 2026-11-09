@@ -661,3 +661,100 @@ An optional local JSON source inventory download must be
 explicitly user-triggered and labelled *not a rights review*.
 This is a private model study surface, not a live camera overlay
 or real Z-Anatomy anatomical slice mode.
+
+## Folio II · Model rig and clip diagnostics (2026-11-09)
+
+Below the private static 3D model viewport, put a compact
+**Rig & animation** study band: actual bound mesh/joint counts,
+honest sampled vertex-weight alerts, and a small Play/Pause
+control for clips **present in the selected source file**.
+The source FBX/GLB is still displayed only locally. Disable
+animation controls if the file has no clips. Never describe
+an unskinned original Z-Anatomy skeleton as ready for real-time
+MediaPipe retargeting and never autocreate a fake rig. The
+camera screen retains its visually dominant layout.
+
+## Folio II · Hand-authored motion-reference plan (2026-11-09)
+
+Add an understated per-mesh *manual* surface-reference
+segment dropdown beside the private source hierarchy.
+Expose source-hash-checked JSON export/import, clear mapping
+and mapped/total counts, but **never** use a commercial
+approval badge or label any mesh auto-classified. The visual
+experience remains focused on the original static model.
+No independent camera/atlas composite is enabled until
+true weights, rest anchors, rights and registration pass.
+
+## Folio II · Local source point calibration draft (2026-11-09)
+
+A compact parchment **model-space reference points**
+panel appears above the bounded original mesh list.
+Users select a real, manually mapped part and mark
+A and B by clicking its source 3D surface (isolate
+first when occluded). Show complete pair counts and
+local protected JSON export/import. The labels
+must emphasize *manual, uncalibrated source points*
+rather than genuine anatomical joints or live body
+pose. Keep the viewport as the primary element.
+
+## Folio II · One-part original-mesh motion reference (2026-11-09)
+
+Below manual mesh mapping and source A/B reference
+points, add a restrained parchment/green **single
+mesh rigid preview** control. A visible plain source
+mesh is rotated by an explicitly chosen **model X/Y/Z
+axis** about the user's manual A position; cap angle
+to ±90° and show changing B point. Offer a strong
+**Restore original pose** action. Keep this separate
+from the authored-animation player and camera.
+Disable controls for SkinnedMesh, animated source
+models, incomplete source points or invisible parts.
+Do not call this actual bone tracking, medical
+calibration, or a rigged skeleton; camera stays
+dominant in the main Leonardo interface.
+
+
+## Folio II · Virtual source-mesh articulation studio (2026-11-09)
+
+Keep the camera-first home screen uncluttered. In the
+separate Leonardo source-model study modal, group
+**2–12 manually selected original Mesh objects** into
+an explicitly labeled *virtual movement chain*. Show
+small selectable chips for each original source mesh,
+a deliberate parent selector, independent X/Y/Z
+angle slider and Zero / Stop controls. Render moving
+source ghosts as a warm gold wireframe overlay
+on the untouched static imported source. This is a
+research instrument for viewing parent/child spatial
+relationships, NEVER a clinically accurate joint
+tree or live patient skeleton projection.
+
+
+## Folio II · Original model try-it-now entry (2026-11-09)
+
+Add one compact **TRY ORIGINAL 3D CHAIN** button
+beneath the user-selected FBX/GLB file picker.
+It generates and previews three simple original
+bars, clearly marked as a tutorial, NOT any
+real anatomical model. This gives reviewers a
+one-click meaningful experience with the gold
+ghost joint chain without committing anatomy
+binaries or requiring an external 41MB FBX.
+Keep the 3D study viewport prominent and
+the rest of the Leonardo mirror unchanged.
+
+
+## Folio II · Motion test keyframe timeline (2026-11-09)
+
+Below the existing gold virtual chain controls,
+add one compact parchment timeline for manually
+authored TEST ANGLES: slider, capture frame,
+play/pause/loop, local JSON export/import and
+small frame chips. Do not crowd the main
+camera view. The original three-box scene
+has three synthetic frames on first-run.
+Use clear labels distinguishing locally
+generated source motion from real body
+pose recording, clinical animation,
+licensed Z-Anatomy geometry or
+actual 3D camera registration.

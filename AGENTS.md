@@ -233,3 +233,283 @@ remain **false**, `licenseEvidence` null, and overall
 point for substantive human license/author audit, not a commercial
 authorization. Do not auto-import its flags as legal signoff or
 upload the JSON. No model geometry is included in the inventory.
+
+## 11. W2c actual source rig inspection and animation preview (2026-11-09)
+
+In the private, user-selected **FBX/GLB static research viewer**,
+it is permitted to inspect **actual authored** Three.js
+`SkinnedMesh`, joint hierarchy, `skinIndex`/`skinWeight`
+attributes and built-in `AnimationClip` data. **No automatic
+weight generation, bone/organ classification or MediaPipe
+retargeting is implemented by this.**
+
+`Web/src/rig-diagnostics.ts` performs **bounded sampling** of
+actual imported weights and joint references, reporting missing
+weight attributes, unweighted/invalid sampled vertices, joint
+indices outside the authored skeleton and suspicious sample weight
+sums. It is a research diagnostic, not a complete binding,
+clinical, anatomical, provenance or commercial authorization
+pass. Do not invent rig data for raw Z-Anatomy FBX.
+
+User-selected model animations can preview in the **separate
+static-model study viewer** via Three.js AnimationMixer. Do not
+autoplay clips when importing models, visiting the page or
+granting camera permission. Pause when closing the study modal,
+discard old actions when replacing imported files, and never
+confuse authored source-file clips with real-time body tracking.
+
+Optional rig-sample diagnostics in the **user-exported** JSON
+must remain explicitly `samplingOnly: true` with overall
+`rightsStatus: NOT_REVIEWED`, even if the imported GLB has
+well-formed weights or animations. Public model distribution and
+true body-to-camera skeletal AR remain separate human-reviewed
+milestones; no Android/native iOS resumption.
+
+## 12. W2d original-mesh to observed pose segment DRAFT mapping (2026-11-09)
+
+The static local anatomy viewer now has a manually edited
+mesh-to-MediaPipe surface reference segment table. Each source
+mesh is identified by its exact original-array `sourceIndex`,
+source name/path/triangle count and the original FBX/GLB
+`SHA-256` + byte size, **not** by a guessed bone label.
+A reviewer can map multiple actual source meshes to one of
+the 12 *existing observed surface pose segments*. Import must
+reject unknown/mismatched SHA, missing parts, original name/path
+changes, duplicate entries, unsupported segments, fake rights
+review metadata, and unknown schema fields, then apply the
+validated draft **atomically**. User-triggered export remains
+local JSON without source mesh geometry or camera data.
+
+All mapping state is **USER_DRAFT_UNCALIBRATED**; original
+coordinate axes, rest pose, true 3D joint anchors, mesh skinning,
+per-mesh source rights, calibrated camera extrinsics, and
+motion retargeting remain unverified. Never interpret these
+assignments as proof that Z-Anatomy bones will follow a person.
+Keep the public distribution release gate FALSE. Neither this
+draft nor a source name authorizes public model publication.
+
+Before W2e, build a separate explicit rest-pose/anchor review
+and independent error-bounded simulation. No direct live-atlas
+AR activation without human anatomical rig and permission gates.
+
+## 13. W2e local source-model 3D point drafts (2026-11-09)
+
+In Folio II, after the user maps an ORIGINAL source mesh to
+one of the 12 MediaPipe SURFACE segments, the user may explicitly
+select a **start** and **end** point on that same visible mesh via
+Three.js raycasting. Record the hit coordinates in the original
+loaded root object's local coordinate frame, **not** normalized
+viewport, not phone camera coordinates, and not a measured
+human bone/joint position. This does NOT by itself create a
+valid articulated skeletal rig, verified anatomical rest
+pose, vertex weights or physical 3D/body calibration.
+
+`Web/src/atlas-anchors.ts` is the gate for its explicit
+locally exported/imported JSON. Require exact original model
+SHA-256/byte size/mesh IDs/paths/triangle counts and **current
+user-provided** pose-segment mapping. Every exported entry
+must say `USER_SELECTED_UNCALIBRATED`, with
+`calibrationStatus=MANUAL_POINTS_NOT_CALIBRATED`,
+`sourceCoordinateFrame=ORIGINAL_ROOT_LOCAL_UNVERIFIED`,
+`retargetingStatus=NOT_READY` and
+`commercialReuseStatus=NOT_REVIEWED`. Reject forged
+approval fields/overlapping or non-finite endpoints and
+import only after the ENTIRE file validates. Invalidate
+points when its mapping is changed, original model is
+replaced, or the entire mapping JSON is replaced.
+
+Require user interaction before each sample; only actual
+raycast source mesh hits may set a point, and a mesh hit
+on a **different** source object must be ignored. Animations
+should be paused before authoring these reference points.
+The original source coordinate system and actual anatomical
+rest pose are UNVERIFIED, including any potential
+animation deformation at sample time. No automatic upload,
+persistent camera data, source mesh redistribution,
+live overlay activation or iOS/Android work.
+
+Next: validate real body-to-mesh camera frame and joint
+hierarchy with **known original source anatomy**, then
+implement a bounded replay/simulation rather than
+claiming actual calibrated 3D human anatomy.
+
+## 14. W2f reversible ONE-mesh rigid source-preview only (2026-11-09)
+
+Continue the **Web-first open-source** product, keeping iOS
+frozen and Android canceled. After a real user selects a
+NON-SKINNED original mesh, manually assigns a W2d MediaPipe
+surface reference segment, and selects distinct W2e source
+A/B points, enable an **explicit click-only local experiment**:
+rotate this one original mesh rigidly around A by at most
+±90 degrees about an **original-model-root X/Y/Z axis**.
+B is a reference direction/endpoint and marker, NOT an
+anatomically verified skeletal joint. A/B are not camera,
+world-measured human or medically meaningful coordinates.
+
+`Web/src/rigid-preview.ts` is the pure, testable matrix
+foundation: `P_parent^-1 * R_root * D_pivot * R_root^-1
+* M_mesh_original_world`. Each slider update MUST start
+from an immutable original mesh matrix/world transform,
+not compound on the already-previewed result. Restore
+the original matrix AND `matrixAutoUpdate` state on
+reset, cancel, model change, hide or modal closure.
+Never rewrite the original imported geometry or disk file.
+
+W2f is **only for exactly ONE plain Mesh at a time**.
+Reject any selected `SkinnedMesh`, **any model with
+authored animation clips**, missing/overlapping anchors,
+nonfinite/oversized angle, hidden mesh, or missing source
+model; never blend the preview with an `AnimationMixer`.
+No camera input, online access, skinning/weight generation,
+joint hierarchy, multi-part skeletal parenting, medical
+measurements, body-pose retargeting or atlas public release
+is authorized by this feature. Keep all real bone/asset
+rights gates fail-closed.
+
+Synthetic TS/Vitest matrix identity, arbitrary transformed
+source-parent frame, rotation pivot and no-accumulation
+tests must pass. A green CI **does not replace** real
+Chrome/Safari source model import, WebGL interaction or
+physical 3D calibration.
+
+
+## 15. W2g original-source virtual hierarchy research (2026-11-09)
+
+**Active platform is Web, iOS code remains frozen, Android canceled.**
+A W2g virtual joint graph is an explicitly user-authored study of
+2–12 original, separately mapped NON-SKINNED source meshes with
+two distinct W2e points per mesh. Each node records an ORIGINAL
+source mesh ID, optional manual parent source mesh ID, an unverified
+source-root point A/B, a source X/Y/Z axis, and a bounded ±90° angle.
+Graph validation MUST reject cycles, duplicate parts, unselected
+parents, invalid points/axes, oversized inputs and unbounded angles.
+
+Parent-child transforms MUST follow the documented pure kinematic
+formula using immutable original source-root coordinates, not
+camera frames. W2g renders **independent THREE.js ghost Mesh objects**
+sharing the source geometry without changing original mesh transform,
+hierarchy, material, visibility, vertices, skinning or authored
+animations. Do NOT dispose shared geometry when clearing ghosts.
+The local original FBX/GLB remains untouched; preview is memory-only.
+Ghosts must disappear after modal close, source change, mapping
+or point changes, and should be reset on source-visibility edits.
+If the source includes authored animation clips or any selected
+part is SkinnedMesh, fail closed and keep the original model
+viewer available.
+
+Do not infer the parent from bone names or treat manual source
+mesh hierarchy as a validated anatomical skeletal rig.
+A large start-to-parent-end distance is a STUDY warning,
+not proof of anatomical attachment. This is neither
+3D body calibration nor MediaPipe retargeting, X-ray,
+patient anatomy, redistributed Z-Anatomy geometry nor
+commercial rights authorization. Continue blocking public
+release until per-mesh rights and Google model-weight
+privacy/redistribution evidence and actual physical device QA.
+
+
+## 16. Original, zero-download Web movement tutorial (2026-11-09)
+
+A user-triggered **original three-box movement fixture** is
+permitted in the private Web Folio II. It must be generated
+from MIT-licensed MagicMirror code, with NO actual human
+bones, external Z-Anatomy/BodyParts3D geometry, model
+downloads, image recording or camera input. The generated
+self-contained local GLB must pass the SAME file/SHA/mesh
+import pipeline and real names as user-selected files.
+The authored fixture owns its source-local A/B points,
+three original mesh names and simple virtual parent links,
+but is not evidence of anatomical joint hierarchy,
+skeletal skinning, 3D camera calibration or commercial
+redistribution rights for ANY third-party source.
+
+Synthetic fixture metadata may prefill W2d/W2e
+mappings/points solely for this example; no unreviewed
+anatomy file is included and no user-created mapping
+is silently uploaded or persisted. The tutorial
+must be opt-in via a direct button, explain the
+three **boxes** are not bones, and leave public
+anatomy/model release approval locked.
+
+
+## 17. W2i deterministic source-angle keyframe study (2026-11-09)
+
+Only the PRIVATE Web Folio II virtual source chain is allowed
+to capture local angle keyframes. W2i frames contain bounded
+`timeMs` (0–10,000), at most 32 deliberately user-authored
+frames and 2–12 explicit source mesh IDs with source X/Y/Z
+axis and degrees ±90. `Web/src/study-timeline.ts` checks
+strictly ascending unique times, exact authored graph
+signature (source part ID, manual parent, original model
+A/B, axis), and original source FBX/GLB SHA-256, file byte
+size and mesh count. Enforce all-or-nothing import, reject
+unknown authorization, camera/medical rights flags and
+invalid/extreme angles. No image, imported geometry
+or live camera pose is recorded or bundled in the JSON.
+
+Interpolation must remain **deterministic linear angle
+interpolation** with per-node axis fixed across frames.
+Apply all source chain nodes in ONE batch renderer update
+per animation frame, never 12 separate render passes.
+Pause on background, dialog close, source/mapping/anchor
+edits and user Stop. Changing selected graph parent or
+axis INVALIDATES existing keyframes, not silently
+retarget them to a new source. Release any pending
+requestAnimationFrame. A synthetic 3-bar fixture may
+include original authored test keyframes (not human
+recordings), opt-in only. Keep camera/clinical
+retargeting and per-mesh third-party licensing
+completely separate and fail closed.
+
+
+## 18. W2j original-demo opt-in browser smoke (2026-11-09)
+
+Ordinary CI **remains fast** and does NOT run Chromium. For a developer
+browser check, run `cd Web && npm run test:browser` after installing
+Playwright's Chromium browser, or trigger the existing
+`Web-first MVP` workflow via GitHub's **Run workflow** menu.
+Opt-in PR branches containing `browser-smoke` also run the
+separate Chromium job in that SAME workflow.
+
+`Web/tests/browser/original-demo.spec.ts` opens the actual Vite
+page in headless Chromium and exercises only original, browser-
+generated MIT-labeled three-box GLB, real GLTFExporter/GLTFLoader,
+Three.js WebGL, static reference chain UI, short angle replay
+and local SHA-bound timeline JSON export/re-import. It tests
+refusal of a forged SHA on import while retaining prior frames.
+It must NOT click Start Camera, record camera content,
+download or bundle actual Z-Anatomy assets, fetch Google
+PoseLandmarker weights, trigger analytics or claim public
+model distribution authorization. Failure screenshots/traces
+can only contain this original generated study geometry;
+do NOT use these test artifacts for sensitive camera files.
+Browser E2E is a stronger runtime integration test than Vitest
+but its GitHub hosted Chromium software rasterizer cannot
+substitute for actual iPhone Safari/desktop camera,
+thermal/latency, accessibility or source-anatomy validation.
+
+W2j acceptance evidence: the opt-in pull-request Chromium job
+completed with **3/3 Playwright tests passing** on GitHub-hosted
+Ubuntu 24.04 with software WebGL on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+Use this as an integration confidence signal **only**; none of
+the restricted release, physical iPhone Safari, real camera or
+original anatomical asset gates are changed or cleared.
+
+## 19. W2k WebKit iPhone-sized engine emulation (2026-11-09)
+
+The same original model-only Playwright E2E suite now runs on
+**desktop Chromium** and on **Linux WebKit with iPhone 13
+viewport, mobile emulation and touch**. Both execute the
+original three-box GLB exporter/loader, WebGL scene, manual
+virtual-chain UI, keyframe replay, and SHA-locked local
+JSON downloads/import rejection. The opt-in PR browser
+workflow completed **6/6 tests passed** on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+
+This DOES NOT certify actual iOS Safari, a physical phone's
+GPU/camera permission handling, thermals, device pixels,
+original Z-Anatomy FBX assets, clinical anatomy or
+distribution rights. Do not remove the remaining W0/W2
+hardware, model-license or third-party Google weights
+privacy/release blockers on the basis of WebKit emulation.

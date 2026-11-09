@@ -1,13 +1,38 @@
 import {
-  AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Group,
-  LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
-  Scene, Vector2, Vector3, WebGLRenderer, type Object3D,
+  AmbientLight, AnimationMixer, Box3, Color, DirectionalLight, DoubleSide, Group,
+  LoadingManager, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
+  Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer, type AnimationAction,
+  type AnimationClip, type Object3D,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { inspectLocalAtlasFile, normalizeSlice, sliceNormal,
   type SliceOrientation } from "./atlas-source";
 import { effectivePartVisibility, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
 import { buildLocalAtlasInventory, type AtlasInventory } from "./atlas-inventory";
+import { inspectRigSamples, usableAnimationStudyClip, type AnimationStudyClip } from "./rig-diagnostics";
+import { validSourcePoint, type AnchorEndpoint, type SourcePoint3 } from "./atlas-anchors";
+import {
+  previewMeshLocalMatrix, transformedSourceEnd, validRigidSource,
+  type SourceAxis,
+} from "./rigid-preview";
+import {
+  orderStudyChain, studyChainDeltas, studyGhostWorldMatrix,
+  transformedStudyPoint, type StudyChainNode,
+} from "./kinematic-chain";
+import type { StudyJointAngle } from "./study-timeline";
+
+interface LocalRigidPreview {
+  readonly id: number;
+  readonly originalMatrix: Matrix4;
+  readonly originalAutoUpdate: boolean;
+  readonly originalRootWorld: Matrix4;
+  readonly originalParentWorld: Matrix4;
+  readonly originalMeshWorld: Matrix4;
+  readonly start: SourcePoint3;
+  readonly end: SourcePoint3;
+  axis: SourceAxis;
+  angleDegrees: number;
+}
 
 interface LocalMeshEntry {
   readonly id: number;
@@ -25,6 +50,13 @@ export interface LocalAtlasStats {
   skinnedMeshes: number;
   authoredJoints: number;
   hasUsableGeometry: boolean;
+  rigSampledVertices: number;
+  rigUnweightedSamples: number;
+  rigInvalidWeightSamples: number;
+  rigInvalidJointReferences: number;
+  rigSuspiciousWeightSums: number;
+  skinnedMeshesWithoutWeightAttributes: number;
+  animationClips: number;
 }
 
 /**
@@ -47,6 +79,18 @@ export class LocalAtlasViewer {
   private readonly slicePlane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly raycaster = new Raycaster();
   private readonly mouse = new Vector2();
+  private readonly anchorMarkerGeometry = new SphereGeometry(1, 12, 9);
+  private readonly anchorMarkerMaterials = [
+    new MeshBasicMaterial({ color: "#f0ba6d", depthTest: false }),
+    new MeshBasicMaterial({ color: "#91d9b8", depthTest: false }),
+  ];
+  private readonly anchorMarkers: Mesh[] = [];
+  private animationMixer?: AnimationMixer;
+  private animationClips: AnimationClip[] = [];
+  private originalAuthoredClipCount = 0;
+  private activeAnimation?: AnimationAction;
+  private animationPlaying = false;
+  private lastAnimationFrameMs = 0;
   private frame = 0;
   private loaded = false;
   private loadGeneration = 0;
@@ -55,6 +99,20 @@ export class LocalAtlasViewer {
   private parts: LocalMeshEntry[] = [];
   private isolatedPartId: number | null = null;
   private selectedPartId: number | null = null;
+  private anchorPickTarget: { id: number; endpoint: AnchorEndpoint } | null = null;
+  private displayedAnchorPoints: { start: SourcePoint3 | null; end: SourcePoint3 | null } | null = null;
+  private rigidPreview: LocalRigidPreview | null = null;
+  private readonly studyGhostMaterial = new MeshBasicMaterial({
+    color: "#ffba64", wireframe: true, transparent: true,
+    opacity: 0.84, depthTest: true, side: DoubleSide,
+  });
+  private chainGhosts = new Map<number, {
+    ghost: Mesh;
+    originalWorld: Matrix4;
+  }>();
+  private chainNodes: StudyChainNode[] | null = null;
+  private chainRootWorld: Matrix4 | null = null;
+  private chainDeltas = new Map<number, Matrix4>();
   private sourceIdentity: {
     fileName: string;
     fileSizeBytes: number;
@@ -63,9 +121,23 @@ export class LocalAtlasViewer {
     triangles: number;
     skinnedMeshes: number;
     authoredJoints: number;
+    rigSamples?: {
+      sampledVertices: number;
+      unweightedVertices: number;
+      invalidWeightSamples: number;
+      invalidJointReferences: number;
+      suspiciousWeightSums: number;
+      skinnedMeshesWithoutWeightAttributes: number;
+      previewableAnimationClips: number;
+    };
   } | null = null;
   private previousPointer?: { x: number; y: number };
   onPartSelected: ((part: AtlasPart) => void) | undefined;
+  onAnchorPicked: ((sample: {
+    sourceMeshId: number;
+    endpoint: AnchorEndpoint;
+    originalRootLocalPoint: SourcePoint3;
+  }) => void) | undefined;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({
@@ -80,6 +152,14 @@ export class LocalAtlasViewer {
     light.position.set(-4, 5, 6);
     this.scene.add(light);
     this.scene.add(this.group);
+    for (const material of this.anchorMarkerMaterials) {
+      const marker = new Mesh(this.anchorMarkerGeometry, material);
+      marker.visible = false;
+      marker.renderOrder = 999;
+      marker.scale.setScalar(0.05);
+      this.scene.add(marker);
+      this.anchorMarkers.push(marker);
+    }
     this.camera.position.set(1, 1.1, 8);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
@@ -104,7 +184,14 @@ export class LocalAtlasViewer {
 
   start(): void {
     if (this.frame) return;
-    const tick = () => {
+    const tick = (nowMs: number) => {
+      if (this.animationPlaying && this.animationMixer) {
+        const delta = this.lastAnimationFrameMs === 0
+          ? 0
+          : Math.max(0, Math.min(0.08, (nowMs - this.lastAnimationFrameMs) / 1000));
+        this.animationMixer.update(delta);
+      }
+      this.lastAnimationFrameMs = nowMs;
       this.controls.update();
       this.render();
       this.frame = window.requestAnimationFrame(tick);
@@ -115,10 +202,14 @@ export class LocalAtlasViewer {
   stop(): void {
     if (this.frame) cancelAnimationFrame(this.frame);
     this.frame = 0;
+    this.lastAnimationFrameMs = 0;
   }
 
   cancelPendingLoad(): void {
     this.loadGeneration++;
+    this.anchorPickTarget = null;
+    this.resetRigidPreview();
+    this.resetChainPreview();
   }
 
   setWireframe(enabled: boolean): void {
@@ -147,6 +238,8 @@ export class LocalAtlasViewer {
       this.material.clippingPlanes = [this.slicePlane];
     }
     this.highlightMaterial.clippingPlanes = this.material.clippingPlanes;
+    this.studyGhostMaterial.clippingPlanes = this.material.clippingPlanes;
+    this.studyGhostMaterial.needsUpdate = true;
     this.material.needsUpdate = true;
     this.highlightMaterial.needsUpdate = true;
     this.render();
@@ -175,6 +268,292 @@ export class LocalAtlasViewer {
   }
 
   getIsolatedPartId(): number | null { return this.isolatedPartId; }
+  getSelectedPartId(): number | null { return this.selectedPartId; }
+
+  /**
+   * Purely local click-based model-space reference point selection.
+   * Does not generate joints, skin weights, rest-pose truth or camera calibration.
+   */
+  beginAnchorPick(id: number, endpoint: AnchorEndpoint): boolean {
+    this.resetRigidPreview();
+    this.resetChainPreview();
+    const entry = this.findPart(id);
+    if (!entry || !entry.mesh.visible || this.animationPlaying ||
+        (endpoint !== "start" && endpoint !== "end")) return false;
+    this.anchorPickTarget = { id, endpoint };
+    this.selectPart(id);
+    return true;
+  }
+
+  cancelAnchorPick(): void { this.anchorPickTarget = null; }
+
+  /** Visual markers are overlay UI, not imported source geometry or a real joint. */
+  showAnchorMarkers(points: {
+    start: SourcePoint3 | null;
+    end: SourcePoint3 | null;
+  } | null): void {
+    this.displayedAnchorPoints = points;
+    this.lastLoaded?.updateWorldMatrix(true, false);
+    for (const [index, point] of [points?.start ?? null, points?.end ?? null].entries()) {
+      const marker = this.anchorMarkers[index];
+      if (!marker) continue;
+      marker.visible = Boolean(point && this.lastLoaded);
+      if (point && this.lastLoaded) {
+        const movingEnd = index === 1 && this.rigidPreview
+          ? transformedSourceEnd(
+            this.rigidPreview.start, this.rigidPreview.end,
+            this.rigidPreview.axis, this.rigidPreview.angleDegrees
+          ) : null;
+        const selectedDelta = this.selectedPartId !== null
+          ? this.chainDeltas.get(this.selectedPartId) : undefined;
+        const position = selectedDelta
+          ? transformedStudyPoint(point, selectedDelta) ?? point
+          : movingEnd ?? point;
+        marker.position.copy(this.lastLoaded.localToWorld(
+          new Vector3(position[0], position[1], position[2])
+        ));
+      }
+    }
+    this.render();
+  }
+
+  /** Preview is intentionally denied for ANY authored clip or skinned mesh. */
+  canRigidPreview(id: number, points: {
+    start: SourcePoint3 | null;
+    end: SourcePoint3 | null;
+  }): boolean {
+    const entry = this.findPart(id);
+    return Boolean(entry && entry.mesh.visible && this.lastLoaded &&
+      !(entry.mesh as import("three").SkinnedMesh).isSkinnedMesh &&
+      this.originalAuthoredClipCount === 0 && !this.animationPlaying &&
+      validRigidSource(points.start, points.end));
+  }
+
+  /** Only ONE non-skinned, unanimated original mesh can be previewed. */
+  beginRigidPreview(id: number, points: {
+    start: SourcePoint3 | null;
+    end: SourcePoint3 | null;
+  }): boolean {
+    if (!this.canRigidPreview(id, points)) return false;
+    const root = this.lastLoaded;
+    const start = points.start;
+    const end = points.end;
+    if (!root || !start || !end) return false;
+    const entry = this.findPart(id)!;
+    this.resetRigidPreview();
+    this.resetChainPreview();
+    const mesh = entry.mesh;
+    mesh.updateWorldMatrix(true, false);
+    const parent = mesh.parent;
+    if (!parent) return false;
+    root.updateWorldMatrix(true, false);
+    this.rigidPreview = {
+      id,
+      originalMatrix: mesh.matrix.clone(),
+      originalAutoUpdate: mesh.matrixAutoUpdate,
+      originalRootWorld: root.matrixWorld.clone(),
+      originalParentWorld: parent.matrixWorld.clone(),
+      originalMeshWorld: mesh.matrixWorld.clone(),
+      start: [start[0], start[1], start[2]],
+      end: [end[0], end[1], end[2]],
+      axis: "z",
+      angleDegrees: 0,
+    };
+    this.showAnchorMarkers(points);
+    return true;
+  }
+
+  getRigidPreviewPartId(): number | null { return this.rigidPreview?.id ?? null; }
+
+  /**
+   * Always derive from baseline matrices. Never mutate source geometry or
+   * attempt joint hierarchy/skin deformation. This is a reversible study
+   * transform in ORIGINAL model-root space, unrelated to camera pose.
+   */
+  setRigidPreview(axis: SourceAxis, degrees: number): boolean {
+    const state = this.rigidPreview;
+    const entry = state ? this.findPart(state.id) : undefined;
+    if (!state || !entry || !entry.mesh.visible || !this.lastLoaded ||
+        this.animationPlaying) return false;
+    const nextMatrix = previewMeshLocalMatrix(
+      state.originalRootWorld, state.originalParentWorld,
+      state.originalMeshWorld, state.start, state.end,
+      axis, degrees
+    );
+    if (!nextMatrix) return false;
+    state.axis = axis;
+    state.angleDegrees = degrees;
+    entry.mesh.matrixAutoUpdate = false;
+    entry.mesh.matrix.copy(nextMatrix);
+    entry.mesh.matrixWorldNeedsUpdate = true;
+    entry.mesh.updateWorldMatrix(true, true);
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+    return true;
+  }
+
+  resetRigidPreview(): void {
+    const state = this.rigidPreview;
+    this.rigidPreview = null;
+    if (!state) return;
+    const entry = this.findPart(state.id);
+    if (entry) {
+      entry.mesh.matrix.copy(state.originalMatrix);
+      entry.mesh.matrixAutoUpdate = state.originalAutoUpdate;
+      entry.mesh.matrixWorldNeedsUpdate = true;
+      entry.mesh.updateWorldMatrix(true, true);
+    }
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+  }
+
+  /** W2g: separate WORLD-space ghost geometry; source Mesh stays immutable. */
+  getChainPreviewActive(): boolean { return this.chainNodes !== null; }
+  getChainPreviewIds(): number[] {
+    return this.chainNodes?.map(node => node.sourceMeshId) ?? [];
+  }
+
+  canChainPreview(nodes: readonly StudyChainNode[]): boolean {
+    if (!this.lastLoaded || this.originalAuthoredClipCount > 0 ||
+        this.animationPlaying || this.disposed) return false;
+    try {
+      for (const node of orderStudyChain(nodes)) {
+        const part = this.findPart(node.sourceMeshId);
+        if (!part || !part.mesh.visible ||
+            (part.mesh as import("three").SkinnedMesh).isSkinnedMesh) return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  beginChainPreview(nodes: readonly StudyChainNode[]): boolean {
+    if (!this.canChainPreview(nodes) || !this.lastLoaded) return false;
+    this.resetRigidPreview();
+    this.resetChainPreview();
+    const ordered = orderStudyChain(nodes);
+    this.lastLoaded.updateWorldMatrix(true, true);
+    const baseline = this.lastLoaded.matrixWorld.clone();
+    const ghosts = new Map<number, { ghost: Mesh; originalWorld: Matrix4 }>();
+    for (const node of ordered) {
+      const mesh = this.findPart(node.sourceMeshId)!.mesh;
+      mesh.updateWorldMatrix(true, false);
+      const ghost = new Mesh(mesh.geometry, this.studyGhostMaterial);
+      ghost.matrixAutoUpdate = false;
+      ghost.frustumCulled = false;
+      this.scene.add(ghost); // scene is world-identity; NOT source group
+      ghosts.set(node.sourceMeshId, {
+        ghost, originalWorld: mesh.matrixWorld.clone(),
+      });
+    }
+    this.chainNodes = ordered.map(node => ({ ...node }));
+    this.chainRootWorld = baseline;
+    this.chainGhosts = ghosts;
+    if (!this.updateChainGhosts()) {
+      this.resetChainPreview();
+      return false;
+    }
+    return true;
+  }
+
+  setChainJoint(id: number, axis: SourceAxis, degrees: number): boolean {
+    if (!this.chainNodes || !this.chainGhosts.has(id)) return false;
+    return this.setChainPose(this.chainNodes.map(node =>
+      node.sourceMeshId === id
+        ? { sourceMeshId: id, axis, degrees }
+        : { sourceMeshId: node.sourceMeshId, axis: node.axis, degrees: node.degrees }
+    ));
+  }
+
+  /** Apply all requested source-only joint angles in ONE atomic ghost redraw. */
+  setChainPose(angles: readonly StudyJointAngle[]): boolean {
+    const nodes = this.chainNodes;
+    if (!nodes || angles.length !== nodes.length) return false;
+    const byId = new Map<number, StudyJointAngle>();
+    for (const point of angles) {
+      if (!this.chainGhosts.has(point.sourceMeshId) ||
+          byId.has(point.sourceMeshId)) return false;
+      byId.set(point.sourceMeshId, point);
+    }
+    const updated = nodes.map(node => {
+      const angle = byId.get(node.sourceMeshId);
+      return angle ? { ...node, axis: angle.axis, degrees: angle.degrees } : node;
+    });
+    if (!this.canChainPreview(updated)) return false;
+    this.chainNodes = updated;
+    if (!this.updateChainGhosts()) {
+      this.resetChainPreview();
+      return false;
+    }
+    return true;
+  }
+
+  private updateChainGhosts(): boolean {
+    if (!this.chainNodes || !this.chainRootWorld) return false;
+    const deltas = studyChainDeltas(this.chainNodes);
+    const targets = new Map<number, Matrix4>();
+    for (const [id, {originalWorld}] of this.chainGhosts) {
+      const delta = deltas.get(id);
+      if (!delta) return false;
+      const transformed = studyGhostWorldMatrix(
+        this.chainRootWorld, originalWorld, delta
+      );
+      if (!transformed) return false;
+      targets.set(id, transformed);
+    }
+    // Commit only after all mesh matrices have been checked.
+    for (const [id, matrix] of targets) {
+      const ghost = this.chainGhosts.get(id)!.ghost;
+      ghost.matrix.copy(matrix);
+      ghost.updateMatrixWorld(true);
+    }
+    this.chainDeltas = deltas;
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+    this.render();
+    return true;
+  }
+
+  resetChainPreview(): void {
+    if (!this.chainNodes) return;
+    this.chainNodes = null;
+    this.chainDeltas.clear();
+    this.chainRootWorld = null;
+    for (const { ghost } of this.chainGhosts.values()) {
+      this.scene.remove(ghost);
+      // Intentionally do NOT dispose source geometry: ghosts share it.
+    }
+    this.chainGhosts.clear();
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+  }
+
+  getAnimationClips(): AnimationStudyClip[] {
+    return this.animationClips.map((clip, id) => ({
+      id,
+      name: clip.name || `Clip ${id + 1}`,
+      durationSeconds: clip.duration,
+      trackCount: clip.tracks.length,
+    }));
+  }
+
+  selectAnimation(id: number): boolean {
+    const clip = this.animationClips[id];
+    if (!clip || !this.animationMixer || !Number.isSafeInteger(id)) return false;
+    this.animationMixer.stopAllAction();
+    this.activeAnimation = this.animationMixer.clipAction(clip);
+    this.activeAnimation.reset().play();
+    this.activeAnimation.paused = true;
+    this.animationPlaying = false;
+    this.lastAnimationFrameMs = 0;
+    this.render();
+    return true;
+  }
+
+  setAnimationPlaying(playing: boolean): boolean {
+    if (!this.activeAnimation || (playing && (this.rigidPreview || this.chainNodes))) return false;
+    this.activeAnimation.paused = !playing;
+    this.animationPlaying = playing;
+    this.lastAnimationFrameMs = 0;
+    return true;
+  }
 
   private findPart(id: number): LocalMeshEntry | undefined {
     return Number.isSafeInteger(id) && id >= 0 ? this.parts[id] : undefined;
@@ -191,20 +570,29 @@ export class LocalAtlasViewer {
   selectPart(id: number): AtlasPart | null {
     const selected = this.findPart(id);
     if (!selected || !selected.mesh.visible) return null;
+    if (this.rigidPreview && this.rigidPreview.id !== id) this.resetRigidPreview();
     this.clearSelection();
     this.selectedPartId = id;
     selected.mesh.material = this.highlightMaterial;
+    this.showAnchorMarkers(this.displayedAnchorPoints);
     this.render();
     return { id, name: selected.name, path: selected.path,
       triangles: selected.triangles, visible: true };
   }
 
   private applyVisibility(): void {
+    if (this.chainNodes) this.resetChainPreview();
+    if (this.rigidPreview &&
+        !this.findPart(this.rigidPreview.id)?.mesh.visible) {
+      this.resetRigidPreview();
+    }
     for (const part of this.parts) {
       part.mesh.visible = effectivePartVisibility(
         part.userVisible, part.id, this.isolatedPartId
       );
     }
+    if (this.rigidPreview &&
+        !this.findPart(this.rigidPreview.id)?.mesh.visible) this.resetRigidPreview();
     if (this.selectedPartId !== null &&
         !this.findPart(this.selectedPartId)?.mesh.visible) this.clearSelection();
     this.render();
@@ -306,19 +694,27 @@ export class LocalAtlasViewer {
     ).join("");
     checkActive();
     let object: Object3D;
+    let sourceAnimations: AnimationClip[] = [];
     if (format === "fbx") {
       const { FBXLoader } = await import("three/addons/loaders/FBXLoader.js");
       checkActive();
       object = new FBXLoader(this.localOnlyLoaderManager()).parse(bytes, "");
+      sourceAnimations = object.animations ?? [];
     } else {
       const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
       checkActive();
-      const parsed = await new Promise<Object3D>((resolve, reject) => {
+      const parsed = await new Promise<{
+        scene: Object3D;
+        animations: AnimationClip[];
+      }>((resolve, reject) => {
         new GLTFLoader(this.localOnlyLoaderManager()).parse(
-          bytes, "", (gltf) => resolve(gltf.scene), reject
+          bytes, "", (gltf) => resolve({
+            scene: gltf.scene, animations: gltf.animations,
+          }), reject
         );
       });
-      object = parsed;
+      object = parsed.scene;
+      sourceAnimations = parsed.animations;
     }
     checkActive();
 
@@ -364,6 +760,39 @@ export class LocalAtlasViewer {
     if (triangles > 2_000_000 || importedMeshes > 5_000) {
       throw new Error("Model exceeds the 2 million-triangle / 5,000-mesh research preview limits. Simplify offline first.");
     }
+    let rigSampledVertices = 0, rigUnweightedSamples = 0;
+    let rigInvalidWeightSamples = 0, rigInvalidJointReferences = 0;
+    let rigSuspiciousWeightSums = 0, skinnedMeshesWithoutWeightAttributes = 0;
+    for (const part of parsedParts) {
+      const skinned = part.mesh as import("three").SkinnedMesh;
+      if (!skinned.isSkinnedMesh || !skinned.skeleton?.bones) continue;
+      const weights = skinned.geometry.getAttribute("skinWeight");
+      const joints = skinned.geometry.getAttribute("skinIndex");
+      if (!weights || !joints || !weights.count || weights.count !== joints.count) {
+        skinnedMeshesWithoutWeightAttributes++;
+        continue;
+      }
+      const sample = inspectRigSamples({
+        vertexCount: Math.min(weights.count, joints.count),
+        jointCount: skinned.skeleton.bones.length,
+        influenceSlots: Math.min(weights.itemSize, joints.itemSize),
+        readWeight: (v, slot) => weights.getComponent(v, slot),
+        readJoint: (v, slot) => joints.getComponent(v, slot),
+      }, Math.max(16, Math.min(256, Math.floor(24000 / Math.max(1, skinnedMeshes)))));
+      rigSampledVertices += sample.sampledVertices;
+      rigUnweightedSamples += sample.unweightedVertices;
+      rigInvalidWeightSamples += sample.invalidWeightSamples;
+      rigInvalidJointReferences += sample.invalidJointReferences;
+      rigSuspiciousWeightSums += sample.suspiciousWeightSums;
+    }
+    const validClips = sourceAnimations.filter((clip, id) =>
+      usableAnimationStudyClip({
+        id,
+        name: clip.name,
+        durationSeconds: clip.duration,
+        trackCount: clip.tracks.length,
+      })
+    ).slice(0, 40);
     const bounds = new Box3().setFromObject(object);
     const size = bounds.getSize(new Vector3());
     const center = bounds.getCenter(new Vector3());
@@ -385,15 +814,31 @@ export class LocalAtlasViewer {
     });
     this.loaded = true;
     this.lastLoaded = object;
+    this.originalAuthoredClipCount = sourceAnimations.length;
+    this.animationClips = validClips;
+    this.animationMixer = validClips.length ? new AnimationMixer(object) : undefined;
     this.sourceIdentity = {
       fileName: file.name, fileSizeBytes: file.size, sourceSHA256,
       importedMeshes, triangles, skinnedMeshes,
       authoredJoints: jointNames.size,
+      rigSamples: {
+        sampledVertices: rigSampledVertices,
+        unweightedVertices: rigUnweightedSamples,
+        invalidWeightSamples: rigInvalidWeightSamples,
+        invalidJointReferences: rigInvalidJointReferences,
+        suspiciousWeightSums: rigSuspiciousWeightSums,
+        skinnedMeshesWithoutWeightAttributes,
+        previewableAnimationClips: validClips.length,
+      },
     };
     this.resetView();
     return {
       file: file.name, importedMeshes, triangles, skinnedMeshes,
       authoredJoints: jointNames.size, hasUsableGeometry: true,
+      rigSampledVertices, rigUnweightedSamples,
+      rigInvalidWeightSamples, rigInvalidJointReferences,
+      rigSuspiciousWeightSums, skinnedMeshesWithoutWeightAttributes,
+      animationClips: validClips.length,
     };
   }
 
@@ -416,6 +861,21 @@ export class LocalAtlasViewer {
     for (const hit of intersections) {
       const entry = this.parts.find((part) => part.mesh === hit.object);
       if (!entry || !entry.mesh.visible) continue;
+      if (this.anchorPickTarget) {
+        // Explicitly avoid choosing a point on a DIFFERENT source mesh,
+        // which could silently corrupt the manually authored relation.
+        if (entry.id !== this.anchorPickTarget.id || !this.lastLoaded) return;
+        this.lastLoaded.updateWorldMatrix(true, false);
+        const local = this.lastLoaded.worldToLocal(hit.point.clone());
+        const xyz: SourcePoint3 = [local.x, local.y, local.z];
+        if (!validSourcePoint(xyz)) return;
+        const pick = this.anchorPickTarget;
+        this.anchorPickTarget = null;
+        this.onAnchorPicked?.({
+          sourceMeshId: pick.id, endpoint: pick.endpoint,
+          originalRootLocalPoint: xyz,
+        });
+      }
       const selected = this.selectPart(entry.id);
       if (selected) this.onPartSelected?.(selected);
       break;
@@ -425,6 +885,20 @@ export class LocalAtlasViewer {
   private render(): void { this.renderer.render(this.scene, this.camera); }
 
   private clearModel(): void {
+    this.anchorPickTarget = null;
+    this.resetChainPreview();
+    this.resetRigidPreview();
+    this.showAnchorMarkers(null);
+    this.animationPlaying = false;
+    this.activeAnimation = undefined;
+    this.animationMixer?.stopAllAction();
+    if (this.animationMixer && this.lastLoaded) {
+      this.animationMixer.uncacheRoot(this.lastLoaded);
+    }
+    this.animationMixer = undefined;
+    this.animationClips = [];
+    this.originalAuthoredClipCount = 0;
+    this.lastAnimationFrameMs = 0;
     this.clearSelection();
     this.parts = [];
     this.isolatedPartId = null;
@@ -453,6 +927,9 @@ export class LocalAtlasViewer {
     this.controls.dispose();
     this.material.dispose();
     this.highlightMaterial.dispose();
+    this.studyGhostMaterial.dispose();
+    this.anchorMarkerGeometry.dispose();
+    for (const material of this.anchorMarkerMaterials) material.dispose();
     this.renderer.dispose();
   }
 }
