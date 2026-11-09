@@ -169,3 +169,15 @@ is a static viewer, **not** an installed Z-Anatomy layer or rigged AR model.
   them medically validated body planes. The W2 real anatomy overlay
   remains blocked until actual mesh-by-mesh license, rigging,
   camera calibration and correct real-device performance evidence.
+
+## 7. W4 original educational segment notes (2026-11-09)
+
+The Web GPU **proxy** now accepts clicks on *only visible* segments
+via a deterministic tested screen-space distance threshold. Short
+original bilingual descriptions may name generic humerus, radius/
+ulna, femur or tibia/fibula regions, but must explicitly explain
+that the visual segment is **not** the user's measured bone or a
+Z-Anatomy mesh. Never infer medical conditions. Dismiss detail
+when tracking/camera state invalidates the observed segment.
+Do not silently promote proxy educational annotations to
+reviewed per-mesh true atlas selection or copied textbook content.

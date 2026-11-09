@@ -93,6 +93,22 @@ rights. Typechecking alone is not a shipped MVP.
 - Independently test against real browser frames and named devices;
   no clinical or measured-bone claims.
 
+### W4a · Interactive reference field notes (SOURCE IMPLEMENTED)
+
+- [x] Tap any actually rendered, confidence-gated limb/torso
+  **procedural proxy segment** to see an original short educational
+  note with Chinese and English anatomical region labels.
+- [x] Disclose that a MediaPipe surface segment does **not** show
+  measured bones, actual clavicles/vertebrae/ribs or individual organs.
+- [x] Hide notes when real pose tracking is lost, camera is stopped,
+  user dismisses them, or stale observations invalidate the overlay.
+- [x] Pure synthetic screen-space hit-testing tests; no 3D atlas
+  mesh is implied by touching a generated cylinder.
+- [ ] Verify actual touch hit targets, clipping and readability on
+  mobile Safari/desktop Chrome with a person in camera.
+- [ ] Expand to REAL per-part bone/organ teaching notes only after
+  human anatomical source review and true atlas rig/selection.
+
 ## W4 · Learning, contributors and public release
 
 - Source-backed anatomy notes, genuine layer visibility and real

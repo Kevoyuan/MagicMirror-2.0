@@ -543,3 +543,13 @@ distinct from the live camera/procedural mirror:
 - Unreviewed static models and model-space slices are **not**
   marketed as real-time anatomical reconstruction, licensed
   bundled anatomy layers or clinically calibrated body sections.
+
+## Web active study notes (2026-11-09)
+
+**Folio III / quick learning:** tapping a *visible* real-time
+procedural segment opens a restrained parchment card with
+Chinese + English anatomical region, concise original educational
+commentary and permanent 'not actual bone imaging' qualification.
+Keep the camera dominant and fade/hide cards when observation is
+lost. The local static FBX/GLB source mesh inspector remains a
+separate Folio II and does not constitute real-time rigged anatomy.

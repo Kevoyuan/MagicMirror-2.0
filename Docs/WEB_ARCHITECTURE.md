@@ -135,3 +135,16 @@ Source author rights **do not vanish** by converting an FBX to GLB,
 switching from App Store to Web or open-sourcing application code.
 The installed iOS rights gates in Draft PRs #51–#53 remain reference
 work and are not claimed to be merged into Web.
+
+## Interactive educational reference notes (W4a)
+
+The active procedural overlay stores only the **actually drawn**
+screen-space segments (with visibility/confidence gating).
+`Web/src/picking.ts` resolves a user click to the nearest valid
+reference segment, never a hidden or invented joint. A small
+Leonardo-style card draws original bilingual educational text
+from `Web/src/education.ts`; the source values are general
+anatomical facts, not medical/individual measurement.
+A lost/stale pose or stopped camera discards hit geometry and notes.
+Local model-study mesh picking is a separate path and never silently
+claims that a generic segment is a Z-Anatomy source component.
