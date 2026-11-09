@@ -114,6 +114,22 @@ const en: Record<string, string> = {
   "暂停": "Pause",
   "仅播放导入文件自带的动作；不是 MediaPipe 身体动作驱动，也不是已校准的解剖骨骼绑定。":
     "Only original clips from the imported model are played. This is not MediaPipe body-motion tracking or calibrated anatomy rigging.",
+  "人工姿态映射草稿 · 非实际骨骼绑定": "Manual pose segment mapping · No bone rig",
+  "请根据原始网格名称与实际模型，自行标记对应的 MediaPipe 体表参考段。映射未经过解剖、骨骼绑定或相机校准审核。":
+    "Assign each source mesh to a coarse MediaPipe surface-reference segment yourself. This is not anatomically reviewed, rigged or camera calibrated.",
+  "未映射任何原始网格": "No source meshes mapped",
+  "导出映射草稿": "Export mapping draft",
+  "导入本地映射 JSON": "Import local mapping JSON",
+  "清空映射": "Clear mappings",
+  "模型空间端点草稿": "Original model-space point drafts",
+  "先在部件列表中选定并映射一个网格，再点“标记起点/终点”，最后在 3D 视图中点击同一网格表面。遮挡时请先独显。坐标来自原始模型，并非解剖关节、已校准姿态或动态骨骼。":
+    "First select and map a source mesh, then choose Mark A/B and click the SAME source mesh in the 3D viewer. Isolate if occluded. These are original-model coordinates, not anatomical joints, calibrated pose or a live skeletal rig.",
+  "标记起点 A": "Mark point A",
+  "标记终点 B": "Mark point B",
+  "清除此网格端点": "Clear selected points",
+  "导出端点草稿": "Export point draft",
+  "导入端点 JSON": "Import point JSON",
+  "尚未标记任何模型空间端点": "No original model-space points marked",
   "原始部件与层级": "Original meshes and hierarchy",
   "尚未导入模型": "No model loaded",
   "按原始网格名称或层级路径搜索": "Search original mesh names or hierarchy paths",
@@ -161,7 +177,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value"
+      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);
