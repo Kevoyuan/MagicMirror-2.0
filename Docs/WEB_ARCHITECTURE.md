@@ -228,3 +228,30 @@ a server or shipped as a licensed asset.
 This does **NOT** change the separate camera pipeline:
 MediaPipe's live procedural proxy still follows 2D observed
 surface points, without a reviewed Z-Anatomy skinning rig.
+
+## W2d editable, source-hash-bound mesh-to-segment mapping
+
+`Web/src/atlas-mapping.ts` defines 12 *existing, observed*
+MediaPipe shoulder/elbow/wrist/hip/knee/ankle and torso segment
+pairs. The Folio II **static** source part browser lets a user
+manually annotate each actual imported mesh with a coarse
+`PoseSegmentId`; no automatic Z-Anatomy bone classifier is
+used or implied. The user can explicitly download or select
+a local mapping JSON containing **no mesh geometry**.
+
+Every draft is bound to the current original source file's
+SHA-256, byte size and real original mesh metadata. Incoming
+JSON is strongly schema validated and must still declare
+`USER_DRAFT_UNCALIBRATED`, `sourceCoordinateFrame=UNVERIFIED`,
+`retargetingStatus=NOT_READY`, and
+`commercialReuseStatus=NOT_REVIEWED`. Unknown fields, fake
+review approvals, duplicate mesh IDs, altered hierarchy paths,
+and different original source files reject the import entirely.
+Nothing is automatically transmitted to a server, written to
+browser storage, or distributed with the Web bundle.
+
+This maps an *artist/researcher hypothesis* of which parts
+belong near an **observed surface segment**. It is NOT a
+kinematic hierarchy, skinning, real joint-local orientation,
+3D rest-pose calibration, verified physical bone position,
+rights evidence, camera registration or animated AR model.

@@ -588,3 +588,14 @@ animation controls if the file has no clips. Never describe
 an unskinned original Z-Anatomy skeleton as ready for real-time
 MediaPipe retargeting and never autocreate a fake rig. The
 camera screen retains its visually dominant layout.
+
+## Folio II · Hand-authored motion-reference plan (2026-11-09)
+
+Add an understated per-mesh *manual* surface-reference
+segment dropdown beside the private source hierarchy.
+Expose source-hash-checked JSON export/import, clear mapping
+and mapped/total counts, but **never** use a commercial
+approval badge or label any mesh auto-classified. The visual
+experience remains focused on the original static model.
+No independent camera/atlas composite is enabled until
+true weights, rest anchors, rights and registration pass.

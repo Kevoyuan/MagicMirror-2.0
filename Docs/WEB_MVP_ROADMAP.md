@@ -201,3 +201,26 @@ rights. Typechecking alone is not a shipped MVP.
   author an independent cohesive rig using Blender before any
   live human-motion retargeting; add camera-space calibration,
   semantic source-part mapping, occlusion and per-part rights.
+
+## W2d · Manual original-mesh ↔ MediaPipe surface-segment draft
+
+- [x] Define the 12 actually observed MediaPipe limb/torso
+  segment pairs; do not equate the reference surface graph
+  with a true skeletal/bone hierarchy.
+- [x] Add a manual (unassigned by default) pose-segment dropdown
+  for each original mesh in the local source browser. Multiple
+  source components may reference one segment.
+- [x] Explicitly save/load local SHA-256 and byte-size-bound
+  JSON drafts; validate exact source mesh count, path, name,
+  triangle count, unique source indices, supported segment
+  and non-approved rights/retargeting/calibration flags.
+- [x] Reject model mismatches and import all assignments
+  atomically (no partial corruption); never persist mappings
+  without the user's explicit download.
+- [x] Strict TS + synthetic Vitest invalid/replay/tamper
+  tests; no third-party models committed or newly hosted.
+- [ ] Run manual import/export, source model swap, browser
+  camera and animation tests on actual Chrome/Safari.
+- [ ] Build a separately reviewed true anatomical rig,
+  rest-pose anchors, camera/model-space registration and
+  real-time skeletal retargeting before any true atlas overlay.

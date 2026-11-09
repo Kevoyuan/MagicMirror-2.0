@@ -264,3 +264,30 @@ must remain explicitly `samplingOnly: true` with overall
 well-formed weights or animations. Public model distribution and
 true body-to-camera skeletal AR remain separate human-reviewed
 milestones; no Android/native iOS resumption.
+
+## 12. W2d original-mesh to observed pose segment DRAFT mapping (2026-11-09)
+
+The static local anatomy viewer now has a manually edited
+mesh-to-MediaPipe surface reference segment table. Each source
+mesh is identified by its exact original-array `sourceIndex`,
+source name/path/triangle count and the original FBX/GLB
+`SHA-256` + byte size, **not** by a guessed bone label.
+A reviewer can map multiple actual source meshes to one of
+the 12 *existing observed surface pose segments*. Import must
+reject unknown/mismatched SHA, missing parts, original name/path
+changes, duplicate entries, unsupported segments, fake rights
+review metadata, and unknown schema fields, then apply the
+validated draft **atomically**. User-triggered export remains
+local JSON without source mesh geometry or camera data.
+
+All mapping state is **USER_DRAFT_UNCALIBRATED**; original
+coordinate axes, rest pose, true 3D joint anchors, mesh skinning,
+per-mesh source rights, calibrated camera extrinsics, and
+motion retargeting remain unverified. Never interpret these
+assignments as proof that Z-Anatomy bones will follow a person.
+Keep the public distribution release gate FALSE. Neither this
+draft nor a source name authorizes public model publication.
+
+Before W2e, build a separate explicit rest-pose/anchor review
+and independent error-bounded simulation. No direct live-atlas
+AR activation without human anatomical rig and permission gates.
