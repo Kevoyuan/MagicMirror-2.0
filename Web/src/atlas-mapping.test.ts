@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeDraftMapping, parseDraftMapping, POSE_SEGMENTS } from "./atlas-mapping";
+import { makeDraftMapping, mappingDownloadName, parseDraftMapping, POSE_SEGMENTS } from "./atlas-mapping";
 import { buildLocalAtlasInventory } from "./atlas-inventory";
 
 const inventory = buildLocalAtlasInventory({
@@ -59,6 +59,14 @@ describe("no-authorization manual mesh-to-MediaPipe-segment drafts", () => {
     expect(() => parseDraftMapping({
       ...mapping, anatomicalReviewApproved: true
     }, inventory)).toThrow(/Unexpected/);
+  });
+  it("exports safe explicit local filenames, never raw source paths", () => {
+    expect(mappingDownloadName("../../SkeletalSystem100.fbx")).toBe(
+      "MagicMirror-SkeletalSystem100-manual-pose-map.json"
+    );
+    expect(mappingDownloadName("未知文件.glb")).toBe(
+      "MagicMirror-local_atlas-manual-pose-map.json"
+    );
   });
   it("blocks invented part IDs and may export an empty draft", () => {
     expect(makeDraftMapping(inventory, new Map()).assignments).toEqual([]);
