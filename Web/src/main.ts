@@ -22,6 +22,11 @@ import {
   ORIGINAL_STUDY_DEMO, createOriginalStudyDemoFile,
 } from "./study-demo";
 import {
+  makeStudyTimelineDraft, parseStudyTimelineDraft,
+  sampleStudyTimeline, studyFrameAt, timelineDownloadName,
+  type StudyKeyframe,
+} from "./study-timeline";
+import {
   countLargeStudyGaps, orderStudyChain,
   type StudyChainNode,
 } from "./kinematic-chain";
@@ -272,6 +277,28 @@ root.innerHTML = `
           <button id="atlas-chain-zero" type="button" disabled>所有角度归零</button>
         </div>
         <p id="atlas-chain-status" role="status" aria-live="polite">请选择真实来源网格建立 2–12 节人工运动链；不执行人体追踪。</p>
+      </section>
+      <section class="atlas-timeline-panel" aria-labelledby="atlas-timeline-title">
+        <h4 id="atlas-timeline-title">离线关键帧与循环回放</h4>
+        <p>仅对当前原创或本地来源的虚拟运动链记录角度，不包含摄像头画面或真实人体骨骼。每帧绑定原始文件哈希、人工网格父子关系和模型空间端点。</p>
+        <div class="atlas-timeline-track">
+          <label for="atlas-timeline-time">时间轴（毫秒）
+            <input id="atlas-timeline-time" type="range" min="0" max="6000" step="100" value="0" disabled />
+          </label>
+          <output id="atlas-timeline-display" for="atlas-timeline-time">0.0s</output>
+        </div>
+        <div class="atlas-timeline-actions">
+          <button id="atlas-timeline-capture" type="button" disabled>记录当前角度</button>
+          <button id="atlas-timeline-delete" type="button" disabled>删除此关键帧</button>
+          <button id="atlas-timeline-play" type="button" disabled>循环播放</button>
+          <button id="atlas-timeline-pause" type="button" disabled>暂停</button>
+          <button id="atlas-timeline-clear" type="button" disabled>清空帧</button>
+          <button id="atlas-timeline-export" type="button" disabled>导出本地动作草稿</button>
+          <label for="atlas-timeline-import">导入动作草稿 JSON</label>
+          <input id="atlas-timeline-import" type="file" accept=".json,application/json" disabled />
+        </div>
+        <div id="atlas-timeline-frames" class="atlas-timeline-frames" role="list"></div>
+        <p id="atlas-timeline-status" role="status" aria-live="polite">请先预览 2–12 个原始网格，然后记录两个不同时间的关键帧；不执行真实人体追踪。</p>
       </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -720,6 +747,21 @@ const atlasChainList = element<HTMLElement>("#atlas-chain-list");
 const atlasChainIds = new Set<number>();
 const atlasChainParents = new Map<number, number | null>();
 const atlasChainAngles = new Map<number, { axis: SourceAxis; degrees: number }>();
+const atlasTimelineTime = element<HTMLInputElement>("#atlas-timeline-time");
+const atlasTimelineDisplay = element<HTMLOutputElement>("#atlas-timeline-display");
+const atlasTimelineCapture = element<HTMLButtonElement>("#atlas-timeline-capture");
+const atlasTimelineDelete = element<HTMLButtonElement>("#atlas-timeline-delete");
+const atlasTimelinePlay = element<HTMLButtonElement>("#atlas-timeline-play");
+const atlasTimelinePause = element<HTMLButtonElement>("#atlas-timeline-pause");
+const atlasTimelineClear = element<HTMLButtonElement>("#atlas-timeline-clear");
+const atlasTimelineExport = element<HTMLButtonElement>("#atlas-timeline-export");
+const atlasTimelineImport = element<HTMLInputElement>("#atlas-timeline-import");
+const atlasTimelineFrames = element<HTMLElement>("#atlas-timeline-frames");
+const atlasTimelineStatus = element<HTMLElement>("#atlas-timeline-status");
+let studyTimelineFrames: StudyKeyframe[] = [];
+let studyTimelineFrameId = 0;
+let studyTimelineStartedAt = 0;
+let studyTimelineStartPositionMs = 0;
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -858,6 +900,7 @@ function chainNodesForCurrentStudy(): StudyChainNode[] {
 }
 
 function stopLocalStudyChain(): void {
+  pauseStudyTimeline();
   atlasViewer?.resetChainPreview();
   atlasChainStatus.textContent = locale === "en"
     ? "Virtual chain stopped. Original geometry and transforms were never modified."
@@ -865,6 +908,7 @@ function stopLocalStudyChain(): void {
 }
 
 function resetStudyChainDraft(): void {
+  clearStudyTimeline();
   stopLocalStudyChain();
   atlasChainIds.clear();
   atlasChainParents.clear();
@@ -951,6 +995,7 @@ function refreshAtlasParts(): void {
   refreshAtlasAnchorStatus();
   refreshAtlasRigidControls();
   refreshAtlasChainControls();
+  refreshStudyTimelineControls();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
