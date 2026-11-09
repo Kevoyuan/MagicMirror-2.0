@@ -460,3 +460,30 @@ include original authored test keyframes (not human
 recordings), opt-in only. Keep camera/clinical
 retargeting and per-mesh third-party licensing
 completely separate and fail closed.
+
+
+## 18. W2j original-demo opt-in browser smoke (2026-11-09)
+
+Ordinary CI **remains fast** and does NOT run Chromium. For a developer
+browser check, run `cd Web && npm run test:browser` after installing
+Playwright's Chromium browser, or trigger the existing
+`Web-first MVP` workflow via GitHub's **Run workflow** menu.
+Opt-in PR branches containing `browser-smoke` also run the
+separate Chromium job in that SAME workflow.
+
+`Web/tests/browser/original-demo.spec.ts` opens the actual Vite
+page in headless Chromium and exercises only original, browser-
+generated MIT-labeled three-box GLB, real GLTFExporter/GLTFLoader,
+Three.js WebGL, static reference chain UI, short angle replay
+and local SHA-bound timeline JSON export/re-import. It tests
+refusal of a forged SHA on import while retaining prior frames.
+It must NOT click Start Camera, record camera content,
+download or bundle actual Z-Anatomy assets, fetch Google
+PoseLandmarker weights, trigger analytics or claim public
+model distribution authorization. Failure screenshots/traces
+can only contain this original generated study geometry;
+do NOT use these test artifacts for sensitive camera files.
+Browser E2E is a stronger runtime integration test than Vitest
+but its GitHub hosted Chromium software rasterizer cannot
+substitute for actual iPhone Safari/desktop camera,
+thermal/latency, accessibility or source-anatomy validation.

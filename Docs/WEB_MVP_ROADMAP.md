@@ -372,3 +372,30 @@ rights. Typechecking alone is not a shipped MVP.
   weights, camera/world landmark registration,
   pose retargeting and privacy/rights signoff
   before advertising true anatomical AR.
+
+
+## W2j · Original-demo browser integration smoke
+
+- [x] Add real Chromium browser tests for UI navigation
+  without camera permission, EN locale switch and close.
+- [x] Exercise the original generated, self-contained
+  3-box GLB through real GLTFExporter/GLTFLoader,
+  Chromium WebGL, source-part list, bounded manual
+  chain and local keyframe loop controls.
+- [x] Download source-SHA-bound timeline JSON, verify
+  rights status remains NOT_REVIEWED, reject a forged
+  source SHA, and re-import valid local data without
+  changing original geometry or camera state.
+- [x] Install Playwright only for opt-in smoke; preserve
+  fast source CI and existing default-denied public
+  deployment. Use the same `Web-first MVP` workflow,
+  with manual dispatch or a `browser-smoke` PR branch,
+  no additional workflow.
+- [ ] Validate new smoke on GitHub-hosted real
+  Chromium/WebGL, then verify ordinary PRs still
+  skip expensive Chromium job.
+- [ ] Independently test actual camera permission,
+  iPhone Safari portrait/landscape, real Z-Anatomy
+  source FBX import/units, skinning, performance,
+  privacy and component copyright in physical devices.
+  Headless CI is not hardware acceptance.
