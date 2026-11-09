@@ -7,3 +7,7 @@ public/models/*.task
 !public/models/.gitkeep
 *.log
 .DS_Store
+
+# Developer-only browser E2E artifacts (never upload a camera recording)
+playwright-report/
+test-results/
