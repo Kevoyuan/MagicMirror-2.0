@@ -165,3 +165,12 @@ export function parseDraftMapping(
   }
   return validated;
 }
+
+/** No directory separators, user source filenames used only for local downloads. */
+export function mappingDownloadName(sourceName: string): string {
+  const sanitized = sourceName.replace(/\.[^.]+$/, "").normalize("NFKC")
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "")
+    .slice(0, 55);
+  return `MagicMirror-${sanitized || "local_atlas"}-manual-pose-map.json`;
+}
