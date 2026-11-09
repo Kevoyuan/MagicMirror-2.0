@@ -525,6 +525,7 @@ element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNot
 languageButton.addEventListener("click", () => {
   setLocale(locale === "zh" ? "en" : "zh");
   if (atlasViewer) refreshAtlasParts();
+  else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
   if (atlasClipSelect.disabled && atlasClipSelect.options.length) {
     atlasClipSelect.options[0].textContent = locale === "en"
