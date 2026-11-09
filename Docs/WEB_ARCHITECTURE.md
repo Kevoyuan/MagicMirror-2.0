@@ -171,3 +171,33 @@ or restarting a MediaPipe/camera session. The real anatomical
 source filename and per-mesh provenance remain original
 strings rather than being auto-translated by an external API.
 This is browser UI localization, not medical terminology QA.
+
+## W2b source anatomy part browser and export
+
+`Web/src/atlas-viewer.ts` now retains a local in-memory index of
+*real parsed* mesh objects, source hierarchy paths, triangle
+counts, per-mesh visibility and a temporary isolation selection.
+The Web scene can change mesh visibility, focus the actual mesh
+bounding box and highlight a chosen object in the static viewer.
+`Web/src/atlas-catalog.ts` provides pure, tested, NFKC/case-
+normalized name/path filtering with capped result rendering,
+without assigning medical semantics or interpreting imported
+names as HTML. The visible list uses `textContent` to prevent
+source-filename markup insertion.
+
+After the user explicitly selects a local file, SHA-256 is computed
+over its original ArrayBuffer in a secure-context browser and
+retained in memory with file size and actual mesh/triangle/skinning
+counts. `Web/src/atlas-inventory.ts` builds a purely informational
+`schemaVersion=1` local downloadable JSON with every source
+mesh hierarchy path. It includes **NO original geometry**, and
+each component has `commercialReuseReviewed=false` and
+`licenseEvidence=null`; the complete inventory is
+`rightsStatus=NOT_REVIEWED`. It cannot serve as clearance for
+publishing those Z-Anatomy/BodyParts3D meshes, a medical source
+or a rigged AR atlas. No export occurs without a user click.
+
+The study model limits remain ≤75 MB selected file, ≤2,000,000
+triangles and ≤5,000 source meshes; large input may still impose
+significant in-memory parsing costs, so actual device profiling
+is an open acceptance requirement.

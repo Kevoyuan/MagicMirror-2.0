@@ -148,3 +148,30 @@ rights. Typechecking alone is not a shipped MVP.
 - [ ] Review every long dialogue paragraph, accessibility name and
   dynamic local model-study error in both locales on real mobile and
   desktop browsers; not all literal copy has been QA-approved.
+
+## W2b · Local source-part hierarchy and inventory (SOURCE IMPLEMENTED)
+
+- [x] Search original mesh names and hierarchical paths of the
+  *locally selected* FBX or GLB, with 60 initial results and
+  bounded "show more" pagination.
+- [x] Hide/show individual parts, isolate a source mesh, restore
+  visibility preferences and focus/reset the orbit camera. The
+  visual labels come from source names, not inferred anatomy.
+- [x] Select source meshes by clicking rendered geometry and
+  synchronize the source-name/triangle display with list controls.
+- [x] Compute SHA-256 of the selected **original model bytes**,
+  and export a local JSON inventory of source file identity,
+  all real source mesh hierarchy paths and triangle/skinning
+  counts. Each license/rights field is explicitly **unreviewed**;
+  no author authorization is fabricated.
+- [x] Reject malformed/too-large inputs, excessive triangle
+  or mesh budgets; invalidate stale local import on dialog close.
+- [x] Synthetic tests for source tree/filter/pagination, isolated
+  part visibility restoration, JSON source identity and default
+  rights status.
+- [ ] Confirm real Z-Anatomy `SkeletalSystem100.fbx` import
+  fidelity, memory, names, part focusing and clipping against
+  desktop browser; assess mobile Safari budget separately.
+- [ ] Carry out full human source-by-source copyright/license
+  evidence review; create a **real** authored mobile rig and
+  camera registration before enabling live anatomy overlays.

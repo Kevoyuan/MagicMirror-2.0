@@ -56,3 +56,15 @@ Z-Anatomy AR" or "real display FPS" are **not** justified by
 the present Web product. If actual source rights or a browser
 test are unavailable, describe the blocker and keep the
 feature disabled.
+
+## Local atlas inventory and evidence standards
+
+Use the source-part hierarchy and JSON inventory as a private
+working input to **human original-mesh** author/license/rig
+review. It is **never** permission to bundle or relicense a
+model. Source mesh names may contain personal/company data:
+do not commit exported JSON or private evidence unless
+origin and distribution rights were checked. Keep original
+source identifiers intact in notes. Use `textContent` for
+user-imported labels and prevent model texture URLs from
+creating unsolicited remote network fetches.

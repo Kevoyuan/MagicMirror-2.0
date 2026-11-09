@@ -105,6 +105,16 @@ const en: Record<string, string> = {
     "No unreviewed Z-Anatomy meshes are shipped",
   "。真实解剖模型及其署名将按资产来源逐项审核。":
     "Real anatomy models and attribution require source-by-source review.",
+  "原始部件与层级": "Original meshes and hierarchy",
+  "尚未导入模型": "No model loaded",
+  "按原始网格名称或层级路径搜索": "Search original mesh names or hierarchy paths",
+  "显示全部": "Show all",
+  "退出独立显示": "Exit isolate",
+  "重置视角": "Reset view",
+  "导出来源清单 JSON": "Export source inventory JSON",
+  "已导入模型的来源部件列表": "Imported original source mesh list",
+  "显示更多匹配部件": "Show more matching meshes",
+  "例如 Femur / Pelvis / 左侧名称": "e.g. Femur / Pelvis / left source name",
   "解剖模型研究台": "Anatomy study viewer",
   "关闭本地模型查看器": "Close local anatomy viewer",
   "仅本地查看。导入模型不会发送到服务器，也不会用于公共下载或自动授权；它":

@@ -206,3 +206,30 @@ Do **not** translate arbitrary user-provided model filenames,
 mesh source names or authorship; preserve exact provenance.
 The switch must never change media sessions, tracking identity,
 model binaries or active privacy controls.
+
+## 10. W2b source-part explorer & rights-evidence boundary (2026-11-09)
+
+The Web-local anatomy study now supports **original-source mesh**
+list/search, source hierarchy breadcrumbs, user-controlled
+per-mesh hide/show, temporary isolate, camera focus and whole-model
+view reset. A list entry represents an actual parsed FBX/GLB mesh;
+**never invent bone names or infer medical organ layers from the
+source hierarchy**. Keep filtering/pagination deterministic and
+bounded to protect mobile DOM; render untrusted source names with
+`textContent`, not `innerHTML`.
+
+Import is still **user initiated and local only**. Source file size
+is limited to 75 MB; more than 2M triangles or 5,000 mesh objects
+requires separate offline simplification. Pending asynchronous
+imports are invalidated when the dialog closes. Preserve
+independent show/hide preferences when exiting isolate mode.
+
+A separate explicit **source inventory JSON** exports
+SHA-256 of the selected original *bytes*, mesh paths and triangle
+counts, original file size and actual skinned/joint counts.
+All generated per-mesh `commercialReuseReviewed` values must
+remain **false**, `licenseEvidence` null, and overall
+`rightsStatus` **NOT_REVIEWED**. The metadata is a starting
+point for substantive human license/author audit, not a commercial
+authorization. Do not auto-import its flags as legal signoff or
+upload the JSON. No model geometry is included in the inventory.

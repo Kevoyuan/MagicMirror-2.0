@@ -562,3 +562,17 @@ educational copy only, not the original imported anatomy mesh
 names, provenance, tracking session or camera frame. On mobile
 maintain the camera as the dominant surface; verify narrow
 portrait iPhone layouts and screen reader labels in both languages.
+
+## Folio II · Original part browser (2026-11-09)
+
+Within the *separate* local anatomy study dialog, place a compact
+search field above a **bounded mesh source hierarchy list**:
+source group breadcrumbs, part name and real triangle count,
+plus small visibility, isolate and focus controls. Show
+60 matches initially to avoid overwhelming a mobile layout.
+Use selected gold accent for actual source geometry and keep
+the anatomical model viewport larger than its metadata panel.
+An optional local JSON source inventory download must be
+explicitly user-triggered and labelled *not a rights review*.
+This is a private model study surface, not a live camera overlay
+or real Z-Anatomy anatomical slice mode.

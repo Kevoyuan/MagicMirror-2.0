@@ -6,6 +6,8 @@ import { educationFor, type EducationNote } from "./education";
 import { translate, translateStaticDOM, type Locale } from "./i18n";
 import { TemporalPoseStabilizer } from "./smoothing";
 import type { LocalAtlasViewer } from "./atlas-viewer";
+import { searchAtlasParts, type AtlasPart } from "./atlas-catalog";
+import { inventoryDownloadName } from "./atlas-inventory";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
@@ -145,6 +147,24 @@ root.innerHTML = `
       <label>透明度 <input id="atlas-opacity" type="range" min="15" max="100" value="88"></label>
       <label class="atlas-checkbox"><input id="atlas-wireframe" type="checkbox"> 显示网格</label>
     </div>
+    <section class="atlas-browser" aria-labelledby="atlas-browser-title">
+      <div class="atlas-browser-heading">
+        <h3 id="atlas-browser-title">原始部件与层级</h3>
+        <span id="atlas-part-count" class="atlas-part-count">尚未导入模型</span>
+      </div>
+      <label class="atlas-search-label" for="atlas-search">按原始网格名称或层级路径搜索</label>
+      <input id="atlas-search" type="search" autocomplete="off"
+        placeholder="例如 Femur / Pelvis / 左侧名称" disabled />
+      <div class="atlas-part-actions">
+        <button id="atlas-show-all" type="button" disabled>显示全部</button>
+        <button id="atlas-restore" type="button" disabled>退出独立显示</button>
+        <button id="atlas-reset-camera" type="button" disabled>重置视角</button>
+        <button id="atlas-export-inventory" type="button" disabled>导出来源清单 JSON</button>
+      </div>
+      <div id="atlas-part-list" class="atlas-part-list" role="list"
+        aria-label="已导入模型的来源部件列表"></div>
+      <button id="atlas-more" class="atlas-more" type="button" hidden>显示更多匹配部件</button>
+    </section>
     <div id="atlas-info" class="atlas-info" role="status" aria-live="polite">尚未选择模型。原始 Z-Anatomy 的 FBX 可用于个人研究，但请确认模型来源和版权。</div>
     <div id="atlas-part" class="atlas-part">拖动旋转，滚轮缩放，点击部件查看源网格名称。</div>
     <p class="atlas-disclaimer">注意：即使可以导入 Z-Anatomy，本地静态浏览也不证明模型已绑定动画、逐网格许可合规或可公开商用。</p>
@@ -449,7 +469,10 @@ canvas.addEventListener("click", (event) => {
   noteCard.hidden = false;
 });
 element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
-languageButton.addEventListener("click", () => setLocale(locale === "zh" ? "en" : "zh"));
+languageButton.addEventListener("click", () => {
+  setLocale(locale === "zh" ? "en" : "zh");
+  if (atlasViewer) refreshAtlasParts();
+});
 setLocale("zh");
 
 startButton.addEventListener("click", () => void startCamera());
@@ -519,6 +542,15 @@ const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
 const atlasFile = element<HTMLInputElement>("#atlas-file");
 const atlasInfo = element<HTMLElement>("#atlas-info");
 const atlasPart = element<HTMLElement>("#atlas-part");
+const atlasSearch = element<HTMLInputElement>("#atlas-search");
+const atlasPartList = element<HTMLElement>("#atlas-part-list");
+const atlasPartCount = element<HTMLElement>("#atlas-part-count");
+const atlasShowAll = element<HTMLButtonElement>("#atlas-show-all");
+const atlasRestore = element<HTMLButtonElement>("#atlas-restore");
+const atlasResetCamera = element<HTMLButtonElement>("#atlas-reset-camera");
+const atlasExportInventory = element<HTMLButtonElement>("#atlas-export-inventory");
+const atlasMore = element<HTMLButtonElement>("#atlas-more");
+let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
 const atlasOpacity = element<HTMLInputElement>("#atlas-opacity");
@@ -530,14 +562,157 @@ async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
   if (atlasViewer) return atlasViewer;
   atlasInit ??= import("./atlas-viewer").then(({ LocalAtlasViewer }) => {
     const viewer = new LocalAtlasViewer(atlasCanvas);
-    viewer.onPartSelected = (name) => {
-      atlasPart.textContent = "源部件：" + name + " · 静态网格，不是实时骨骼识别";
+    viewer.onPartSelected = (part) => {
+      displayAtlasPart(part);
+      refreshAtlasParts();
     };
     atlasViewer = viewer;
     return viewer;
   }).finally(() => { atlasInit = undefined; });
   return atlasInit;
 }
+function displayAtlasPart(part: AtlasPart): void {
+  // Original names/paths are never interpreted as HTML or medical labels.
+  atlasPart.textContent = locale === "en"
+    ? `Original source: ${part.path} · ${part.triangles.toLocaleString()} triangles. Static geometry; NOT a tracked bone.`
+    : `来源部件：${part.path} · ${part.triangles.toLocaleString()} 个三角形。仅静态网格，不是实时追踪的骨骼。`;
+}
+
+function refreshAtlasParts(): void {
+  const parts = atlasViewer?.getParts() ?? [];
+  const { matches, totalMatches, totalParts, hiddenParts, truncated } =
+    searchAtlasParts(parts, atlasSearch.value, atlasPageLimit);
+  const isolated = atlasViewer?.getIsolatedPartId() ?? null;
+  atlasPartCount.textContent = locale === "en"
+    ? `${totalMatches.toLocaleString()} matches / ${totalParts.toLocaleString()} parts · ${hiddenParts} hidden`
+    : `匹配 ${totalMatches.toLocaleString()} / ${totalParts.toLocaleString()} 个部件 · 隐藏 ${hiddenParts} 个`;
+  atlasRestore.disabled = isolated === null;
+  atlasMore.hidden = !truncated;
+  atlasMore.disabled = atlasPageLimit >= 300;
+
+  const fragment = document.createDocumentFragment();
+  let lastGroup = "";
+  for (const part of matches) {
+    const sourceParent = part.path.includes(" / ")
+      ? part.path.slice(0, part.path.lastIndexOf(" / "))
+      : (locale === "en" ? "Model root" : "模型根目录");
+    if (sourceParent !== lastGroup) {
+      lastGroup = sourceParent;
+      const heading = document.createElement("h4");
+      heading.className = "atlas-group-heading";
+      heading.textContent = sourceParent;
+      fragment.append(heading);
+    }
+
+    const entry = document.createElement("div");
+    entry.className = "atlas-part-row";
+    entry.setAttribute("role", "listitem");
+    const caption = document.createElement("button");
+    caption.type = "button";
+    caption.className = "atlas-part-name";
+    caption.textContent = part.name;
+    caption.title = part.path;
+    caption.setAttribute("aria-label", (locale === "en" ? "Select source part: " : "选择来源部件：") + part.path);
+    caption.disabled = !part.visible;
+    caption.addEventListener("click", () => {
+      const selected = atlasViewer?.selectPart(part.id);
+      if (selected) {
+        displayAtlasPart(selected);
+        refreshAtlasParts();
+      }
+    });
+
+    const count = document.createElement("span");
+    count.className = "atlas-triangle-count";
+    count.textContent = part.triangles.toLocaleString() + " △";
+
+    const visibilityLabel = document.createElement("label");
+    visibilityLabel.className = "atlas-part-visibility";
+    const visibility = document.createElement("input");
+    visibility.type = "checkbox";
+    visibility.checked = part.visible;
+    visibility.setAttribute("aria-label", (locale === "en" ? "Show " : "显示 ") + part.path);
+    visibility.addEventListener("change", () => {
+      atlasViewer?.setPartVisibility(part.id, visibility.checked);
+      refreshAtlasParts();
+    });
+    visibilityLabel.append(visibility);
+
+    const isolate = document.createElement("button");
+    isolate.type = "button";
+    isolate.className = "atlas-part-isolate";
+    isolate.textContent = isolated === part.id ? "●" : "◎";
+    isolate.title = locale === "en" ? "Show only this part" : "仅显示此部件";
+    isolate.setAttribute("aria-label", isolate.title + " " + part.path);
+    isolate.addEventListener("click", () => {
+      if (atlasViewer?.isolatePart(part.id)) {
+        const selected = atlasViewer.selectPart(part.id);
+        if (selected) displayAtlasPart(selected);
+        refreshAtlasParts();
+      }
+    });
+
+    const focus = document.createElement("button");
+    focus.type = "button";
+    focus.className = "atlas-part-focus";
+    focus.textContent = "⌕";
+    focus.title = locale === "en" ? "Focus camera on part" : "聚焦此部件";
+    focus.setAttribute("aria-label", focus.title + " " + part.path);
+    focus.addEventListener("click", () => {
+      if (atlasViewer?.focusPart(part.id)) {
+        const selected = atlasViewer.selectPart(part.id);
+        if (selected) displayAtlasPart(selected);
+        refreshAtlasParts();
+      }
+    });
+
+    entry.append(caption, count, visibilityLabel, isolate, focus);
+    fragment.append(entry);
+  }
+  atlasPartList.replaceChildren(fragment);
+}
+atlasSearch.addEventListener("input", () => {
+  atlasPageLimit = 60;
+  refreshAtlasParts();
+});
+atlasMore.addEventListener("click", () => {
+  atlasPageLimit = Math.min(atlasPageLimit + 60, 300);
+  refreshAtlasParts();
+});
+atlasShowAll.addEventListener("click", () => {
+  atlasViewer?.showAllParts();
+  refreshAtlasParts();
+});
+atlasRestore.addEventListener("click", () => {
+  atlasViewer?.restorePartVisibility();
+  refreshAtlasParts();
+});
+atlasResetCamera.addEventListener("click", () => atlasViewer?.resetView());
+atlasExportInventory.addEventListener("click", () => {
+  const manifest = atlasViewer?.sourceInventory();
+  if (!manifest) return;
+  try {
+    const payload = JSON.stringify(manifest, null, 2) + "\n";
+    const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = inventoryDownloadName(manifest.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasPart.textContent = locale === "en"
+      ? "Downloaded a LOCAL geometry inventory (not a rights clearance)."
+      : "已在本地导出网格来源清单（不构成版权授权证明）。";
+  } catch (error) {
+    atlasPart.textContent = locale === "en"
+      ? "Could not export the local JSON inventory."
+      : "无法导出本地 JSON 清单。";
+    console.error("Local inventory export failed", error);
+  }
+});
+
 element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () => {
   stopCamera("进入本地模型研究模式");
   element<HTMLDialogElement>("#layers-dialog").close();
@@ -550,7 +725,10 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
     atlasInfo.textContent = "WebGL 模型查看器无法启动：" + String(error);
   });
 });
-atlasDialog.addEventListener("close", () => atlasViewer?.stop());
+atlasDialog.addEventListener("close", () => {
+  atlasViewer?.cancelPendingLoad();
+  atlasViewer?.stop();
+});
 atlasFile.addEventListener("change", () => {
   const file = atlasFile.files?.[0];
   if (!file) return;
@@ -567,7 +745,17 @@ atlasFile.addEventListener("change", () => {
     atlasViewer?.setWireframe(atlasWireframe.checked);
     atlasViewer?.setOpacity(Number(atlasOpacity.value) / 100);
     atlasViewer?.setSection(atlasSection.value as SliceOrientation, Number(atlasLevel.value));
+    atlasSearch.disabled = false;
+    atlasShowAll.disabled = false;
+    atlasResetCamera.disabled = false;
+    atlasExportInventory.disabled = false;
+    atlasPageLimit = 60;
+    atlasPart.textContent = locale === "en"
+      ? "Select a source mesh to examine its original name and geometry."
+      : "点击或搜索来源网格，查看其原始名称和几何结构。";
+    refreshAtlasParts();
   }).catch((error) => {
+    if (!atlasDialog.open) return;
     atlasInfo.textContent = "无法导入：" + (error instanceof Error ? error.message : String(error));
     console.warn("Local model parsing failed (no upload attempted)", error);
   }).finally(() => {
