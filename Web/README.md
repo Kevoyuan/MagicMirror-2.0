@@ -38,6 +38,40 @@ If `npm run stage:assets` fails, review upstream package/model URLs
 and hashes instead of weakening verification. The `latest` download
 URL is mutable; changed model bytes fail the developer staging script.
 
+## Web UI design — Leonardo notebook v2.0 (source implementation)
+
+The active [Web design contract](../DESIGN.md) supersedes the archived
+SwiftUI-only visual handoff. The live camera remains the primary view;
+no dashboard or account layer has been introduced.
+
+- The mobile header keeps the brand, language toggle and real pose status
+  on one compact row while respecting browser safe-area insets.
+- Whole / Arms / Legs remain directly reachable; **Opacity** uses a native
+  collapsible `<details>` control. The four existing actions retain
+  keyboard focus and 44px minimum targets.
+- Local inference diagnostics are available on demand, not constantly
+  drawn over the live camera. Their numbers are process/output timings,
+  not display FPS, medical measurements or sensor latency.
+- A visible proxy limb can show an original educational note. The note
+  initially shows a short title; **Read anatomy note** expands its
+  explanation. The card and active camera guidance are not displayed
+  on top of one another.
+- The Anatomy / Privacy dialogs and static FBX/GLB study viewer render
+  as scrollable parchment bottom sheets on narrow touch viewports,
+  retaining native `<dialog>` close and Escape behavior.
+- The layer folio now displays the **working proxy** and local file
+  action before the longer rights explanation. Genuine multi-system
+  AR layers stay unavailable until licensed, rigged and registered.
+- English and Simplified Chinese disclosure labels are built from local
+  `Web/src/i18n.ts`; user-provided source mesh filenames are never
+  translated or uploaded.
+
+**UI acceptance still open:** check real Chrome / Safari desktop and
+iPhone Safari safe areas, screen reader and keyboard flow, browser zoom,
+camera layer alignment, overlay-note interactions and 70% camera-stage
+composition target on a representative portrait phone. CI source build
+does not establish real-device UX or asset publication rights.
+
 ## Honest implemented features
 
 - Browser `getUserMedia` with an explicit click/permission flow,
