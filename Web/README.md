@@ -42,17 +42,26 @@ URL is mutable; changed model bytes fail the developer staging script.
 
 - Browser `getUserMedia` with an explicit click/permission flow,
   camera flip, stop tracks, stop on tab background, and restart.
-- MediaPipe Tasks Vision `VIDEO` inference in browser, at most ~13
-  attempts/second, synchronous. **The main thread can stall** on slow
-  devices. A worker and proper end-to-end latency measurement come later.
+- Worker-first MediaPipe Tasks Vision `VIDEO` inference with
+  transferable ImageBitmap and one-in-flight, ≥75ms sampling gate.
+  Unsupported Worker/OffscreenCanvas browsers fall back to throttled
+  synchronous main-thread inference. A worker helps UI responsiveness;
+  it does not prove frame-perfect camera alignment. The source compiles
+  in CI; cross-browser runtime confirmation is still needed.
 - Partial arms/legs can render when confident even if full body is
   outside the frame; avoid filling low-confidence or missing joints.
 - Three.js WebGL volumetric proxy (not an anatomical mesh) follows
   `object-fit: cover` projection and selfie mirror transformations.
 - Whole / Arms / Legs focus, overlay-only pause, opacity, status,
-  and a disclosure-only layer catalogue. Anatomy systems remain
+  optional **explicit** locally downloaded PNG photo (with a visible
+  nonmedical label), and a disclosure-only layer catalogue.
+  App source never automatically records/saves/uploads images.
+  Anatomy systems remain
   **disabled/not available** until real legal/rig/alignment acceptance.
-- Local code does not upload or save camera images or pose history.
+- Measured pose output frequency, inference duration p95 and
+  local capture-request-to-result delivery p95; **not** screen FPS,
+  motion-to-photon latency or camera-based bone measurements.
+- Local code does not upload or *automatically* save camera images or pose history.
   Google's MediaPipe SDK may send **performance/utilization metrics**.
   Review the package privacy notice and applicable user consent duties.
 
@@ -110,3 +119,19 @@ See [architecture](../Docs/WEB_ARCHITECTURE.md),
 Google MediaPipe SDK (Apache-2.0), task weights and any later anatomy
 data have their own terms. Existing `Mobile/iOS/`, `Unity/`,
 `Tools/` and historical research are **not** relicensed by this file.
+
+## W1 controls and verification (2026-11-09)
+
+The owner reported testing the initial Web MVP; no specific camera
+device/browser logs or measured acceptance were supplied. New W1 code
+adds `LivePoseInference`, `pose.worker.ts`, latest-only frame
+ordering/freshness checks, worker start/stop cancellation, track-ended
+recovery and local telemetry. Test with desktop Chrome and iPhone
+Safari; watch for Worker fallback, permission denial, camera flip,
+landscape rotation, background/restore and clipping.
+
+The **Save image / 保存画面** button creates a PNG of the visible,
+mirrored/cropped camera and the current Three.js proxy, marked
+"Illustrative 3D proxy / NOT X-ray". It is opt-in and stored only
+when a user explicitly downloads it. Do not use these images for
+medical decisions. No remote snapshot or recording API exists.

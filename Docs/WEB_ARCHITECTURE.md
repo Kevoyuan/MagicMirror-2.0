@@ -1,4 +1,4 @@
-# MagicMirror Web — active architecture v0.1
+# MagicMirror Web — active architecture v0.2 (W1 worker capture)
 
 **As of:** 2026-11-08. Active Web; native iOS held/frozen;
 Android canceled. This is the architecture of **existing Web source**,
@@ -37,6 +37,44 @@ especially if inference stalls. This is a W1 instrumentation/
 frame-integrity problem; don't claim an already fixed AR registration.
 The 3D proxy is rendered using 2D positions plus cosmetic depth only.
 MediaPipe `worldLandmarks` alone are not camera extrinsics.
+
+## W1 reliability pipeline (implemented source, browser QA pending)
+
+```mermaid
+flowchart TD
+  A[HTMLVideoElement camera] --> B{ImageBitmap and Worker available?}
+  B -->|yes| C[Transfer latest captured ImageBitmap]
+  C --> D[MediaPipe VIDEO inside Worker]
+  B -->|no/initialization failure| E[Throttled synchronous main thread]
+  D --> F[Result, source timestamp, frame ID, dimensions]
+  E --> F
+  F --> G{Same session / fresh / monotonic result?}
+  G -->|no| H[Discard and hide stale reference]
+  G -->|yes| I[Three.js 3D illustrative proxy]
+  I --> J[Overlay + measured local pipeline stats]
+```
+
+`Web/src/inference.ts` owns model creation and dynamic worker/main
+fallback; worker `Web/src/pose.worker.ts` receives a transferred
+`ImageBitmap` and **must close it**. `Web/src/telemetry.ts` owns a
+single-inflight, ≥75ms sampling gate and deterministic freshness
+checks. No frame queue, uploads or recording are introduced.
+
+The UI metric is **observed output results/second**, plus inference
+p95 and capture-request-to-result p95. It does **not** measure camera
+sensor exposure timing, browser GPU presentation or visual motion
+latency. The video preview continues advancing independently.
+`Web/src/snapshot.ts` builds a local PNG from the video and the
+currently rendered WebGL overlay after **explicit** user interaction;
+it marks the output as an illustrative proxy and never silently
+saves anything.
+
+Browser worker support depends on OffscreenCanvas, MediaPipe's
+runtime assumptions and transferable ImageBitmap support; CI
+typechecks, bundles the worker and runs synthetic tests but does not
+execute the Worker on actual iOS Safari. Runtime fallback is
+implemented. A worker failure while processing hides old results,
+then tries to recover with throttled main-thread inference once.
 
 ## Development vs publication
 

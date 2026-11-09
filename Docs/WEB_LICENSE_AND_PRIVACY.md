@@ -53,3 +53,12 @@ References:
 - [MDN getUserMedia secure contexts](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
 - [Z-Anatomy upstream](https://github.com/Z-Anatomy/Models-of-human-anatomy)
 - [CC BY-SA 4.0 terms](https://creativecommons.org/licenses/by-sa/4.0/)
+
+## W1 opt-in local export (2026-11-09)
+
+The Web UI provides **one explicit user-triggered PNG download**.
+Camera frames, canvas data and pose observations remain in the
+browser; the application itself has no recording, automatic saving,
+analytics or upload endpoint. Downloaded files are subsequently
+managed by the user's browser/device. Google MediaPipe SDK network
+metrics obligations remain a distinct public-release review topic.
