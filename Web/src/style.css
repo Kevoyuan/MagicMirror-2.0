@@ -602,3 +602,68 @@ a { color: inherit; }
   .atlas-mapping-tools { padding: 8px; }
   .atlas-map-actions { gap: 5px; }
 }
+
+/* W2e: local, manually clicked source-mesh 3D reference endpoints.
+   NEVER a claim of anatomical joint or camera calibration. */
+.atlas-anchor-tools {
+  margin: 11px 0;
+  padding: 10px;
+  border: 1px solid #b2a071;
+  border-radius: 8px;
+  background: #f1e7cf;
+  color: #354a3d;
+}
+.atlas-anchor-tools h4 {
+  font: 600 15px Georgia, "Songti SC", serif;
+  margin: 0 0 5px;
+}
+.atlas-anchor-tools > p {
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 4px 0 9px;
+  color: #73684d;
+}
+.atlas-anchor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.atlas-anchor-actions button, .atlas-anchor-actions label {
+  border-radius: 6px;
+  border: 1px solid #a99a79;
+  background: #dce4d2;
+  color: #355244;
+  padding: 7px 10px;
+  min-height: 36px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.atlas-anchor-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.atlas-anchor-actions input[type=file] {
+  max-width: 100%;
+  flex: 1 1 100%;
+  font-size: 11px;
+  min-height: 33px;
+}
+#atlas-anchor-summary {
+  margin-top: 9px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #4d6b55;
+}
+.atlas-anchor-message {
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  color: #866749;
+}
+@media (max-width: 600px) {
+  .atlas-anchor-tools { padding: 8px; }
+  .atlas-anchor-actions { gap: 5px; }
+  .atlas-anchor-actions button { flex: 1 1 auto; padding: 7px; }
+}
