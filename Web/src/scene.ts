@@ -135,6 +135,11 @@ export class ProxySkeletonRenderer {
     return i;
   }
 
+  /** Draw on explicit capture so the immediately sampled back buffer is current. */
+  renderForCapture(): void {
+    this.renderer.render(this.scene, this.camera);
+  }
+
   hide(): void {
     for (const mesh of this.bonePool) mesh.visible = false;
     for (const mesh of this.jointPool) mesh.visible = false;

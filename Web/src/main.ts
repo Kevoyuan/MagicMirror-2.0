@@ -1,6 +1,7 @@
 import { coverageFor, type Coverage, type Focus } from "./pose";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
+import { captureLocalPNG } from "./snapshot";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
@@ -345,6 +346,29 @@ function tick(now: number): void {
 
 startButton.addEventListener("click", () => void startCamera());
 stopButton.addEventListener("click", () => stopCamera());
+snapshotButton.addEventListener("click", () => {
+  if (!active || !proxy) return;
+  void (async () => {
+    snapshotButton.disabled = true;
+    try {
+      proxy.renderForCapture();
+      const blob = await captureLocalPNG(video, canvas, stage, mirrored);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `MagicMirror-reference-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      console.error("Explicit local capture failed", error);
+      showGuidance("无法保存 PNG。请确认相机正常，并检查浏览器的下载权限。");
+    } finally {
+      snapshotButton.disabled = !active;
+    }
+  })();
+});
 switchButton.addEventListener("click", () => {
   preferredFacing = preferredFacing === "user" ? "environment" : "user";
   void startCamera();
