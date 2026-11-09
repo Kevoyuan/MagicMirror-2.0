@@ -233,3 +233,34 @@ remain **false**, `licenseEvidence` null, and overall
 point for substantive human license/author audit, not a commercial
 authorization. Do not auto-import its flags as legal signoff or
 upload the JSON. No model geometry is included in the inventory.
+
+## 11. W2c actual source rig inspection and animation preview (2026-11-09)
+
+In the private, user-selected **FBX/GLB static research viewer**,
+it is permitted to inspect **actual authored** Three.js
+`SkinnedMesh`, joint hierarchy, `skinIndex`/`skinWeight`
+attributes and built-in `AnimationClip` data. **No automatic
+weight generation, bone/organ classification or MediaPipe
+retargeting is implemented by this.**
+
+`Web/src/rig-diagnostics.ts` performs **bounded sampling** of
+actual imported weights and joint references, reporting missing
+weight attributes, unweighted/invalid sampled vertices, joint
+indices outside the authored skeleton and suspicious sample weight
+sums. It is a research diagnostic, not a complete binding,
+clinical, anatomical, provenance or commercial authorization
+pass. Do not invent rig data for raw Z-Anatomy FBX.
+
+User-selected model animations can preview in the **separate
+static-model study viewer** via Three.js AnimationMixer. Do not
+autoplay clips when importing models, visiting the page or
+granting camera permission. Pause when closing the study modal,
+discard old actions when replacing imported files, and never
+confuse authored source-file clips with real-time body tracking.
+
+Optional rig-sample diagnostics in the **user-exported** JSON
+must remain explicitly `samplingOnly: true` with overall
+`rightsStatus: NOT_REVIEWED`, even if the imported GLB has
+well-formed weights or animations. Public model distribution and
+true body-to-camera skeletal AR remain separate human-reviewed
+milestones; no Android/native iOS resumption.

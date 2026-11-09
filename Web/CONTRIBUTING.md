@@ -68,3 +68,14 @@ origin and distribution rights were checked. Keep original
 source identifiers intact in notes. Use `textContent` for
 user-imported labels and prevent model texture URLs from
 creating unsolicited remote network fetches.
+
+## Rig and animation claims
+
+Only report joint/weight counts actually found in the imported
+model's `SkinnedMesh` and `skinWeight/skinIndex`.
+Sampling is intentionally limited, and imported animations
+are preview-only, unrelated to observed MediaPipe person
+tracking. Every local source inventory must retain
+`rightsStatus=NOT_REVIEWED`. Never treat a valid clip or
+well-formed joint as evidence that the author approved
+redistribution of the geometry.

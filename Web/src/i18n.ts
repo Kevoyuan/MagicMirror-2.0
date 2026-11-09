@@ -105,6 +105,15 @@ const en: Record<string, string> = {
     "No unreviewed Z-Anatomy meshes are shipped",
   "。真实解剖模型及其署名将按资产来源逐项审核。":
     "Real anatomy models and attribution require source-by-source review.",
+  "绑定与动画诊断": "Rig and authored animation diagnostics",
+  "尚未载入骨骼模型。仅检查模型内实际存在的关节、顶点权重及动画，不进行人体实时跟随。":
+    "No rigged model loaded. Only genuine imported joints, vertex weights and animation clips are inspected; no live body retargeting.",
+  "模型内置动画": "Authored model animation",
+  "无可预览动画": "No previewable animation",
+  "播放": "Play",
+  "暂停": "Pause",
+  "仅播放导入文件自带的动作；不是 MediaPipe 身体动作驱动，也不是已校准的解剖骨骼绑定。":
+    "Only original clips from the imported model are played. This is not MediaPipe body-motion tracking or calibrated anatomy rigging.",
   "原始部件与层级": "Original meshes and hierarchy",
   "尚未导入模型": "No model loaded",
   "按原始网格名称或层级路径搜索": "Search original mesh names or hierarchy paths",

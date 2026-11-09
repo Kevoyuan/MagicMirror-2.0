@@ -1,13 +1,15 @@
 import {
-  AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Group,
+  AmbientLight, AnimationMixer, Box3, Color, DirectionalLight, DoubleSide, Group,
   LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
-  Scene, Vector2, Vector3, WebGLRenderer, type Object3D,
+  Scene, Vector2, Vector3, WebGLRenderer, type AnimationAction,
+  type AnimationClip, type Object3D,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { inspectLocalAtlasFile, normalizeSlice, sliceNormal,
   type SliceOrientation } from "./atlas-source";
 import { effectivePartVisibility, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
 import { buildLocalAtlasInventory, type AtlasInventory } from "./atlas-inventory";
+import { inspectRigSamples, usableAnimationStudyClip, type AnimationStudyClip } from "./rig-diagnostics";
 
 interface LocalMeshEntry {
   readonly id: number;
@@ -25,6 +27,13 @@ export interface LocalAtlasStats {
   skinnedMeshes: number;
   authoredJoints: number;
   hasUsableGeometry: boolean;
+  rigSampledVertices: number;
+  rigUnweightedSamples: number;
+  rigInvalidWeightSamples: number;
+  rigInvalidJointReferences: number;
+  rigSuspiciousWeightSums: number;
+  skinnedMeshesWithoutWeightAttributes: number;
+  animationClips: number;
 }
 
 /**
@@ -47,6 +56,11 @@ export class LocalAtlasViewer {
   private readonly slicePlane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly raycaster = new Raycaster();
   private readonly mouse = new Vector2();
+  private animationMixer?: AnimationMixer;
+  private animationClips: AnimationClip[] = [];
+  private activeAnimation?: AnimationAction;
+  private animationPlaying = false;
+  private lastAnimationFrameMs = 0;
   private frame = 0;
   private loaded = false;
   private loadGeneration = 0;
@@ -63,6 +77,15 @@ export class LocalAtlasViewer {
     triangles: number;
     skinnedMeshes: number;
     authoredJoints: number;
+    rigSamples?: {
+      sampledVertices: number;
+      unweightedVertices: number;
+      invalidWeightSamples: number;
+      invalidJointReferences: number;
+      suspiciousWeightSums: number;
+      skinnedMeshesWithoutWeightAttributes: number;
+      previewableAnimationClips: number;
+    };
   } | null = null;
   private previousPointer?: { x: number; y: number };
   onPartSelected: ((part: AtlasPart) => void) | undefined;
@@ -104,7 +127,14 @@ export class LocalAtlasViewer {
 
   start(): void {
     if (this.frame) return;
-    const tick = () => {
+    const tick = (nowMs: number) => {
+      if (this.animationPlaying && this.animationMixer) {
+        const delta = this.lastAnimationFrameMs === 0
+          ? 0
+          : Math.max(0, Math.min(0.08, (nowMs - this.lastAnimationFrameMs) / 1000));
+        this.animationMixer.update(delta);
+      }
+      this.lastAnimationFrameMs = nowMs;
       this.controls.update();
       this.render();
       this.frame = window.requestAnimationFrame(tick);
@@ -115,6 +145,7 @@ export class LocalAtlasViewer {
   stop(): void {
     if (this.frame) cancelAnimationFrame(this.frame);
     this.frame = 0;
+    this.lastAnimationFrameMs = 0;
   }
 
   cancelPendingLoad(): void {
@@ -175,6 +206,36 @@ export class LocalAtlasViewer {
   }
 
   getIsolatedPartId(): number | null { return this.isolatedPartId; }
+
+  getAnimationClips(): AnimationStudyClip[] {
+    return this.animationClips.map((clip, id) => ({
+      id,
+      name: clip.name || `Clip ${id + 1}`,
+      durationSeconds: clip.duration,
+      trackCount: clip.tracks.length,
+    }));
+  }
+
+  selectAnimation(id: number): boolean {
+    const clip = this.animationClips[id];
+    if (!clip || !this.animationMixer || !Number.isSafeInteger(id)) return false;
+    this.animationMixer.stopAllAction();
+    this.activeAnimation = this.animationMixer.clipAction(clip);
+    this.activeAnimation.reset().play();
+    this.activeAnimation.paused = true;
+    this.animationPlaying = false;
+    this.lastAnimationFrameMs = 0;
+    this.render();
+    return true;
+  }
+
+  setAnimationPlaying(playing: boolean): boolean {
+    if (!this.activeAnimation) return false;
+    this.activeAnimation.paused = !playing;
+    this.animationPlaying = playing;
+    this.lastAnimationFrameMs = 0;
+    return true;
+  }
 
   private findPart(id: number): LocalMeshEntry | undefined {
     return Number.isSafeInteger(id) && id >= 0 ? this.parts[id] : undefined;
@@ -306,19 +367,27 @@ export class LocalAtlasViewer {
     ).join("");
     checkActive();
     let object: Object3D;
+    let sourceAnimations: AnimationClip[] = [];
     if (format === "fbx") {
       const { FBXLoader } = await import("three/addons/loaders/FBXLoader.js");
       checkActive();
       object = new FBXLoader(this.localOnlyLoaderManager()).parse(bytes, "");
+      sourceAnimations = object.animations ?? [];
     } else {
       const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
       checkActive();
-      const parsed = await new Promise<Object3D>((resolve, reject) => {
+      const parsed = await new Promise<{
+        scene: Object3D;
+        animations: AnimationClip[];
+      }>((resolve, reject) => {
         new GLTFLoader(this.localOnlyLoaderManager()).parse(
-          bytes, "", (gltf) => resolve(gltf.scene), reject
+          bytes, "", (gltf) => resolve({
+            scene: gltf.scene, animations: gltf.animations,
+          }), reject
         );
       });
-      object = parsed;
+      object = parsed.scene;
+      sourceAnimations = parsed.animations;
     }
     checkActive();
 
@@ -364,6 +433,39 @@ export class LocalAtlasViewer {
     if (triangles > 2_000_000 || importedMeshes > 5_000) {
       throw new Error("Model exceeds the 2 million-triangle / 5,000-mesh research preview limits. Simplify offline first.");
     }
+    let rigSampledVertices = 0, rigUnweightedSamples = 0;
+    let rigInvalidWeightSamples = 0, rigInvalidJointReferences = 0;
+    let rigSuspiciousWeightSums = 0, skinnedMeshesWithoutWeightAttributes = 0;
+    for (const part of parsedParts) {
+      const skinned = part.mesh as import("three").SkinnedMesh;
+      if (!skinned.isSkinnedMesh || !skinned.skeleton?.bones) continue;
+      const weights = skinned.geometry.getAttribute("skinWeight");
+      const joints = skinned.geometry.getAttribute("skinIndex");
+      if (!weights || !joints || !weights.count || weights.count !== joints.count) {
+        skinnedMeshesWithoutWeightAttributes++;
+        continue;
+      }
+      const sample = inspectRigSamples({
+        vertexCount: Math.min(weights.count, joints.count),
+        jointCount: skinned.skeleton.bones.length,
+        influenceSlots: Math.min(weights.itemSize, joints.itemSize),
+        readWeight: (v, slot) => weights.getComponent(v, slot),
+        readJoint: (v, slot) => joints.getComponent(v, slot),
+      }, Math.max(16, Math.min(256, Math.floor(24000 / Math.max(1, skinnedMeshes)))));
+      rigSampledVertices += sample.sampledVertices;
+      rigUnweightedSamples += sample.unweightedVertices;
+      rigInvalidWeightSamples += sample.invalidWeightSamples;
+      rigInvalidJointReferences += sample.invalidJointReferences;
+      rigSuspiciousWeightSums += sample.suspiciousWeightSums;
+    }
+    const validClips = sourceAnimations.filter((clip, id) =>
+      usableAnimationStudyClip({
+        id,
+        name: clip.name,
+        durationSeconds: clip.duration,
+        trackCount: clip.tracks.length,
+      })
+    ).slice(0, 40);
     const bounds = new Box3().setFromObject(object);
     const size = bounds.getSize(new Vector3());
     const center = bounds.getCenter(new Vector3());
@@ -385,15 +487,30 @@ export class LocalAtlasViewer {
     });
     this.loaded = true;
     this.lastLoaded = object;
+    this.animationClips = validClips;
+    this.animationMixer = validClips.length ? new AnimationMixer(object) : undefined;
     this.sourceIdentity = {
       fileName: file.name, fileSizeBytes: file.size, sourceSHA256,
       importedMeshes, triangles, skinnedMeshes,
       authoredJoints: jointNames.size,
+      rigSamples: {
+        sampledVertices: rigSampledVertices,
+        unweightedVertices: rigUnweightedSamples,
+        invalidWeightSamples: rigInvalidWeightSamples,
+        invalidJointReferences: rigInvalidJointReferences,
+        suspiciousWeightSums: rigSuspiciousWeightSums,
+        skinnedMeshesWithoutWeightAttributes,
+        previewableAnimationClips: validClips.length,
+      },
     };
     this.resetView();
     return {
       file: file.name, importedMeshes, triangles, skinnedMeshes,
       authoredJoints: jointNames.size, hasUsableGeometry: true,
+      rigSampledVertices, rigUnweightedSamples,
+      rigInvalidWeightSamples, rigInvalidJointReferences,
+      rigSuspiciousWeightSums, skinnedMeshesWithoutWeightAttributes,
+      animationClips: validClips.length,
     };
   }
 
@@ -425,6 +542,15 @@ export class LocalAtlasViewer {
   private render(): void { this.renderer.render(this.scene, this.camera); }
 
   private clearModel(): void {
+    this.animationPlaying = false;
+    this.activeAnimation = undefined;
+    this.animationMixer?.stopAllAction();
+    if (this.animationMixer && this.lastLoaded) {
+      this.animationMixer.uncacheRoot(this.lastLoaded);
+    }
+    this.animationMixer = undefined;
+    this.animationClips = [];
+    this.lastAnimationFrameMs = 0;
     this.clearSelection();
     this.parts = [];
     this.isolatedPartId = null;
