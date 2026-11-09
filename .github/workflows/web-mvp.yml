@@ -60,5 +60,43 @@ jobs:
           echo "PASS: public model distribution stays blocked by default."
       - name: Note non-verified browser/rights scope
         run: |
-          echo 'This compiles browser code and runs synthetic unit tests ONLY.'
+          echo 'The ordinary push/PR build compiles sources and runs synthetic unit tests only.'
           echo 'No physical webcam, WebGL, Safari, HTTPS, media model binary, or third-party model redistribution rights validated.'
+
+  # Deliberately manual: no added workflow and NO Chromium install on every
+  # quick push/PR run. Use Actions → Web-first MVP → Run workflow when needed.
+  # Tests only MagicMirror's original generated 3-box GLB. No webcam/task
+  # model, Z-Anatomy assets, user uploads or public release distribution.
+  browser-demo-smoke:
+    name: Original 3D demo browser smoke (manual, Chromium WebGL)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: Web/package.json
+      - name: Install exact developer dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Install isolated headless Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Exercise real GLTF exporter/loader, WebGL and local timeline
+        env:
+          CI: "true"
+        run: npm run test:browser
+      - name: Attach optional original-demo failure diagnostics only
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: magicmirror-original-demo-smoke-failure
+          path: |
+            Web/playwright-report/
+            Web/test-results/
+          if-no-files-found: ignore
+          retention-days: 3
