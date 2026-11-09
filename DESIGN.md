@@ -1,24 +1,109 @@
 # MagicMirror 2.0 — DESIGN.md
 
-> **Historical iOS-only design handoff — NOT the active platform.**
-> Owner decision **2026-11-08** switched MagicMirror to
-> **Web open source first**, preserving the native iOS project on hold.
-> The **Leonardo notebook visual language, compact header, spacious
-> camera and small parchment dock remain active across Web**.
-> Web implementation is under `Web/src/style.css` and `Web/src/main.ts`.
-> iOS-specific SwiftUI/safe-area details below remain useful design
-> research but do not establish current delivery requirements.
-> See `Docs/ADR-003_WEB_OPEN_SOURCE_FIRST.md` and
-> `Docs/WEB_MVP_ROADMAP.md`.
+**Version:** 2.0 — Web Leonardo camera-first design (2026-11-09)  
+**Active product:** Browser-first, open-source educational anatomy mirror  
+**Visual direction:** B · Leonardo Anatomy Notebook, refined for responsive Web  
+**Status:** UI source implementation on a design PR; actual camera/Safari visual acceptance and public model/SDK rights review remain outstanding  
+**Source of truth:** `AGENTS.md`, `Docs/ADR-003_WEB_OPEN_SOURCE_FIRST.md`, `Docs/WEB_MVP_ROADMAP.md`; Web runtime under `Web/src/`  
+**Frozen references:** `Mobile/iOS/` and former iOS UX/architecture documents are preserved but not under active feature development. No native Android work.
 
+## Active Web design · the moving anatomical folio
 
-**Version:** 1.3 — bilingual adaptive Leonardo interface (2026-11-07)  
-**Status:** Owner-selected B / Leonardo direction, with future layer UX concepts; not a claim of implemented anatomy rendering or physical-device verification  
-**Product:** Native iPhone anatomy AR mirror, iOS 17+  
-**Platform scope (2026-11-07):** iOS only. Android designs, Jetpack Compose adaptation and Android parity are not planned.  
-**Repository:** https://github.com/Kevoyuan/MagicMirror-2.0  
-**Applies to:** Mobile/iOS/MagicMirror/ — iOS UI and user-facing real-time rendering only  
-**Authority:** This file owns interaction and visual design. AGENTS.md, ADR-002, the active mobile roadmap, privacy/asset reviews, and code own product/engineering truth.
+The main user job is to **start a private browser camera, observe only confidently detected body regions, and study the illustrative reference skeleton**. The experience must clearly distinguish a procedural GPU proxy from any separately licensed static anatomy model imported by the user.
+
+A simple mental model:
+
+```text
+Leonardo Mirror (live, default)
+├── Slender brand · EN/中文 · real tracking status
+├── Full-bleed camera + truthful 3D procedural proxy
+│   ├── One-shot local PNG (explicit action only)
+│   ├── Optional, collapsible processing diagnostics
+│   └── Tap visible proxy part → short study card → expand details
+├── Compact parchment folio
+│   ├── Whole / Arms / Legs (directly reachable)
+│   ├── Reference opacity (collapsed until requested)
+│   ├── Pause overlay / Flip camera / Stop / Layers
+│   └── Always-visible reference / nonmedical disclosure
+└── On-demand dialogs
+    ├── Anatomy layers and rights: actual Proxy first; unavailable systems locked
+    ├── Local FBX / GLB research: static inspector, no pose binding
+    └── Privacy and provenance
+```
+
+### Product and ethical boundaries
+
+- Live camera is the focal surface; no landing-page gallery, account, multi-tab dashboard, backend inference, forced tutorials, or decorative camera filter.
+- The ordinary RGB camera does **not** measure actual bones. No X-ray, person-specific reconstruction, clinical diagnosis or calibrated anatomical section claims.
+- A visible arm or leg can support partial reference tracking; do not demand full-body framing to start. Hide uncertain segments instead of predicting missing joints.
+- Only the actual **procedural proxy** can be presented as live camera-tracked today. Imported FBX/GLB models are user-chosen, local-only, static research models; source model axes are not validated anatomical planes.
+- No model rights are granted merely by MIT-licensing the new Web code. Public deployment remains subject to verified task-weight redistribution, SDK privacy, mesh-by-mesh rights and honest attribution.
+- Unavailable Z-Anatomy bones, muscles, organs and true cross-sections are informational states, not active colored toggles.
+
+### Responsive spatial hierarchy
+
+| Zone | Design rule | Technical owner |
+| --- | --- | --- |
+| Header | One tight row, status legible, language button at least 44px; camera safe area respected | `Web/src/style.css` `.topbar`, `#language-toggle` |
+| Live stage | Largest uninterrupted view, webcam crop/mirror matched with 3D overlay | `.camera-stage`, video, `#skeleton` |
+| Stage utilities | Snapshot explicit; callback/latency diagnostics collapsed by default | `#snapshot`, `.diagnostics-disclosure` |
+| Learning card | Compact visible segment title, details on demand, never simultaneously cover tracking guidance | `#part-note`, `.part-note-more` |
+| Bottom folio | Whole/Arms/Legs direct; opacity expandable; action row 44px+; reference disclosure persistent | `.control-folio`, `.opacity-disclosure` |
+| Anatomy / Privacy dialogs | Centered parchment study on desktop; scrollable bottom sheet on narrow phones | `dialog.folio-dialog` |
+| Static model viewer | Independent, local-only, clearly labelled as nonanimated research; no hidden upload | `dialog.atlas-dialog` |
+
+**Camera-stage objective:** on a representative portrait browser with ordinary text size, aim for approximately **70% or more of the visible layout area devoted to the stage** (not necessarily an unobscured pixel rectangle: translucencies and safe-area changes vary). Do not hard-code the ratio, or compromise 44px touch targets. At very short viewport heights, vertical scrolling is allowed instead of clipping or shrinking essential controls.
+
+### Leonardo design system · Web token ownership
+
+The Web styling uses coherent, restrained values rather than a parchment-themed decorative wallpaper:
+- **Paper:** `--mm-paper #E5DAC1` / `--mm-paper-light #F4EAD4` for the folio and explanatory surfaces.
+- **Ink:** `--mm-ink #25352E` for readable paragraph text, with `--mm-sepia #8B7658` for rules or noncritical metadata.
+- **Verdigris:** `--mm-verdigris #345B50` for actual actions and selection.
+- **Video scrim:** `--mm-camera-scrim #152820E8` for readable information over moving footage.
+- **Type pairing:** restrained Georgia/system serif for the short *Folio* and *Anatomia* signature; system sans for buttons, guidance, accessibility and long passages.
+- **Rhythm:** 4px baseline, 8/12/16/24px main spacing; 44×44px minimum activation targets; avoid low-contrast, tiny interactive numerals.
+
+`Web/src/style.css` is the **runtime visual-token owner**. These values are a design contract and should be maintained there rather than copied into a second runtime stylesheet. Decorative registration corners and Latin folio labels must not imply pose calibration.
+
+### Progressive disclosure · always tell the truth
+
+1. **Default camera:** focus selector, four essential actions, one-line nonmedical disclosure. No always-visible opacity slider or long performance-readout panel.
+2. **Opacity:** native `<details>` foldout presents the same working reference transparency slider. The closed state still remains keyboard/screen-reader discoverable.
+3. **Diagnostics:** optional `<details>` exposes measured **local processing** indicators, never mislabelled as true display FPS or camera motion-to-photon latency.
+4. **Proxy study note:** when a real visible segment is tapped, show its title and source-safe subtitle. Longer learning copy appears after an explicit expansion, with the nonmedical limitation visible in the full text. A note and framing guidance must not cover each other.
+5. **Anatomy layers:** show **Proxy available** and local model entry before the long licensing explanation; use a disclosure after the genuine controls. Planned systems remain locked/unavailable.
+6. **Local model study:** never substitute its static viewer for live AR, never silently upload, and always label model-axis clipping rather than medically registered transverse/sagittal/coronal planes.
+
+### Locale and accessibility
+
+- Chinese and English are supported directly from `Web/src/i18n.ts`. Decorative Italian/Latin marks are intentionally untranslated; user-facing action labels, errors, foldouts and privacy disclosures must be translated.
+- Preserve exact original filenames, mesh hierarchy node names and provenance; don't send them to a translation API or generate guessed anatomical labels.
+- Use semantic native `button`, `fieldset`, `input`, `summary`, and `dialog` elements. No fake clickable `div`. All interactive surfaces must reach 44px where feasible, have a visible focus outline and be keyboard usable.
+- `dialog` must be dismissible via the existing close button and Escape; mobile bottom sheets stay scrollable and honor safe-area insets.
+- Respect `prefers-reduced-motion`, high contrast, and browser text zoom. At large zoom or short viewports, prioritize scrolling over missing controls.
+- The camera and WebGL canvas should not trigger noisy frame-by-frame screen-reader announcements. Dynamic status text should describe state changes, not expose internal inference timing as health data.
+
+### Review acceptance matrix — Web only
+
+| View / state | Check on real browser | Owner |
+| --- | --- | --- |
+| 390×844 portrait / mobile Safari | Camera stage dominates; header safe; focus and main actions reachable | Web UI |
+| 320px narrow / 200% text zoom | Labels, buttons and privacy copy accessible without horizontal loss | Web UI |
+| Desktop Chrome / Safari | Centered anatomy folio; working camera/video/Three.js overlay crop and mirror | Web + runtime |
+| Start/deny/restart/background | Correct permissions, one source stream, no leaked tracks or stale proxy | Web runtime |
+| Partial pose / lost pose | Only visible segments; concise guidance, note automatically clears if stale | Web runtime |
+| Local anatomy viewer | Explicit import, static model, honest metrics and coordinate-axis cut, no outbound file upload | Web + rights |
+| Keyboard / screen reader | Logical Tab order, focus rings, summary expand/collapse, dialog close, errors | Web UI |
+| Release | Independently reviewed Google weights, SDK disclosures, relevant anatomy licenses | Owner/legal |
+
+**Verification semantics:** `npm run typecheck`, `npm test` and `npm run build:code` establish source quality only. They do **not** prove camera behavior on an iPhone or authorize a public deployment. The full rights-gated `npm run build` must stay blocked until real evidence exists.
+
+---
+
+## Archived native iOS design notes (historical, NOT active)
+
+Everything below this heading is preserved for potential future resumption of SwiftUI development. Its old platform/version labels, 34pt native header numbers, UIKit/Metal descriptions and mobile roadmap references do **not** override the active Web design above.
 
 ## 1. Product contract and design intent
 
