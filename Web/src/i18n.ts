@@ -121,6 +121,15 @@ const en: Record<string, string> = {
   "导出映射草稿": "Export mapping draft",
   "导入本地映射 JSON": "Import local mapping JSON",
   "清空映射": "Clear mappings",
+  "单部件刚体旋转实验 · 本地预览": "Single-mesh rigid rotation · Local experiment",
+  "选择已映射且有 A/B 端点的普通网格，以原始模型的 A 点为支点，绕模型 X/Y/Z 轴旋转。B 点仅表示运动参考方向；不生成骨骼关节、权重或人体实时动画。带 SkinnedMesh 或内置动画的模型不可使用此模式。":
+    "Select a mapped, ordinary mesh with A/B endpoints. Rotate around A using the SOURCE model X/Y/Z axis. B is a movement reference, not a bone joint. No rig, weights or human-driven animation is generated. Models containing SkinnedMesh or authored clips are excluded.",
+  "开启局部运动预览": "Start local rigid preview",
+  "原模型旋转轴": "Source-model rotation axis",
+  "旋转角度": "Rotation angle",
+  "恢复原始姿态": "Restore original pose",
+  "未开始。需要一个普通可见网格、人工映射和两个不同的模型空间端点。":
+    "Not started. Select a visible ordinary mesh with manual mapping and two distinct original-model points.",
   "模型空间端点草稿": "Original model-space point drafts",
   "先在部件列表中选定并映射一个网格，再点“标记起点/终点”，最后在 3D 视图中点击同一网格表面。遮挡时请先独显。坐标来自原始模型，并非解剖关节、已校准姿态或动态骨骼。":
     "First select and map a source mesh, then choose Mark A/B and click the SAME source mesh in the 3D viewer. Isolate if occluded. These are original-model coordinates, not anatomical joints, calibrated pose or a live skeletal rig.",
