@@ -47,3 +47,14 @@ export function sourcePathForPart(
 ): string {
   return [...names, leaf].filter((value) => value.trim() !== "").join(" / ");
 }
+
+/** User toggles are overridden only temporarily by part isolation. */
+export function effectivePartVisibility(
+  originalUserVisible: boolean,
+  partId: number,
+  isolatedPartId: number | null
+): boolean {
+  return isolatedPartId === null
+    ? originalUserVisible
+    : partId === isolatedPartId;
+}
