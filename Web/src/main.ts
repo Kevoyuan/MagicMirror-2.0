@@ -467,7 +467,10 @@ canvas.addEventListener("click", (event) => {
   noteCard.hidden = false;
 });
 element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
-languageButton.addEventListener("click", () => setLocale(locale === "zh" ? "en" : "zh"));
+languageButton.addEventListener("click", () => {
+  setLocale(locale === "zh" ? "en" : "zh");
+  if (atlasViewer) refreshAtlasParts();
+});
 setLocale("zh");
 
 startButton.addEventListener("click", () => void startCamera());
