@@ -487,3 +487,10 @@ Browser CI pins **Ubuntu 24.04** for Playwright's supported Chromium
 runtime; ordinary source checks continue on the current GitHub
 default runner. The browser smoke is specifically software WebGL,
 not an iPhone/physical GPU performance or medical anatomy acceptance.
+
+**First verified browser smoke (2026-11-09):** all **3/3**
+Playwright tests passed on GitHub-hosted Ubuntu 24.04
+Chromium with software WebGL and no webcam permission:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+This is real browser execution of the original generated GLB,
+not a confirmation of Safari/iPhone or original Z-Anatomy FBX behavior.

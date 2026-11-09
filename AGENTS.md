@@ -487,3 +487,11 @@ Browser E2E is a stronger runtime integration test than Vitest
 but its GitHub hosted Chromium software rasterizer cannot
 substitute for actual iPhone Safari/desktop camera,
 thermal/latency, accessibility or source-anatomy validation.
+
+W2j acceptance evidence: the opt-in pull-request Chromium job
+completed with **3/3 Playwright tests passing** on GitHub-hosted
+Ubuntu 24.04 with software WebGL on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+Use this as an integration confidence signal **only**; none of
+the restricted release, physical iPhone Safari, real camera or
+original anatomical asset gates are changed or cleared.

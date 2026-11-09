@@ -391,9 +391,13 @@ rights. Typechecking alone is not a shipped MVP.
   deployment. Use the same `Web-first MVP` workflow,
   with manual dispatch or a `browser-smoke` PR branch,
   no additional workflow.
-- [ ] Validate new smoke on GitHub-hosted real
-  Chromium/WebGL, then verify ordinary PRs still
-  skip expensive Chromium job.
+- [x] Verified the exact opt-in PR workflow on GitHub-hosted
+  Chromium/WebGL: **3/3 Playwright E2E tests passed**,
+  including real generated GLB/WebGL, live timeline
+  controls, bad-source rejection and good JSON reimport.
+  Evidence: https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
+  Ordinary Web pushes still skip Chromium installation;
+  browser-smoke PR branches and manual dispatch opt in.
 - [ ] Independently test actual camera permission,
   iPhone Safari portrait/landscape, real Z-Anatomy
   source FBX import/units, skinning, performance,
