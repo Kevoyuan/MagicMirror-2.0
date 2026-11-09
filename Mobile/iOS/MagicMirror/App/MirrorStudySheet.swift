@@ -17,6 +17,7 @@ struct MirrorStudyNote: Identifiable {
 struct MirrorStudySheet: View {
     let note: MirrorStudyNote
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         NavigationStack {
@@ -102,7 +103,8 @@ struct MirrorStudySheet: View {
         }
         .tint(LeonardoPalette.verdigris)
         .preferredColorScheme(.light)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize
+            ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }
