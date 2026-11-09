@@ -751,6 +751,7 @@ async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
           : "请在同一个原始网格上选择两个不同的端点。";
         return;
       }
+      resetStudyChainDraft();
       atlasAnchors.set(sample.sourceMeshId, next);
       const triplet = sample.originalRootLocalPoint.map(v => v.toFixed(3)).join(", ");
       atlasAnchorMessage.textContent = locale === "en"
@@ -1031,6 +1032,7 @@ function refreshAtlasParts(): void {
         atlasMappings.set(part.id, mapping.value as PoseSegmentId);
       }
       if (former !== atlasMappings.get(part.id)) {
+        resetStudyChainDraft();
         atlasAnchors.delete(part.id);
         atlasViewer?.cancelAnchorPick();
         atlasAnchorMessage.textContent = locale === "en"
@@ -1088,6 +1090,7 @@ atlasExportInventory.addEventListener("click", () => {
 });
 
 atlasMapClear.addEventListener("click", () => {
+  resetStudyChainDraft();
   atlasMappings.clear();
   atlasAnchors.clear();
   atlasViewer?.cancelAnchorPick();
@@ -1137,6 +1140,7 @@ atlasMapImport.addEventListener("change", () => {
     }
     const parsed: unknown = JSON.parse(source);
     const validated = parseDraftMapping(parsed, current);
+    resetStudyChainDraft();
     // An incoming mapping may have changed every semantic part assignment;
     // clear prior anchor pairs instead of silently attaching them to a new one.
     atlasAnchors.clear();
@@ -1309,6 +1313,7 @@ function beginLocalAnchor(endpoint: AnchorEndpoint): void {
 atlasAnchorStart.addEventListener("click", () => beginLocalAnchor("start"));
 atlasAnchorEnd.addEventListener("click", () => beginLocalAnchor("end"));
 atlasAnchorClear.addEventListener("click", () => {
+  resetStudyChainDraft();
   const id = atlasViewer?.getSelectedPartId();
   if (id !== null && id !== undefined) atlasAnchors.delete(id);
   atlasViewer?.cancelAnchorPick();
@@ -1362,6 +1367,7 @@ atlasAnchorImport.addEventListener("change", () => {
     }
     const raw: unknown = JSON.parse(text);
     const checked = parseAnchorDraft(raw, current, atlasMappings);
+    resetStudyChainDraft();
     atlasAnchors.clear();
     atlasViewer?.cancelAnchorPick();
     for (const [id, pair] of checked) atlasAnchors.set(id, pair);
@@ -1407,6 +1413,7 @@ atlasFile.addEventListener("change", () => {
   atlasFile.disabled = true;
   atlasInfo.textContent = "正在本地解析模型；大体积 FBX 可能导致浏览器暂时变慢…";
   void ensureAtlasViewer().then((viewer) => viewer.load(file)).then((stats) => {
+    resetStudyChainDraft();
     atlasInfo.textContent = stats.file + " · " +
       stats.importedMeshes.toLocaleString() + " 网格 · " +
       stats.triangles.toLocaleString() + " 三角形 · " +
