@@ -17,6 +17,7 @@ import {
   sufficientAnchorDistance, type PartAnchorPair, type AnchorEndpoint,
 } from "./atlas-anchors";
 import type { SliceOrientation } from "./atlas-source";
+import type { SourceAxis } from "./rigid-preview";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
@@ -213,6 +214,26 @@ root.innerHTML = `
         </div>
         <p id="atlas-anchor-summary" role="status" aria-live="polite">尚未标记任何模型空间端点</p>
         <div id="atlas-anchor-message" class="atlas-anchor-message" role="status" aria-live="polite"></div>
+      </section>
+      <section class="atlas-rigid-panel" aria-labelledby="atlas-rigid-title">
+        <h4 id="atlas-rigid-title">单部件刚体旋转实验 · 本地预览</h4>
+        <p>选择已映射且有 A/B 端点的普通网格，以原始模型的 A 点为支点，绕模型 X/Y/Z 轴旋转。B 点仅表示运动参考方向；不生成骨骼关节、权重或人体实时动画。带 SkinnedMesh 或内置动画的模型不可使用此模式。</p>
+        <div class="atlas-rigid-controls">
+          <button id="atlas-rigid-begin" type="button" disabled>开启局部运动预览</button>
+          <label for="atlas-rigid-axis">原模型旋转轴
+            <select id="atlas-rigid-axis" disabled>
+              <option value="x">X</option>
+              <option value="y">Y</option>
+              <option value="z" selected>Z</option>
+            </select>
+          </label>
+          <label class="atlas-rigid-range" for="atlas-rigid-angle">旋转角度
+            <input id="atlas-rigid-angle" type="range" min="-90" max="90" step="1" value="0" disabled />
+          </label>
+          <output id="atlas-rigid-degrees" for="atlas-rigid-angle">0°</output>
+          <button id="atlas-rigid-reset" type="button" disabled>恢复原始姿态</button>
+        </div>
+        <p id="atlas-rigid-status" role="status" aria-live="polite">未开始。需要一个普通可见网格、人工映射和两个不同的模型空间端点。</p>
       </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -627,6 +648,12 @@ const atlasAnchorExport = element<HTMLButtonElement>("#atlas-anchor-export");
 const atlasAnchorImport = element<HTMLInputElement>("#atlas-anchor-import");
 const atlasAnchorSummary = element<HTMLElement>("#atlas-anchor-summary");
 const atlasAnchorMessage = element<HTMLElement>("#atlas-anchor-message");
+const atlasRigidBegin = element<HTMLButtonElement>("#atlas-rigid-begin");
+const atlasRigidAxis = element<HTMLSelectElement>("#atlas-rigid-axis");
+const atlasRigidAngle = element<HTMLInputElement>("#atlas-rigid-angle");
+const atlasRigidDegrees = element<HTMLOutputElement>("#atlas-rigid-degrees");
+const atlasRigidReset = element<HTMLButtonElement>("#atlas-rigid-reset");
+const atlasRigidStatus = element<HTMLElement>("#atlas-rigid-status");
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -714,6 +741,36 @@ function refreshAtlasAnchorStatus(): void {
     : `完整端点 ${count} 组 / 共标记 ${atlasAnchors.size} 个网格。 ${selectedStatus} 未经校准。`;
 }
 
+function stopLocalRigidPreview(): void {
+  atlasViewer?.resetRigidPreview();
+  atlasRigidAngle.value = "0";
+  atlasRigidDegrees.textContent = "0°";
+  atlasRigidStatus.textContent = locale === "en"
+    ? "Original mesh pose restored. This study is not anatomical retargeting."
+    : "已恢复来源网格的原始位置；该实验不构成人体动作重定向。";
+}
+
+function refreshAtlasRigidControls(): void {
+  const selectedId = atlasViewer?.getSelectedPartId() ?? null;
+  const points = selectedId !== null ? atlasAnchors.get(selectedId) : undefined;
+  const candidate = selectedId !== null && atlasMappings.has(selectedId) &&
+    Boolean(points && atlasViewer?.canRigidPreview(selectedId, points));
+  const existing = atlasViewer?.getRigidPreviewPartId() ?? null;
+  if (existing !== null && (!candidate || existing !== selectedId)) {
+    stopLocalRigidPreview();
+  }
+  const active = atlasViewer?.getRigidPreviewPartId() !== null &&
+    atlasViewer?.getRigidPreviewPartId() !== undefined;
+  atlasRigidBegin.disabled = !candidate || active;
+  atlasRigidAxis.disabled = !active;
+  atlasRigidAngle.disabled = !active;
+  atlasRigidReset.disabled = !active;
+  if (!active) {
+    atlasRigidAngle.value = "0";
+    atlasRigidDegrees.textContent = "0°";
+  }
+}
+
 function refreshAtlasParts(): void {
   const parts = atlasViewer?.getParts() ?? [];
   const { matches, totalMatches, totalParts, hiddenParts, truncated } =
@@ -732,6 +789,7 @@ function refreshAtlasParts(): void {
   atlasMapImport.disabled = totalParts === 0;
   atlasMapClear.disabled = atlasMappings.size === 0;
   refreshAtlasAnchorStatus();
+  refreshAtlasRigidControls();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -952,6 +1010,49 @@ atlasMapImport.addEventListener("change", () => {
   });
 });
 
+atlasRigidBegin.addEventListener("click", () => {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  const points = id !== null ? atlasAnchors.get(id) : undefined;
+  if (id === null || !points || !atlasMappings.has(id) ||
+      !atlasViewer?.beginRigidPreview(id, points)) {
+    atlasRigidStatus.textContent = locale === "en"
+      ? "Preview unavailable. Use a visible NON-SKINNED mesh, valid A/B points and a model without authored animation clips."
+      : "无法预览：需要可见的非 SkinnedMesh 网格、有效 A/B 端点，且模型不能含内置动画。";
+    refreshAtlasRigidControls();
+    return;
+  }
+  atlasViewer.setRigidPreview("z", 0);
+  atlasRigidAxis.value = "z";
+  atlasRigidAngle.value = "0";
+  atlasRigidDegrees.textContent = "0°";
+  atlasRigidStatus.textContent = locale === "en"
+    ? "LOCAL rigid preview active. Point A is the manual pivot; B is a moving reference, not an anatomical joint."
+    : "已开启本地刚体预览。A 是人工旋转支点，B 是运动参考点，均非真实解剖关节。";
+  refreshAtlasRigidControls();
+});
+function applyRigidAngle(): void {
+  const axis = atlasRigidAxis.value as SourceAxis;
+  const degrees = Number(atlasRigidAngle.value);
+  if (!atlasViewer?.setRigidPreview(axis, degrees)) {
+    stopLocalRigidPreview();
+    refreshAtlasRigidControls();
+    atlasRigidStatus.textContent = locale === "en"
+      ? "Invalid or stale source preview: original pose restored."
+      : "模型数据无效或过期：已恢复来源网格原始位置。";
+    return;
+  }
+  atlasRigidDegrees.textContent = `${degrees}°`;
+  atlasRigidStatus.textContent = locale === "en"
+    ? `Previewing one original mesh around manual pivot A · source-${axis.toUpperCase()} ${degrees}° · NOT calibrated.`
+    : `仅当前原始网格绕人工 A 点运动 · 模型 ${axis.toUpperCase()} 轴 ${degrees}° · 未经校准。`;
+}
+atlasRigidAxis.addEventListener("change", applyRigidAngle);
+atlasRigidAngle.addEventListener("input", applyRigidAngle);
+atlasRigidReset.addEventListener("click", () => {
+  stopLocalRigidPreview();
+  refreshAtlasRigidControls();
+});
+
 function beginLocalAnchor(endpoint: AnchorEndpoint): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasMappings.has(id) ||
@@ -1049,6 +1150,7 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
   });
 });
 atlasDialog.addEventListener("close", () => {
+  stopLocalRigidPreview();
   atlasViewer?.cancelPendingLoad();
   atlasViewer?.cancelAnchorPick();
   atlasViewer?.setAnimationPlaying(false);
@@ -1092,6 +1194,7 @@ atlasFile.addEventListener("change", () => {
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
     atlasExportInventory.disabled = false;
+    stopLocalRigidPreview();
     atlasMappings.clear();
     atlasAnchors.clear();
     atlasViewer?.cancelAnchorPick();
