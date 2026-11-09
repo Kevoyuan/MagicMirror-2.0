@@ -768,3 +768,24 @@ registration gate in a testable pure function, used by
 layers and valid solo selection. The iOS build CI **compiles** the test
 target; physical camera, accessibility and actual live model selection
 must still be checked on a signed physical iPhone.
+
+## Leonardo folio hierarchy refinement (2026-11-09)
+
+The native `AnatomyLayersSheet` now shows a **compact title and the
+Systems/Sections picker first**, followed by current registered-model state
+and actual controls. Long explanations are retained but moved to
+**How anatomy layers work / What do section planes show?** native
+disclosure groups *below* interactive content; the educational/nonmedical
+disclaimer remains available without expanding them. This improves
+first-action visibility on a medium-height iPhone sheet without changing
+camera capture, pose math, atlas authorization or renderer semantics.
+
+`AnatomyLayersSheet`, `MirrorGuideSheet` and `MirrorStudySheet` now
+prefer the large native detent at accessibility Dynamic Type sizes;
+normal text sizes retain medium/large detents. User-facing disclosure
+labels are paired in English and Simplified Chinese.
+
+**QA still required:** screenshot of medium detent on an actual compact
+iPhone showing the first model row, a11y text sizes, Chinese label
+wrapping, VoiceOver order, locked state and actual 3D section eligibility.
+GitHub Simulator build-for-testing proves compilation only.
