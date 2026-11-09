@@ -462,7 +462,7 @@ model weights):
 ```bash
 cd Web
 npm install --legacy-peer-deps
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run test:browser
 ```
 
@@ -494,3 +494,21 @@ Chromium with software WebGL and no webcam permission:
 https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42651083351 .
 This is real browser execution of the original generated GLB,
 not a confirmation of Safari/iPhone or original Z-Anatomy FBX behavior.
+
+### W2k: Original-demo mobile-browser engine coverage
+
+The opt-in suite now runs **six** real browser checks:
+three on desktop Chromium and the same three on
+Linux WebKit using an **iPhone 13 viewport and touch
+emulation**. GitHub-hosted Ubuntu 24.04 verified
+**6/6 passed** for the original generated GLB,
+model-space ghost chain, timeline replay and
+source-locked local JSON on 2026-11-09:
+https://github.com/Kevoyuan/MagicMirror-2.0/actions/runs/42652358053 .
+
+This is meaningful desktop/mobile browser-engine
+integration confidence, but **not** a physical
+iPhone Safari camera/WebGL performance result.
+Real Z-Anatomy licensing, original FBX import,
+medical/camera calibration and public release
+review are not cleared by these tests.

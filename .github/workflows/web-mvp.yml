@@ -63,9 +63,9 @@ jobs:
           echo 'The ordinary push/PR build compiles sources and runs synthetic unit tests only.'
           echo 'No physical webcam, WebGL, Safari, HTTPS, media model binary, or third-party model redistribution rights validated.'
 
-  # Opt-in only: no new workflow and no Chromium installation on ordinary
+  # Opt-in only: no new workflow and no browser-engine installation on ordinary
   # pushes/PRs. Run manually, or name a test PR branch "*browser-smoke*" or "*chromium-demo-smoke*".
-  # Tests only MagicMirror's original generated 3-box GLB. No webcam/task
+  # Tests only MagicMirror's original generated 3-box GLB in Chromium/WebKit. No webcam/task
   # model, Z-Anatomy assets, user uploads or public release distribution.
   browser-demo-smoke:
     name: Original 3D demo browser smoke (Chromium + iPhone WebKit engine)
