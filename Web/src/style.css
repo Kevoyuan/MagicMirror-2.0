@@ -667,3 +667,86 @@ a { color: inherit; }
   .atlas-anchor-actions { gap: 5px; }
   .atlas-anchor-actions button { flex: 1 1 auto; padding: 7px; }
 }
+
+/* W2f — isolated original mesh rigid transform research controls.
+   Purely local, deliberately separate from camera/medical rigging. */
+.atlas-rigid-panel {
+  margin: 11px 0;
+  padding: 11px;
+  border-radius: 9px;
+  background: #e1e6d6;
+  border: 1px solid #9fae8c;
+  color: #314b3e;
+}
+.atlas-rigid-panel h4 {
+  margin: 0 0 6px;
+  font: 600 16px/1.3 Georgia, "Songti SC", serif;
+}
+.atlas-rigid-panel > p {
+  font: 11px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #637460;
+  margin: 5px 0 11px;
+}
+.atlas-rigid-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.atlas-rigid-controls button {
+  min-height: 40px;
+  border: 1px solid #90a48b;
+  border-radius: 6px;
+  background: #e8efdc;
+  color: #315f49;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.atlas-rigid-controls button:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+.atlas-rigid-controls label {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #627560;
+}
+.atlas-rigid-controls select {
+  min-height: 39px;
+  padding: 6px 10px;
+  border: 1px solid #9cae96;
+  border-radius: 6px;
+  background: #f8f2e4;
+  color: #335646;
+}
+.atlas-rigid-range {
+  flex: 1 1 200px;
+}
+.atlas-rigid-range input {
+  width: 100%;
+  height: 30px;
+  accent-color: #477a61;
+}
+.atlas-rigid-controls output {
+  font: 600 14px/40px ui-monospace, SFMono-Regular, Consolas, monospace;
+  min-width: 45px;
+  text-align: center;
+  color: #336b57;
+}
+#atlas-rigid-status {
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 11px 0 2px;
+  color: #55715c;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 620px) {
+  .atlas-rigid-panel { padding: 8px; }
+  .atlas-rigid-panel h4 { font-size: 14px; }
+  .atlas-rigid-controls { gap: 6px; }
+  .atlas-rigid-controls button { flex: 1 1 auto; font-size: 11px; }
+  .atlas-rigid-range { flex-basis: calc(100% - 55px); }
+}
