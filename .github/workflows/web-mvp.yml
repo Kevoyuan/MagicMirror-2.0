@@ -63,13 +63,13 @@ jobs:
           echo 'The ordinary push/PR build compiles sources and runs synthetic unit tests only.'
           echo 'No physical webcam, WebGL, Safari, HTTPS, media model binary, or third-party model redistribution rights validated.'
 
-  # Deliberately manual: no added workflow and NO Chromium install on every
-  # quick push/PR run. Use Actions → Web-first MVP → Run workflow when needed.
+  # Opt-in only: no new workflow and no Chromium installation on ordinary
+  # pushes/PRs. Run manually, or name a test PR branch "*browser-smoke*".
   # Tests only MagicMirror's original generated 3-box GLB. No webcam/task
   # model, Z-Anatomy assets, user uploads or public release distribution.
   browser-demo-smoke:
     name: Original 3D demo browser smoke (manual, Chromium WebGL)
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(github.head_ref, 'browser-smoke'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
