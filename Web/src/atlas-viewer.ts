@@ -1,7 +1,7 @@
 import {
   AmbientLight, AnimationMixer, Box3, Color, DirectionalLight, DoubleSide, Group,
-  LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
-  Scene, Vector2, Vector3, WebGLRenderer, type AnimationAction,
+  LoadingManager, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
+  Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer, type AnimationAction,
   type AnimationClip, type Object3D,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -57,6 +57,12 @@ export class LocalAtlasViewer {
   private readonly slicePlane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly raycaster = new Raycaster();
   private readonly mouse = new Vector2();
+  private readonly anchorMarkerGeometry = new SphereGeometry(1, 12, 9);
+  private readonly anchorMarkerMaterials = [
+    new MeshBasicMaterial({ color: "#f0ba6d", depthTest: false }),
+    new MeshBasicMaterial({ color: "#91d9b8", depthTest: false }),
+  ];
+  private readonly anchorMarkers: Mesh[] = [];
   private animationMixer?: AnimationMixer;
   private animationClips: AnimationClip[] = [];
   private activeAnimation?: AnimationAction;
@@ -110,6 +116,14 @@ export class LocalAtlasViewer {
     light.position.set(-4, 5, 6);
     this.scene.add(light);
     this.scene.add(this.group);
+    for (const material of this.anchorMarkerMaterials) {
+      const marker = new Mesh(this.anchorMarkerGeometry, material);
+      marker.visible = false;
+      marker.renderOrder = 999;
+      marker.scale.setScalar(0.05);
+      this.scene.add(marker);
+      this.anchorMarkers.push(marker);
+    }
     this.camera.position.set(1, 1.1, 8);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
@@ -230,6 +244,25 @@ export class LocalAtlasViewer {
   }
 
   cancelAnchorPick(): void { this.anchorPickTarget = null; }
+
+  /** Visual markers are overlay UI, not imported source geometry or a real joint. */
+  showAnchorMarkers(points: {
+    start: SourcePoint3 | null;
+    end: SourcePoint3 | null;
+  } | null): void {
+    this.lastLoaded?.updateWorldMatrix(true, false);
+    for (const [index, point] of [points?.start ?? null, points?.end ?? null].entries()) {
+      const marker = this.anchorMarkers[index];
+      if (!marker) continue;
+      marker.visible = Boolean(point && this.lastLoaded);
+      if (point && this.lastLoaded) {
+        marker.position.copy(
+          this.lastLoaded.localToWorld(new Vector3(point[0], point[1], point[2]))
+        );
+      }
+    }
+    this.render();
+  }
 
   getAnimationClips(): AnimationStudyClip[] {
     return this.animationClips.map((clip, id) => ({
@@ -560,7 +593,7 @@ export class LocalAtlasViewer {
       if (this.anchorPickTarget) {
         // Explicitly avoid choosing a point on a DIFFERENT source mesh,
         // which could silently corrupt the manually authored relation.
-        if (entry.id !== this.anchorPickTarget.id || !this.lastLoaded) continue;
+        if (entry.id !== this.anchorPickTarget.id || !this.lastLoaded) return;
         this.lastLoaded.updateWorldMatrix(true, false);
         const local = this.lastLoaded.worldToLocal(hit.point.clone());
         const xyz: SourcePoint3 = [local.x, local.y, local.z];
@@ -582,6 +615,7 @@ export class LocalAtlasViewer {
 
   private clearModel(): void {
     this.anchorPickTarget = null;
+    this.showAnchorMarkers(null);
     this.animationPlaying = false;
     this.activeAnimation = undefined;
     this.animationMixer?.stopAllAction();
@@ -619,6 +653,8 @@ export class LocalAtlasViewer {
     this.controls.dispose();
     this.material.dispose();
     this.highlightMaterial.dispose();
+    this.anchorMarkerGeometry.dispose();
+    for (const material of this.anchorMarkerMaterials) material.dispose();
     this.renderer.dispose();
   }
 }
