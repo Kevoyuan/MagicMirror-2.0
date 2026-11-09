@@ -898,3 +898,47 @@ a { color: inherit; }
   .atlas-timeline-actions button { flex: 1 1 auto; }
   .atlas-timeline-track { gap: 5px; }
 }
+
+/* W2j one explicit local study-session file; never a rights or camera claim. */
+.atlas-session-panel {
+  margin: 12px 0 9px; padding: 11px;
+  border: 1px solid #b2a27d; border-radius: 9px;
+  background: #eee6d3; color: #3b5746;
+}
+.atlas-session-panel h4 {
+  margin: 0 0 5px; font: 600 15px/1.4 Georgia,"Songti SC",serif;
+}
+.atlas-session-panel > p {
+  font: 11px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color: #7b6d50; margin: 5px 0 9px;
+}
+.atlas-session-actions {
+  display: flex; flex-wrap: wrap; align-items: end;
+  gap: 6px; margin: 9px 0 8px;
+}
+.atlas-session-actions button,
+.atlas-session-actions label {
+  min-height: 36px; padding: 7px 10px;
+  border: 1px solid #aba384; border-radius: 6px;
+  color: #36584a; background: #e4e9da;
+  font-size: 11px; font-weight: 600;
+}
+.atlas-session-actions button:disabled {
+  opacity: .45; cursor: not-allowed;
+}
+.atlas-session-actions input[type=file] {
+  width: 100%; max-width: 100%;
+  font-size: 11px; min-height: 30px;
+}
+#atlas-session-status {
+  font-weight: 600; color: #456551;
+}
+#atlas-session-diagnostics {
+  font: 11px/1.5 ui-monospace,Consolas,monospace;
+  color: #4b6b57; word-break: break-word;
+}
+#atlas-session-diagnostics:empty { display: none; }
+@media(max-width:620px) {
+  .atlas-session-panel { padding: 8px; }
+  .atlas-session-actions button { flex: 1 1 auto; }
+}

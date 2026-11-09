@@ -450,3 +450,64 @@ retargeting, a human joint motion log,
 a licensed bone or a medical scan.
 Run a real browser interaction test
 before considering it hardware verified.
+
+
+## W2j: save and restore one local study session
+
+Instead of downloading and re-importing the separate mapping,
+endpoint and keyframe JSON files in the right order, open
+**Anatomy layers → Local FBX/GLB viewer** and use
+**Local study session · one-file atomic restore**.
+**Export study session** writes ONE local JSON containing the
+current manual mapping, source A/B points, virtual chain and
+angle keyframes (or an early mapping-only state). It contains
+no model geometry, camera image, authored clip, author license
+or rights approval.
+
+**Import study session JSON** first verifies the exact original
+file SHA-256, byte size and mesh count, every original mesh
+name/path/triangle count, each manual segment and A/B point,
+the parent chain, axes and all frame times. It also refuses
+hidden, skinned or animated source parts. ONLY if the whole
+file passes does it replace the in-memory study state in one
+step; a rejected file changes nothing. Import does not touch
+the webcam, does not auto-start the ghost preview or replay,
+and does not save anything by itself. Click **Preview virtual
+chain** again to see ghosts.
+
+A short **synthetic matrix replay** line reports whether repeated
+source-root transform recomputation is bit-identical with zero
+drift across keyframes and interpolation midpoints. This is a
+numerical reproducibility check ONLY — not camera/body
+calibration, anatomy accuracy, WebGL or real-device validation.
+Real Chrome/Safari import, touch targets and GPU behaviour are
+still unverified; true atlas overlay, per-mesh rights review
+and public release stay blocked.
+
+
+## W1c: a failed worker never reuses an old pose
+
+The camera pipeline now has a small pure gate
+(`src/inference-result.ts`) between the MediaPipe worker and the
+renderer. It accepts a result ONLY when the worker is alive, the
+frame is still the one in flight, the camera session still matches
+and all timings, dimensions, inference cost and up to 33 landmark
+numbers are finite and plausible.
+
+On a worker crash, a 2s inference stall, a malformed CURRENT result
+or a user stop, the engine immediately invalidates that in-flight
+frame, terminates the worker and hides the stale reference. A late
+`result`, `fatal` or `error` that arrives afterwards is ignored —
+it can neither draw a reused pose nor kill the throttled main-thread
+fallback that is already recovering. Bitmaps created while the
+worker died are closed, and frame ids stay monotonic across the
+fallback so the viewer does not mistake new frames for old ones.
+A failure of main-thread inference itself still calls `onFatal`.
+
+`src/inference-result.test.ts` and `src/inference.test.ts` cover
+these paths with fake Worker / fake ImageBitmap / mocked MediaPipe
+only, and Web CI checks that `vite build` produces the
+`pose.worker-*.js` chunk. These are synthetic state-machine tests:
+real Chrome/Safari WASM loading, ImageBitmap transfer, worker crash
+recovery, GPU behaviour and measured latency on physical devices
+remain unverified. The public release gate stays FALSE.

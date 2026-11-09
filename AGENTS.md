@@ -460,3 +460,80 @@ include original authored test keyframes (not human
 recordings), opt-in only. Keep camera/clinical
 retargeting and per-mesh third-party licensing
 completely separate and fail closed.
+
+
+## 18. W2j one-file local study session (2026-11-09)
+
+**Web-first open source remains active; iOS is frozen, Android canceled.**
+The private Folio II viewer may now save and restore the separate
+W2d mapping, W2e anchor, W2g virtual-chain and W2i keyframe drafts
+as ONE explicitly user-downloaded, ORIGINAL-model-SHA-bound local
+JSON session. `Web/src/study-session.ts` is the pure gate; it reuses
+the existing strict `parse*` validators, so every source SHA/size/
+mesh count, original mesh name/path/triangle count, pose segment,
+A/B point, parent graph, axis and angle check still applies.
+
+Import MUST be all-or-nothing: reject unknown/forged rights, camera,
+medical or calibration fields, mismatched chain-versus-anchor
+coordinates, cycles, unselected parents, single/oversized chains,
+duplicate parts and extreme angles BEFORE any live state changes.
+A viewer-side pre-pass must additionally fail closed for hidden,
+skinned or authored-animation source meshes. Do not auto-start the
+chain ghost preview, camera, animation or replay on import, and do
+not persist, upload or bundle source geometry, webcam frames or a
+rights approval. Only an explicit click may download the file.
+
+`studyReplayDiagnostics` is a bounded, pure matrix-replay study at
+authored keyframes and interpolation midpoints: it reports whether
+repeated recomputation from immutable rest data is bit-identical
+with zero drift, plus authored angle ranges and geometric
+endpoint-gap warnings. Zero drift proves ONLY synthetic
+source-root transform reproducibility. It is not camera/body
+registration, anatomical accuracy, WebGL runtime correctness,
+device performance or medical validation.
+
+The 中文 / EN switch must keep the new session controls, status and
+diagnostics aligned, using original local translations only. The
+public release gate stays FALSE; real mesh-by-mesh rights evidence,
+a reviewed rest-pose rig, skin weights, camera extrinsics and
+physical-device QA remain separate blocked milestones. Passing
+source/browser tests does not authorize true anatomical AR or
+public model distribution.
+
+
+## 19. W1c worker fail-closed lifecycle (2026-11-09)
+
+**Web-first open source remains active; iOS is frozen, Android canceled.**
+This closes the W1 item "if worker throws, fail closed/hide its
+geometry rather than reuse old results; fallback must be safe".
+`Web/src/inference-result.ts` is a PURE gate:
+`decideWorkerMessage(state, message)` returns `accept`, `ignore` or
+`fatal` from `closed`, `ready`, `recovering`, `mode`, `workerAlive`,
+`pendingFrameId` and `currentSession`, and validates frame id,
+camera session, finite timings, positive dimensions, nonnegative
+inference cost and at most 33 finite landmarks. It has no DOM,
+Worker, MediaPipe, camera or Three.js dependency.
+
+`LivePoseInference` MUST invalidate `pendingFrameId` and
+`currentSession` synchronously inside `fail()`/`close()`, terminate
+the worker, clear the 2s stall deadline and `settle()` (NOT `reset()`)
+the latest-only gate so frame ids stay monotonic across the throttled
+main-thread fallback. A late `result`, `fatal` or `error` from a
+terminated worker MUST be ignored: never drawn as a reused pose and
+never escalated into `onFatal` while the fallback is recovering.
+`postBitmap` must re-check mode/recovery/frame/session identity after
+the async `createImageBitmap` and close a bitmap whose frame was
+abandoned. A corrupt CURRENT result fails closed; a corrupt STALE
+result is dropped. A boot rejection caused by `close()` must
+propagate, not silently start a main-thread model.
+
+Synthetic Vitest suites must cover the pure gate (normal, stale,
+replaced session, late result after fail, late fatal during recovery,
+malformed payloads) and the lifecycle with fake Worker,
+`createImageBitmap` and MediaPipe mocks (normal frame, stall, crash
+fallback, malformed result, bitmap race, boot close, main-thread
+fatal). Web CI must additionally assert that `vite build` emits a
+`pose.worker-*.js` chunk containing `detectForVideo`. These are NOT
+real Chrome/Safari webcam, WASM/ImageBitmap, GPU or latency
+measurements; the public release gate stays FALSE and all rights,
+cross-browser and physical-device QA remain open.

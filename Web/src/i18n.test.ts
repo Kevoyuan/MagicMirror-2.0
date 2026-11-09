@@ -11,4 +11,11 @@ describe("Web bilingual presentation", () => {
     expect(translate("解剖图层", "zh")).toBe("解剖图层");
     expect(translate("SkeletalSystem100.fbx", "en")).toBe("SkeletalSystem100.fbx");
   });
+  it("translates the W2j study session controls in both locales", () => {
+    expect(translate("导出研究会话", "en")).toBe("Export study session");
+    expect(translate("导入研究会话 JSON", "en")).toBe("Import study session JSON");
+    expect(translate("本地研究会话 · 单文件原子恢复", "en"))
+      .toContain("atomic restore");
+    expect(translate("导出研究会话", "zh")).toBe("导出研究会话");
+  });
 });

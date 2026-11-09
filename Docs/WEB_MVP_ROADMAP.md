@@ -372,3 +372,56 @@ rights. Typechecking alone is not a shipped MVP.
   weights, camera/world landmark registration,
   pose retargeting and privacy/rights signoff
   before advertising true anatomical AR.
+
+
+## W2j · One-file local study session (SOURCE IMPLEMENTED; real browser QA OPEN)
+
+- [x] Bundle the four separate user-authored drafts (W2d mapping,
+  W2e source A/B points, W2g virtual chain, W2i keyframes) into ONE
+  explicitly downloaded, ORIGINAL-model-SHA-bound local JSON.
+- [x] Reuse the existing strict draft parsers: exact source SHA/size/
+  mesh identity, original mesh names/paths/triangles, manual segment
+  assignment, chain-versus-anchor A/B equality, parent graph/axis
+  and every keyframe time/angle.
+- [x] All-or-nothing restore: forged approval/camera/medical fields,
+  unknown keys, cycles, single/oversized chains, duplicate parts,
+  mismatched anchors and extreme angles leave live state untouched.
+- [x] Viewer-side fail-closed check for hidden, skinned or animated
+  source meshes; no automatic ghost preview, camera or replay start.
+- [x] Bounded pure deterministic matrix-replay diagnostic at frames
+  and interpolation midpoints, explicitly NOT calibration evidence.
+- [x] EN/ZH session controls and status copy; synthetic Vitest
+  round-trip, tamper, ordering, no-drift and locale tests; strict
+  TS + Web CI source build.
+- [ ] Verify real FBX/GLB one-file export/import, DOM touch targets
+  and study restore on desktop Chrome and iPhone Safari.
+- [ ] Real per-original-mesh rights review, reviewed anatomical rest
+  rig, camera registration and retargeting remain blocked before any
+  true atlas overlay or public release.
+
+
+## W1c · Worker fail-closed lifecycle (SOURCE IMPLEMENTED; real browser QA OPEN)
+
+- [x] Extract `Web/src/inference-result.ts`, a PURE worker-message gate:
+  `accept` / `ignore` / `fatal` from closed, ready, recovering, mode,
+  workerAlive, in-flight frame id and camera session, plus strict
+  validation of timings, dimensions, inference cost and <=33 finite
+  landmarks. No DOM, Worker, MediaPipe or camera side effects.
+- [x] Invalidate the in-flight frame id and session synchronously on
+  worker crash, stall, malformed result, `close()` and boot abort;
+  terminate the worker and clear its 2s stall deadline.
+- [x] Ignore late worker results/fatals/errors after recovery instead
+  of drawing a reused pose or firing a second fatal; settle (not reset)
+  the latest-only gate so frame ids stay monotonic on the fallback.
+- [x] Re-check frame/session/mode identity after async `createImageBitmap`;
+  close bitmaps whose frame was abandoned; propagate boot rejection
+  when the camera session is closed.
+- [x] Synthetic Vitest coverage for the pure gate (8 cases) and the
+  fake-Worker / fake-MediaPipe lifecycle (7 cases); Web CI asserts
+  that `vite build` emits a `pose.worker-*.js` chunk containing
+  `detectForVideo`.
+- [ ] Verify real Chrome/Safari WASM + transferable ImageBitmap worker
+  boot, crash/stall recovery, fallback cadence, foreground/background
+  camera sessions and measured delivery latency on physical devices.
+- [ ] Keep `releaseApproved: false`; model/rights review, anatomy rig,
+  camera extrinsics and cross-browser acceptance stay separate gates.

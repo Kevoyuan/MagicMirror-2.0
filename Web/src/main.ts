@@ -27,6 +27,10 @@ import {
   type StudyKeyframe,
 } from "./study-timeline";
 import {
+  makeStudySession, parseStudySession, studyReplayDiagnostics,
+  studySessionDownloadName, type StudyReplayDiagnostics,
+} from "./study-session";
+import {
   countLargeStudyGaps, orderStudyChain,
   type StudyChainNode,
 } from "./kinematic-chain";
@@ -299,6 +303,17 @@ root.innerHTML = `
         </div>
         <div id="atlas-timeline-frames" class="atlas-timeline-frames" role="list"></div>
         <p id="atlas-timeline-status" role="status" aria-live="polite">请先预览 2–12 个原始网格，然后记录两个不同时间的关键帧；不执行真实人体追踪。</p>
+      </section>
+      <section class="atlas-session-panel" aria-labelledby="atlas-session-title">
+        <h4 id="atlas-session-title">本地研究会话 · 单文件原子恢复</h4>
+        <p>将人工映射、模型空间端点、虚拟运动链与角度关键帧合并为一份显式下载的本地 JSON。导入时先整体核验原始模型哈希与各草稿一致性，全部通过才一次性替换研究状态；不含模型几何、摄像头画面或任何版权授权。</p>
+        <div class="atlas-session-actions">
+          <button id="atlas-session-export" type="button" disabled>导出研究会话</button>
+          <label for="atlas-session-import">导入研究会话 JSON</label>
+          <input id="atlas-session-import" type="file" accept=".json,application/json" disabled />
+        </div>
+        <p id="atlas-session-status" role="status" aria-live="polite">尚未导出或导入研究会话。导入不会改变摄像头或已加载的原始模型。</p>
+        <p id="atlas-session-diagnostics" role="status" aria-live="polite"></p>
       </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -610,6 +625,7 @@ canvas.addEventListener("click", (event) => {
 element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
 languageButton.addEventListener("click", () => {
   setLocale(locale === "zh" ? "en" : "zh");
+  refreshStudySessionCopy();
   if (atlasViewer) refreshAtlasParts();
   else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
@@ -758,7 +774,48 @@ const atlasTimelineExport = element<HTMLButtonElement>("#atlas-timeline-export")
 const atlasTimelineImport = element<HTMLInputElement>("#atlas-timeline-import");
 const atlasTimelineFrames = element<HTMLElement>("#atlas-timeline-frames");
 const atlasTimelineStatus = element<HTMLElement>("#atlas-timeline-status");
+const atlasSessionExport = element<HTMLButtonElement>("#atlas-session-export");
+const atlasSessionImport = element<HTMLInputElement>("#atlas-session-import");
+const atlasSessionStatus = element<HTMLElement>("#atlas-session-status");
+const atlasSessionDiagnostics = element<HTMLElement>("#atlas-session-diagnostics");
+const SESSION_IDLE_EN = "No study session exported or imported yet. Import never changes the camera or the loaded original model.";
+const SESSION_IDLE_ZH = "尚未导出或导入研究会话。导入不会改变摄像头或已加载的原始模型。";
+const SESSION_INVALID_EN = "A different local model is loaded. Previous study session drafts no longer apply.";
+const SESSION_INVALID_ZH = "已载入不同的本地模型，先前的研究会话草稿不再适用。";
+let lastSessionStatus: { en: string; zh: string } | null = null;
+let lastSessionDiagnostics: { en: string; zh: string } = { en: "", zh: "" };
 let studyTimelineFrames: StudyKeyframe[] = [];
+
+/** Keep the new session status aligned with the 中文 / EN header switch. */
+function refreshStudySessionCopy(): void {
+  const status = lastSessionStatus ??
+    { en: SESSION_IDLE_EN, zh: SESSION_IDLE_ZH };
+  atlasSessionStatus.textContent = locale === "en" ? status.en : status.zh;
+  atlasSessionDiagnostics.textContent = locale === "en"
+    ? lastSessionDiagnostics.en : lastSessionDiagnostics.zh;
+}
+function setSessionStatus(en: string, zh: string): void {
+  lastSessionStatus = { en, zh };
+  refreshStudySessionCopy();
+}
+function setSessionDiagnostics(en: string, zh: string): void {
+  lastSessionDiagnostics = { en, zh };
+  refreshStudySessionCopy();
+}
+function refreshStudySessionControls(): void {
+  const ready = Boolean(atlasViewer?.sourceInventory());
+  atlasSessionExport.disabled = !ready;
+  atlasSessionImport.disabled = !ready;
+}
+function showSessionReplayDiagnostics(report: StudyReplayDiagnostics): void {
+  const tested = report.frameCount > 0 && report.nodeCount >= 2;
+  const verdict = !tested ? "NOT TESTED" : report.deterministic ? "YES" : "NO";
+  const zhVerdict = !tested ? "未测试" : report.deterministic ? "通过" : "失败";
+  setSessionDiagnostics(
+    `Synthetic matrix replay: ${report.frameCount} frames / ${report.nodeCount} source nodes / ${report.sampledPoints} samples · deterministic ${verdict} · max drift ${report.maxReplayDrift} · ${report.largeSourceGaps} distant manual endpoints. STUDY ONLY: not camera, anatomy, WebGL or device validation.`,
+    `合成矩阵重放：${report.frameCount} 帧 / ${report.nodeCount} 个来源节点 / ${report.sampledPoints} 次采样 · 确定性 ${zhVerdict} · 最大漂移 ${report.maxReplayDrift} · ${report.largeSourceGaps} 处人工端点间距偏大。仅为数值一致性研究，不代表相机、解剖、WebGL 或真机验证。`
+  );
+}
 let studyTimelineFrameId = 0;
 let studyTimelineStartedAt = 0;
 let studyTimelineStartPositionMs = 0;
@@ -1075,6 +1132,7 @@ function refreshAtlasParts(): void {
   refreshAtlasRigidControls();
   refreshAtlasChainControls();
   refreshStudyTimelineControls();
+  refreshStudySessionControls();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -1584,6 +1642,107 @@ atlasTimelineImport.addEventListener("change", () => {
   }).finally(() => refreshStudyTimelineControls());
 });
 
+/** W2j: ONE explicit local file replaces the separate W2d/W2e/W2i downloads. */
+atlasSessionExport.addEventListener("click", () => {
+  const source = atlasViewer?.sourceInventory();
+  if (!source) return;
+  try {
+    let chain: StudyChainNode[] = [];
+    if (atlasChainIds.size === 1) {
+      throw new Error(locale === "en"
+        ? "Add a second source mesh to the virtual chain, or clear the one-node draft before exporting."
+        : "请先添加第二个来源网格，或清空只有一个节点的运动链草稿后再导出。");
+    }
+    if (atlasChainIds.size >= 2) chain = chainNodesForCurrentStudy();
+    const bundle = makeStudySession(source, atlasMappings, atlasAnchors,
+      chain, studyTimelineFrames);
+    const blob = new Blob([JSON.stringify(bundle, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = studySessionDownloadName(source.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    showSessionReplayDiagnostics(studyReplayDiagnostics(chain, studyTimelineFrames));
+    const mappings = bundle.mapping.assignments.length;
+    const pairs = bundle.anchors.anchors.length;
+    const keyframes = bundle.timeline?.frames.length ?? 0;
+    setSessionStatus(
+      `Downloaded ONE local study session: ${mappings} mappings, ${pairs} anchor pairs, ${bundle.chain.length} chain nodes, ${keyframes} keyframes. UNCALIBRATED; no geometry, camera frames or rights approval.`,
+      `已下载一份本地研究会话：${mappings} 项映射、${pairs} 组端点、${bundle.chain.length} 个运动链节点、${keyframes} 个关键帧。未经校准；不含模型几何、摄像头画面或版权授权。`
+    );
+  } catch (error) {
+    setSessionStatus(`Export refused: ${String(error)}`,
+      `导出被拒绝：${String(error)}`);
+    setSessionDiagnostics("", "");
+  }
+});
+
+atlasSessionImport.addEventListener("change", () => {
+  const file = atlasSessionImport.files?.[0];
+  atlasSessionImport.value = "";
+  const originalInventory = atlasViewer?.sourceInventory();
+  if (!file || !originalInventory) return;
+  if (file.size < 1 || file.size > 2_000_000) {
+    setSessionStatus("Study session JSON must be 1–2 MB.",
+      "研究会话 JSON 大小须在 1–2 MB 之间。");
+    setSessionDiagnostics("", "");
+    return;
+  }
+  atlasSessionImport.disabled = true;
+  void file.text().then(text => {
+    const current = atlasViewer?.sourceInventory();
+    if (!current ||
+        current.sourceSHA256 !== originalInventory.sourceSHA256 ||
+        current.fileSizeBytes !== originalInventory.fileSizeBytes) {
+      throw new Error("Local source model changed during study session import.");
+    }
+    const raw: unknown = JSON.parse(text);
+    const state = parseStudySession(raw, current);
+    // Viewer-side fail-closed pre-pass BEFORE any live state is touched:
+    // the restored chain must still be plain, visible, unanimated source meshes.
+    for (const node of state.chain) {
+      const pair = state.anchors.get(node.sourceMeshId);
+      if (!pair || !atlasViewer?.canRigidPreview(node.sourceMeshId, pair)) {
+        throw new Error("Restored chain mesh is hidden, skinned or has authored animation; show plain visible parts and retry.");
+      }
+    }
+    // Atomic replace only after the ENTIRE bundle and viewer state validate.
+    resetStudyChainDraft();
+    atlasMappings.clear();
+    for (const [id, segment] of state.mappings) atlasMappings.set(id, segment);
+    atlasAnchors.clear();
+    for (const [id, pair] of state.anchors) atlasAnchors.set(id, pair);
+    atlasViewer?.cancelAnchorPick();
+    for (const node of state.chain) {
+      atlasChainIds.add(node.sourceMeshId);
+      atlasChainParents.set(node.sourceMeshId, node.parentMeshId);
+      atlasChainAngles.set(node.sourceMeshId,
+        { axis: node.axis, degrees: node.degrees });
+    }
+    studyTimelineFrames = state.frames;
+    const firstTime = state.frames[0]?.timeMs ?? 0;
+    atlasTimelineTime.value = String(firstTime);
+    atlasTimelineDisplay.textContent = `${(firstTime / 1000).toFixed(1)}s`;
+    atlasMapError.textContent = "";
+    atlasAnchorMessage.textContent = "";
+    showSessionReplayDiagnostics(
+      studyReplayDiagnostics(state.chain, state.frames));
+    setSessionStatus(
+      `Atomically restored ${state.mappings.size} mappings, ${state.anchors.size} anchor pairs, ${state.chain.length} chain nodes and ${state.frames.length} keyframes. Click Preview virtual chain to see ghosts; NOT calibrated or rights reviewed.`,
+      `已原子恢复 ${state.mappings.size} 项映射、${state.anchors.size} 组端点、${state.chain.length} 个运动链节点与 ${state.frames.length} 个关键帧。点击「预览运动链」查看虚拟网格；未经校准，也未完成版权审核。`
+    );
+    refreshAtlasParts();
+  }).catch(error => {
+    setSessionStatus(`Session import rejected: ${String(error)}`,
+      `研究会话导入被拒绝：${String(error)}`);
+    setSessionDiagnostics("", "");
+  }).finally(() => refreshStudySessionControls());
+});
+
 function beginLocalAnchor(endpoint: AnchorEndpoint): void {
   const id = atlasViewer?.getSelectedPartId() ?? null;
   if (id === null || !atlasMappings.has(id) ||
@@ -1693,6 +1852,7 @@ atlasDialog.addEventListener("close", () => {
   atlasViewer?.stop();
   atlasPlayAnimation.disabled = atlasClipSelect.disabled;
   atlasPauseAnimation.disabled = true;
+  setSessionDiagnostics("", "");
 });
 function loadAtlasFile(file: File, builtInDemo = false): void {
   atlasFile.disabled = true;
@@ -1737,6 +1897,8 @@ function loadAtlasFile(file: File, builtInDemo = false): void {
     atlasViewer?.cancelAnchorPick();
     atlasAnchorMessage.textContent = "";
     atlasMapError.textContent = "";
+    setSessionStatus(SESSION_INVALID_EN, SESSION_INVALID_ZH);
+    setSessionDiagnostics("", "");
     atlasPageLimit = 60;
     atlasPart.textContent = locale === "en"
       ? "Select a source mesh to examine its original name and geometry."

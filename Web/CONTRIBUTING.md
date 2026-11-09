@@ -165,3 +165,48 @@ all camera-independent study lifecycle
 events and batch scene updates.
 Synthetic unit tests cannot replace
 real GPU/mobile browser acceptance.
+
+
+## W2j one-file session and replay review standard
+
+A local study session bundles only the four existing
+user-authored drafts plus the ORIGINAL model identity.
+Never add source geometry, webcam frames, author
+license metadata or a rights/calibration approval
+flag to the exported JSON. Reuse the existing
+W2d/W2e/W2i parsers instead of writing a weaker
+second validator; a session import must be
+all-or-nothing and must not auto-start the ghost
+preview, camera, animation or replay.
+
+`studyReplayDiagnostics` reports synthetic matrix
+reproducibility only. Keep its scope label and
+never advertise zero drift as camera registration,
+anatomical accuracy, WebGL correctness or device
+QA. New session UI strings need both 中文 / EN
+local copy, with dynamic status excluded from
+static translation. Keep the public release gate
+false and list unmet rights/real-browser evidence.
+
+
+## W1c worker failure review standard
+
+Keep worker-result decisions in the pure
+`inference-result.ts` gate; do not scatter ad-hoc
+`if (message.frameId === ...)` checks back into
+the engine or the renderer. Any new worker message
+field must be validated there before it reaches
+`onFrame`. `fail()` and `close()` must invalidate
+the in-flight frame/session first, then terminate
+the worker; never reuse a pose from a worker that
+crashed, stalled or was replaced.
+
+Use `gate.settle()`, not `gate.reset()`, on failure
+so frame ids remain monotonic across the main-thread
+fallback. Re-check frame identity after every await
+in `postBitmap` and close abandoned bitmaps. Add
+synthetic tests for late results/errors, malformed
+payloads and boot-time close whenever the lifecycle
+changes; keep Web CI's worker-chunk assertion.
+Never describe these tests as real Safari/Chrome
+webcam, WASM, GPU or latency verification.

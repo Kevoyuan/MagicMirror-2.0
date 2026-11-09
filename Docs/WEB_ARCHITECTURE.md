@@ -403,3 +403,80 @@ recording, author bone-weight change,
 physical 3D camera calibration, real
 human pose animation or public model
 distribution is authorized by these frames.
+
+
+## W2j one-file local study session and replay diagnostics
+
+`Web/src/study-session.ts` composes the already validated
+`AtlasMappingDraft`, `AtlasAnchorDraft`, an ordered bounded W2g
+`StudyChainNode[]` and an optional `StudyTimelineDraft` into a single
+`magicmirror-local-study-session` document. `makeStudySession` only
+serializes a state whose chain A/B points are byte-identical to the
+validated anchor draft; `parseStudySession` calls
+`parseDraftMapping`, `parseAnchorDraft`, `orderStudyChain` and
+`parseStudyTimelineDraft` in that order and returns nothing unless
+EVERY check passes. No source geometry, camera frames, clip data or
+rights approval is written; no `localStorage`, network request or
+automatic download is used. An early mapping/anchor-only state is
+allowed with an empty chain and `timeline: null`.
+
+Folio II exposes explicit Export/Import controls. The import handler
+first checks that every restored chain mesh is still a visible,
+non-skinned, unanimated source part via
+`LocalAtlasViewer.canRigidPreview`, then replaces mappings, anchors,
+chain IDs/parents/angles and keyframes in ONE batch. It deliberately
+does NOT restart the ghost preview, animation mixer, webcam or
+keyframe loop; the user must click Preview virtual chain again.
+Loading a different model invalidates the previous session status,
+and the 中文 / EN switch keeps the panel, status and diagnostics
+aligned through locally bundled copy.
+
+`studyReplayDiagnostics` samples every authored keyframe and each
+interpolation midpoint, recomputes `studyChainDeltas` twice from the
+immutable authored rest nodes, and compares all 16 matrix elements
+of each node, including a full-sequence restart back to frame 0.
+`deterministic` is true only when the maximum absolute difference is
+exactly zero. The report is labelled
+`SYNTHETIC_SOURCE_MATRIX_REPLAY_ONLY`: it is a numerical
+reproducibility check, not anatomical accuracy, camera calibration,
+WebGL runtime correctness, GPU budget or device QA. Public model
+distribution and real body-to-mesh AR remain separately gated.
+
+
+## W1c worker result gate and fail-closed fallback
+
+`Web/src/inference-result.ts` is a pure decision function placed BETWEEN
+the Worker message boundary and the renderer. `decideWorkerMessage`
+receives the immutable engine snapshot (`closed`, `ready`,
+`recovering`, `mode`, `workerAlive`, `pendingFrameId`,
+`currentSession`) plus the message and returns `accept`, `ignore` or
+`fatal`. `accept` requires a live worker, an unconsumed in-flight
+frame id, an exact camera-session match and finite, plausible timing,
+dimensions, inference cost and at most 33 finite landmark points;
+`null` landmarks are the only honest "no pose" payload. `ignore`
+covers closed/recovering sessions, stale or duplicate frames, replaced
+camera sessions, unknown payloads, malformed STALE results and late
+fatals from terminated workers. A malformed CURRENT result returns
+`fatal`, which fails the worker closed. `workerFailureText` exposes
+only local error strings, never image or pose data.
+
+`Web/src/inference.ts` now consumes that gate for both `message` and
+`error` events. `fail()` and `close()` synchronously set
+`pendingFrameId = 0` and `currentSession = -1`, terminate the worker,
+clear the 2s stall timer and call `gate.settle()` rather than
+`gate.reset()`: the frame sequence stays monotonic so the viewer's
+`lastReceivedFrameId` guard still accepts main-thread fallback frames.
+The once-only recovery builds a throttled main-thread `PoseLandmarker`
+without drawing anything from the dead worker; a second failure on
+the main path calls `onFatal`. `postBitmap` revalidates mode,
+recovery, frame id and session after `await createImageBitmap(...)`
+and closes an abandoned bitmap. A rejection of the boot promise from
+`close()` propagates instead of starting a local model.
+
+`Web/src/inference-result.test.ts` and `Web/src/inference.test.ts` are
+synthetic: fake Worker, fake `createImageBitmap`, fake `OffscreenCanvas`
+and a mocked `@mediapipe/tasks-vision`. The Web CI build step also
+asserts that `vite build` emits a `pose.worker-*.js` chunk containing
+`detectForVideo`. None of this executes WASM, a real ImageBitmap
+transfer, WebGL or Safari; it is a compilation/state-machine check, not
+a latency, camera-quality or hardware acceptance result.

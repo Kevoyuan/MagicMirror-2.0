@@ -46,6 +46,19 @@ jobs:
           npm test
       - name: Compile Web frontend sources (NOT a deployable release)
         run: npm run build:code
+      - name: Verify the MediaPipe worker chunk is emitted by vite build
+        run: |
+          set -euo pipefail
+          worker_chunk=$(find dist/assets -maxdepth 1 -type f -name 'pose.worker-*.js' | head -n 1)
+          if [ -z "$worker_chunk" ]; then
+            echo "::error::vite build emitted no pose.worker chunk; worker inference would silently disappear"
+            exit 1
+          fi
+          if ! grep -q 'detectForVideo' "$worker_chunk"; then
+            echo "::error::pose.worker chunk is missing MediaPipe VIDEO inference code"
+            exit 1
+          fi
+          echo "PASS: $worker_chunk exists and contains VIDEO inference (compilation only, no runtime check)."
       - name: Stage and verify real developer model and local WASM
         run: |
           npm run stage:assets

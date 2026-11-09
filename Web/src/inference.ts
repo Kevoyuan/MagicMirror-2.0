@@ -2,6 +2,9 @@ import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
 import type { WorkerInput, WorkerOutput } from "./inference-protocol";
 import type { PosePoint } from "./pose";
 import { LatestOnlyGate, type InferenceFrame, type CapturedFrame } from "./telemetry";
+import {
+  decideWorkerMessage, workerFailureText, type WorkerResultState,
+} from "./inference-result";
 
 export type InferenceMode = "worker" | "main";
 export interface InferenceOptions {
@@ -13,6 +16,9 @@ export interface InferenceOptions {
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
+
+/** No real camera session uses a negative id; used to invalidate late results. */
+const INVALID_SESSION = -1;
 
 /** One camera session owns one inference engine, worker and frame gate. */
 export class LivePoseInference {
@@ -26,6 +32,7 @@ export class LivePoseInference {
   private workerDeadline?: ReturnType<typeof setTimeout>;
   private recovering = false;
   private pendingFrameId = 0;
+  private currentSession = INVALID_SESSION;
   mode: InferenceMode = "main";
   droppedFrames = 0;
 
@@ -41,9 +48,10 @@ export class LivePoseInference {
         this.ready = true;
         return this.mode;
       } catch (err) {
-        console.warn("MediaPipe Web Worker unavailable; using main-thread fallback", err);
         this.worker?.terminate();
         this.worker = undefined;
+        if (this.closed) throw asError(err);
+        console.warn("MediaPipe Web Worker unavailable; using main-thread fallback", err);
       }
     }
     if (this.closed) throw new Error("Camera session stopped");
@@ -113,32 +121,50 @@ export class LivePoseInference {
     });
     if (this.closed) {
       worker.terminate();
+      this.worker = undefined;
       throw new Error("Camera session stopped during worker setup");
     }
     worker.addEventListener("message", this.onWorkerMessage);
     worker.addEventListener("error", this.onWorkerError);
   }
 
+  /** Immutable snapshot consumed by the pure W1c fail-closed gate. */
+  private resultState(): WorkerResultState {
+    return {
+      closed: this.closed,
+      ready: this.ready,
+      recovering: this.recovering,
+      mode: this.mode,
+      workerAlive: this.worker !== undefined,
+      pendingFrameId: this.pendingFrameId,
+      currentSession: this.currentSession,
+    };
+  }
+
   private onWorkerError = (event: ErrorEvent): void => {
-    this.fail(new Error(event.message || "MediaPipe worker crashed"));
+    const message: WorkerOutput = {
+      kind: "fatal", message: event.message || "MediaPipe worker crashed",
+    };
+    // A terminated worker may still deliver a queued error event. Ignore it
+    // once the session is closed, recovering or already on the main path.
+    if (decideWorkerMessage(this.resultState(), message) !== "fatal") return;
+    this.fail(new Error(workerFailureText(message)));
   };
 
   private onWorkerMessage = (event: MessageEvent<WorkerOutput>): void => {
-    if (this.closed) return;
     const message = event.data;
-    if (message.kind === "fatal") {
-      this.fail(new Error(message.message));
+    const decision = decideWorkerMessage(this.resultState(), message);
+    if (decision === "fatal") {
+      this.fail(new Error(workerFailureText(message)));
       return;
     }
-    if (message.kind !== "result") return;
-    if (message.frameId !== this.pendingFrameId) {
-      // A stale result from an earlier in-flight task can never overwrite
-      // a more recent pose. Our stream is latest-only by construction.
-      return;
-    }
+    // "ignore" covers closed/recovering sessions, stale frame ids, replaced
+    // camera sessions, late results after a crash/stall and unknown payloads.
+    if (decision !== "accept" || message.kind !== "result") return;
     if (this.workerDeadline) clearTimeout(this.workerDeadline);
     this.workerDeadline = undefined;
     this.gate.settle();
+    this.pendingFrameId = 0; // consume the frame so duplicates are ignored
     this.options.onFrame({
       frameId: message.frameId, session: message.session,
       capturedAtMs: message.capturedAtMs,
@@ -154,7 +180,7 @@ export class LivePoseInference {
    * Main-thread fallback is intentionally throttled and synchronous.
    */
   submit(video: HTMLVideoElement, nowMs: number, session: number): void {
-    if (!this.ready || this.closed) return;
+    if (!this.ready || this.closed || this.recovering) return;
     const frame = this.gate.acquire(
       nowMs, video.currentTime, session, video.videoWidth, video.videoHeight,
     );
@@ -163,6 +189,7 @@ export class LivePoseInference {
       return;
     }
     this.pendingFrameId = frame.frameId;
+    this.currentSession = frame.session;
     if (this.worker) {
       void this.postBitmap(video, frame);
       return;
@@ -170,33 +197,51 @@ export class LivePoseInference {
     this.inferMain(video, frame);
   }
 
+  private frameIsCurrent(frame: CapturedFrame, workerExpected: boolean): boolean {
+    return !this.closed && this.ready && !this.recovering &&
+      frame.frameId === this.pendingFrameId && frame.session === this.currentSession &&
+      (workerExpected ? this.mode === "worker" && this.worker !== undefined
+        : this.mode === "main");
+  }
+
   private async postBitmap(video: HTMLVideoElement, frame: CapturedFrame): Promise<void> {
     let bitmap: ImageBitmap | undefined;
     try {
       bitmap = await createImageBitmap(video);
-      if (this.closed || !this.worker || frame.frameId !== this.pendingFrameId) {
+      const worker = this.worker;
+      if (!worker || !this.frameIsCurrent(frame, true)) {
         bitmap.close();
         return;
       }
       const message: WorkerInput = { kind: "frame", ...frame, bitmap };
-      this.worker.postMessage(message, [bitmap]);
+      worker.postMessage(message, [bitmap]);
       bitmap = undefined; // now owned by worker
+      const stalledFrameId = frame.frameId;
       this.workerDeadline = setTimeout(() => {
-        this.fail(new Error("MediaPipe worker inference stalled"));
+        if (this.pendingFrameId === stalledFrameId && !this.closed && !this.recovering &&
+            this.mode === "worker" && this.worker !== undefined) {
+          this.fail(new Error("MediaPipe worker inference stalled"));
+        }
       }, 2000);
     } catch (err) {
       bitmap?.close();
+      // A bitmap failure for an already abandoned frame must not tear down a
+      // healthy/recovered session.
+      if (!this.frameIsCurrent(frame, true)) return;
       this.fail(asError(err));
     }
   }
 
   private inferMain(video: HTMLVideoElement, frame: CapturedFrame): void {
     try {
+      if (!this.frameIsCurrent(frame, false)) return;
       if (!this.task) throw new Error("Main-thread MediaPipe model not initialized");
       const start = performance.now();
       const result = this.task.detectForVideo(video, frame.capturedAtMs);
       const duration = Math.max(0, performance.now() - start);
+      if (!this.frameIsCurrent(frame, false)) return;
       const points = result.landmarks[0] as PosePoint[] | undefined;
+      this.pendingFrameId = 0;
       this.options.onFrame({
         ...frame, inferredInMs: duration,
         landmarks: points ? points.map((p) => ({
@@ -213,10 +258,17 @@ export class LivePoseInference {
   private fail(error: Error): void {
     if (this.closed) return;
     this.ready = false;
+    // Invalidate the in-flight identity synchronously. Any result/error that
+    // arrives after this point belongs to a dead worker and must be dropped,
+    // never drawn as a reused pose.
+    this.pendingFrameId = 0;
+    this.currentSession = INVALID_SESSION;
     this.worker?.terminate();
     this.worker = undefined;
     if (this.workerDeadline) clearTimeout(this.workerDeadline);
     this.workerDeadline = undefined;
+    // settle(), not reset(): frame ids stay monotonic across the fallback so
+    // the viewer's lastReceivedFrameId guard still accepts main-thread frames.
     this.gate.settle();
     if (this.mode === "worker" && !this.recovering) {
       // A Worker can initialize successfully yet fail to ingest a
@@ -243,6 +295,9 @@ export class LivePoseInference {
     if (this.closed) return;
     this.closed = true;
     this.ready = false;
+    this.recovering = false;
+    this.pendingFrameId = 0;
+    this.currentSession = INVALID_SESSION;
     this.abortWorkerBoot?.();
     if (this.workerBootTimer) clearTimeout(this.workerBootTimer);
     if (this.workerDeadline) clearTimeout(this.workerDeadline);
