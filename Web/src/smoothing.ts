@@ -38,7 +38,7 @@ export class TemporalPoseStabilizer {
       const current = points[i];
       if (!usable(current)) {
         this.previous[i] = undefined;
-        result.push({ ...(current ?? { x: 0, y: 0, z: 0 }), visibility: 0, presence: 0 });
+        result.push({ x: 0, y: 0, z: 0, visibility: 0, presence: 0 });
         continue;
       }
       const last = this.previous[i];
