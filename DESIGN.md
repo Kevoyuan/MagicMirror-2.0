@@ -599,3 +599,15 @@ approval badge or label any mesh auto-classified. The visual
 experience remains focused on the original static model.
 No independent camera/atlas composite is enabled until
 true weights, rest anchors, rights and registration pass.
+
+## Folio II · Local source point calibration draft (2026-11-09)
+
+A compact parchment **model-space reference points**
+panel appears above the bounded original mesh list.
+Users select a real, manually mapped part and mark
+A and B by clicking its source 3D surface (isolate
+first when occluded). Show complete pair counts and
+local protected JSON export/import. The labels
+must emphasize *manual, uncalibrated source points*
+rather than genuine anatomical joints or live body
+pose. Keep the viewport as the primary element.

@@ -291,3 +291,44 @@ draft nor a source name authorizes public model publication.
 Before W2e, build a separate explicit rest-pose/anchor review
 and independent error-bounded simulation. No direct live-atlas
 AR activation without human anatomical rig and permission gates.
+
+## 13. W2e local source-model 3D point drafts (2026-11-09)
+
+In Folio II, after the user maps an ORIGINAL source mesh to
+one of the 12 MediaPipe SURFACE segments, the user may explicitly
+select a **start** and **end** point on that same visible mesh via
+Three.js raycasting. Record the hit coordinates in the original
+loaded root object's local coordinate frame, **not** normalized
+viewport, not phone camera coordinates, and not a measured
+human bone/joint position. This does NOT by itself create a
+valid articulated skeletal rig, verified anatomical rest
+pose, vertex weights or physical 3D/body calibration.
+
+`Web/src/atlas-anchors.ts` is the gate for its explicit
+locally exported/imported JSON. Require exact original model
+SHA-256/byte size/mesh IDs/paths/triangle counts and **current
+user-provided** pose-segment mapping. Every exported entry
+must say `USER_SELECTED_UNCALIBRATED`, with
+`calibrationStatus=MANUAL_POINTS_NOT_CALIBRATED`,
+`sourceCoordinateFrame=ORIGINAL_ROOT_LOCAL_UNVERIFIED`,
+`retargetingStatus=NOT_READY` and
+`commercialReuseStatus=NOT_REVIEWED`. Reject forged
+approval fields/overlapping or non-finite endpoints and
+import only after the ENTIRE file validates. Invalidate
+points when its mapping is changed, original model is
+replaced, or the entire mapping JSON is replaced.
+
+Require user interaction before each sample; only actual
+raycast source mesh hits may set a point, and a mesh hit
+on a **different** source object must be ignored. Animations
+should be paused before authoring these reference points.
+The original source coordinate system and actual anatomical
+rest pose are UNVERIFIED, including any potential
+animation deformation at sample time. No automatic upload,
+persistent camera data, source mesh redistribution,
+live overlay activation or iOS/Android work.
+
+Next: validate real body-to-mesh camera frame and joint
+hierarchy with **known original source anatomy**, then
+implement a bounded replay/simulation rather than
+claiming actual calibrated 3D human anatomy.

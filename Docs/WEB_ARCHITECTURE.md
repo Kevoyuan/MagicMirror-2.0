@@ -255,3 +255,31 @@ belong near an **observed surface segment**. It is NOT a
 kinematic hierarchy, skinning, real joint-local orientation,
 3D rest-pose calibration, verified physical bone position,
 rights evidence, camera registration or animated AR model.
+
+## W2e explicit original-root point authoring
+
+Folio II uses the same Three.js source mesh raycaster to
+select two **user-clicked** original model-space reference
+points per explicitly mapped source mesh. The user
+chooses an endpoint, then clicks *that same source mesh*;
+hits on different objects cannot mark it. Each
+`hit.point` (world space) is converted with the
+imported source root's `worldToLocal()`, recording
+original-root local coordinates rather than normalized
+renderer positions. Real model asset file origin and
+rest pose remain unvalidated; paused authored animations
+can still have non-rest transforms, so these points are
+**not** a certified joint or model rig.
+
+`Web/src/atlas-anchors.ts` validates original source
+file SHA-256, byte size, mesh name/path/count/triangle
+identity, exact current W2d segment mapping and
+distinct finite source-space endpoint coordinates.
+Every accepted JSON must state uncalibrated,
+unretargeted, original-frame-unverified and
+NOT_REVIEWED licensing, with no forged approval fields.
+Only the explicit user click downloads this JSON;
+it contains no mesh vertices, camera frames,
+source asset bytes or automatic recording.
+A changed mapping or model invalidates stale points,
+and importing another model's JSON fails closed.

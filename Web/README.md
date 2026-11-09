@@ -294,3 +294,37 @@ retargeting and commercial clearance remain
 `UNVERIFIED / NOT_READY / NOT_REVIEWED`. This is a foundation
 for proper rig authoring, not an active real-time Z-Anatomy
 skeleton overlay and not validated physical anatomy.
+
+## W2e: Click actual source-model reference points
+
+**Local model study → Source-part list → choose a real mesh and
+its manual surface segment → Mark point A / Mark point B.**
+For each endpoint, click the **SAME visible source mesh**
+in the separate 3D study canvas. Isolate the part if
+other meshes hide it. The viewer saves the user's own
+clicked **original model-root local 3D coordinates**,
+not coordinates from the person's camera image.
+
+The control shows how many source parts have both
+distinct points, and how many are still incomplete.
+**Export point draft** produces explicit local JSON;
+**Import point JSON** only accepts matching original
+source SHA-256, size, source mesh IDs/paths/triangles
+and the currently manually chosen pose segment.
+A mapping edit, mapping re-import or new original
+model invalidates earlier points.
+
+These are user-selected source-model **reference
+points only**. No actual anatomical rest pose,
+skinned joint transform, MediaPipe-to-bone live
+retargeting, camera extrinsics, calibrated slice,
+model redistribution or medical validation is
+implied. Pause authored animation before picking;
+positions on an already-deformed paused model
+are not necessarily rest coordinates. The JSON
+includes no source geometry or camera images
+and explicitly marks calibration and rights
+as **NOT READY / NOT REVIEWED**.
+
+The real original Z-Anatomy FBX and mobile Safari
+performance still require physical browser QA.

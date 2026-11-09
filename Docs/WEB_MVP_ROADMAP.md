@@ -224,3 +224,32 @@ rights. Typechecking alone is not a shipped MVP.
 - [ ] Build a separately reviewed true anatomical rig,
   rest-pose anchors, camera/model-space registration and
   real-time skeletal retargeting before any true atlas overlay.
+
+## W2e · Original-source mesh point selection (SOURCE IMPLEMENTED)
+
+- [x] Let users explicitly choose **start/end** model-local
+  sample points on the SAME visible original mesh by 3D
+  raycasting, only after a manual W2d surface-segment
+  assignment. Warn when a mesh is hidden/occluded or
+  its authored animation is still playing.
+- [x] Keep user coordinates in original source-root local
+  space, not normalized renderer/view/camera space; do
+  not call arbitrary clicks verified anatomical joints.
+- [x] Show per-source point A/B and complete-pair progress.
+  Clear when the mesh's surface mapping changes, model
+  is replaced or the mapping draft is imported afresh.
+- [x] SHA-256 + original mesh metadata + exact current
+  pose-segment assignment-locked user-triggered local
+  JSON export/import. Reject forged approval flags,
+  invalid/overlapping/non-finite points, source mismatch
+  and duplicates with all-or-nothing import.
+- [x] Strict TS, pure synthetic endpoint validation,
+  anti-tamper tests and Web source build in CI.
+- [ ] Run original pinned Z-Anatomy desktop FBX and
+  known rigged GLB through actual raycast anchor picks.
+  Evaluate model root origin, FBX units/orientation,
+  accuracy and mobile Safari memory/performance.
+- [ ] Author a real, coherent anatomical rig/rest
+  hierarchy, explicit geometry-to-joint association,
+  physical camera extrinsics and retargeting acceptance.
+  Neither W2d nor W2e enables true live model AR.

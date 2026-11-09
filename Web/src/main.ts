@@ -12,6 +12,10 @@ import {
   makeDraftMapping, mappingDownloadName, parseDraftMapping,
   POSE_SEGMENTS, type PoseSegmentId,
 } from "./atlas-mapping";
+import {
+  completeAnchorPairCount, makeAnchorDraft, parseAnchorDraft,
+  sufficientAnchorDistance, type PartAnchorPair, type AnchorEndpoint,
+} from "./atlas-anchors";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
@@ -196,6 +200,20 @@ root.innerHTML = `
         </div>
         <div id="atlas-map-error" class="atlas-map-message" role="status" aria-live="polite"></div>
       </div>
+      <section class="atlas-anchor-tools" aria-labelledby="atlas-anchor-title">
+        <h4 id="atlas-anchor-title">模型空间端点草稿</h4>
+        <p>先在部件列表中选定并映射一个网格，再点“标记起点/终点”，最后在 3D 视图中点击同一网格表面。遮挡时请先独显。坐标来自原始模型，并非解剖关节、已校准姿态或动态骨骼。</p>
+        <div class="atlas-anchor-actions">
+          <button id="atlas-anchor-start" type="button" disabled>标记起点 A</button>
+          <button id="atlas-anchor-end" type="button" disabled>标记终点 B</button>
+          <button id="atlas-anchor-clear" type="button" disabled>清除此网格端点</button>
+          <button id="atlas-anchor-export" type="button" disabled>导出端点草稿</button>
+          <label for="atlas-anchor-import">导入端点 JSON</label>
+          <input id="atlas-anchor-import" type="file" accept=".json,application/json" disabled />
+        </div>
+        <p id="atlas-anchor-summary" role="status" aria-live="polite">尚未标记任何模型空间端点</p>
+        <div id="atlas-anchor-message" class="atlas-anchor-message" role="status" aria-live="polite"></div>
+      </section>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
       <button id="atlas-more" class="atlas-more" type="button" hidden>显示更多匹配部件</button>
@@ -507,6 +525,7 @@ element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNot
 languageButton.addEventListener("click", () => {
   setLocale(locale === "zh" ? "en" : "zh");
   if (atlasViewer) refreshAtlasParts();
+  else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
   if (atlasClipSelect.disabled && atlasClipSelect.options.length) {
     atlasClipSelect.options[0].textContent = locale === "en"
@@ -600,6 +619,14 @@ const atlasMapClear = element<HTMLButtonElement>("#atlas-map-clear");
 const atlasMapCount = element<HTMLElement>("#atlas-map-count");
 const atlasMapError = element<HTMLElement>("#atlas-map-error");
 const atlasMappings = new Map<number, PoseSegmentId>();
+const atlasAnchors = new Map<number, PartAnchorPair>();
+const atlasAnchorStart = element<HTMLButtonElement>("#atlas-anchor-start");
+const atlasAnchorEnd = element<HTMLButtonElement>("#atlas-anchor-end");
+const atlasAnchorClear = element<HTMLButtonElement>("#atlas-anchor-clear");
+const atlasAnchorExport = element<HTMLButtonElement>("#atlas-anchor-export");
+const atlasAnchorImport = element<HTMLInputElement>("#atlas-anchor-import");
+const atlasAnchorSummary = element<HTMLElement>("#atlas-anchor-summary");
+const atlasAnchorMessage = element<HTMLElement>("#atlas-anchor-message");
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -629,6 +656,28 @@ async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
       displayAtlasPart(part);
       refreshAtlasParts();
     };
+    viewer.onAnchorPicked = (sample) => {
+      if (!atlasMappings.has(sample.sourceMeshId)) return;
+      const existing = atlasAnchors.get(sample.sourceMeshId) ?? {
+        start: null, end: null,
+      };
+      const next: PartAnchorPair = {
+        ...existing,
+        [sample.endpoint]: sample.originalRootLocalPoint,
+      };
+      if (next.start && next.end && !sufficientAnchorDistance(next.start, next.end)) {
+        atlasAnchorMessage.textContent = locale === "en"
+          ? "Two distinct points are required on the SAME source mesh."
+          : "请在同一个原始网格上选择两个不同的端点。";
+        return;
+      }
+      atlasAnchors.set(sample.sourceMeshId, next);
+      const triplet = sample.originalRootLocalPoint.map(v => v.toFixed(3)).join(", ");
+      atlasAnchorMessage.textContent = locale === "en"
+        ? `Stored ${sample.endpoint} point [${triplet}] (source-root local; NOT calibrated).`
+        : `已记录${sample.endpoint === "start" ? "起点" : "终点"} [${triplet}]（原始模型局部坐标，未经校准）。`;
+      refreshAtlasParts();
+    };
     atlasViewer = viewer;
     return viewer;
   }).finally(() => { atlasInit = undefined; });
@@ -639,6 +688,30 @@ function displayAtlasPart(part: AtlasPart): void {
   atlasPart.textContent = locale === "en"
     ? `Original source: ${part.path} · ${part.triangles.toLocaleString()} triangles. Static geometry; NOT a tracked bone.`
     : `来源部件：${part.path} · ${part.triangles.toLocaleString()} 个三角形。仅静态网格，不是实时追踪的骨骼。`;
+}
+
+function refreshAtlasAnchorStatus(): void {
+  const partId = atlasViewer?.getSelectedPartId() ?? null;
+  const assigned = partId !== null ? atlasMappings.get(partId) : undefined;
+  const selectedPoints = partId !== null ? atlasAnchors.get(partId) : undefined;
+  atlasViewer?.showAnchorMarkers(selectedPoints ?? null);
+  const count = completeAnchorPairCount(atlasAnchors);
+  const inventory = atlasViewer?.sourceInventory();
+  atlasAnchorStart.disabled = !assigned;
+  atlasAnchorEnd.disabled = !assigned;
+  atlasAnchorClear.disabled = !selectedPoints;
+  atlasAnchorExport.disabled = !inventory || atlasAnchors.size === 0;
+  atlasAnchorImport.disabled = !inventory || atlasMappings.size === 0;
+  const selectedStatus = !assigned
+    ? (locale === "en"
+      ? "Select a mapped original mesh before choosing endpoints."
+      : "请先选择一个已人工映射的来源网格。")
+    : (locale === "en"
+      ? `Selected source #${partId}: A ${selectedPoints?.start ? "✓" : "–"} / B ${selectedPoints?.end ? "✓" : "–"}.`
+      : `已选来源网格 #${partId}：起点 A ${selectedPoints?.start ? "✓" : "–"} / 终点 B ${selectedPoints?.end ? "✓" : "–"}。`);
+  atlasAnchorSummary.textContent = locale === "en"
+    ? `${count} complete / ${atlasAnchors.size} annotated source meshes. ${selectedStatus} NOT calibrated.`
+    : `完整端点 ${count} 组 / 共标记 ${atlasAnchors.size} 个网格。 ${selectedStatus} 未经校准。`;
 }
 
 function refreshAtlasParts(): void {
@@ -658,6 +731,7 @@ function refreshAtlasParts(): void {
   atlasMapExport.disabled = totalParts === 0;
   atlasMapImport.disabled = totalParts === 0;
   atlasMapClear.disabled = atlasMappings.size === 0;
+  refreshAtlasAnchorStatus();
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -746,9 +820,17 @@ function refreshAtlasParts(): void {
     }
     mapping.value = atlasMappings.get(part.id) ?? "";
     mapping.addEventListener("change", () => {
+      const former = atlasMappings.get(part.id);
       if (mapping.value === "") atlasMappings.delete(part.id);
       else if (POSE_SEGMENTS.some((segment) => segment.id === mapping.value)) {
         atlasMappings.set(part.id, mapping.value as PoseSegmentId);
+      }
+      if (former !== atlasMappings.get(part.id)) {
+        atlasAnchors.delete(part.id);
+        atlasViewer?.cancelAnchorPick();
+        atlasAnchorMessage.textContent = locale === "en"
+          ? "Changing a surface mapping cleared that part's old anchor points."
+          : "已清除该部件以前的端点，因为体表映射发生了变化。";
       }
       atlasMapError.textContent = "";
       refreshAtlasParts();
@@ -802,6 +884,9 @@ atlasExportInventory.addEventListener("click", () => {
 
 atlasMapClear.addEventListener("click", () => {
   atlasMappings.clear();
+  atlasAnchors.clear();
+  atlasViewer?.cancelAnchorPick();
+  atlasAnchorMessage.textContent = "";
   atlasMapError.textContent = "";
   refreshAtlasParts();
 });
@@ -847,6 +932,10 @@ atlasMapImport.addEventListener("change", () => {
     }
     const parsed: unknown = JSON.parse(source);
     const validated = parseDraftMapping(parsed, current);
+    // An incoming mapping may have changed every semantic part assignment;
+    // clear prior anchor pairs instead of silently attaching them to a new one.
+    atlasAnchors.clear();
+    atlasViewer?.cancelAnchorPick();
     // Atomic update only after EVERY input/source field has passed checks.
     atlasMappings.clear();
     for (const [id, segment] of validated) atlasMappings.set(id, segment);
@@ -860,6 +949,90 @@ atlasMapImport.addEventListener("change", () => {
       : `映射导入被拒绝：${String(error)}`;
   }).finally(() => {
     atlasMapImport.disabled = !atlasViewer?.sourceInventory();
+  });
+});
+
+function beginLocalAnchor(endpoint: AnchorEndpoint): void {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  if (id === null || !atlasMappings.has(id) ||
+      !atlasViewer?.beginAnchorPick(id, endpoint)) {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Select a mapped, visible source mesh and pause any authored animation before marking."
+      : "请先选择并映射一个可见原始网格，并暂停模型动画后再标记。";
+    return;
+  }
+  atlasAnchorMessage.textContent = locale === "en"
+    ? `Click the selected source mesh #${id} in the 3D viewer to mark the ${endpoint} point. Isolate it if occluded.`
+    : `请在 3D 模型视图点击选中的来源网格 #${id}，标记${endpoint === "start" ? "起点 A" : "终点 B"}；如被遮挡，请先独显。`;
+}
+atlasAnchorStart.addEventListener("click", () => beginLocalAnchor("start"));
+atlasAnchorEnd.addEventListener("click", () => beginLocalAnchor("end"));
+atlasAnchorClear.addEventListener("click", () => {
+  const id = atlasViewer?.getSelectedPartId();
+  if (id !== null && id !== undefined) atlasAnchors.delete(id);
+  atlasViewer?.cancelAnchorPick();
+  atlasAnchorMessage.textContent = locale === "en"
+    ? "Cleared anchor points for the selected mesh."
+    : "已清除当前选中来源网格的两个端点。";
+  refreshAtlasAnchorStatus();
+});
+atlasAnchorExport.addEventListener("click", () => {
+  const inventory = atlasViewer?.sourceInventory();
+  if (!inventory) return;
+  try {
+    const manifest = makeAnchorDraft(inventory, atlasMappings, atlasAnchors);
+    const filename = mappingDownloadName(inventory.fileName)
+      .replace("-manual-pose-map.json", "-source-anchor-draft.json");
+    const blob = new Blob([JSON.stringify(manifest, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Saved LOCAL uncalibrated model-coordinate points. No weights, rights or camera calibration included."
+      : "已在本地保存未经校准的原始模型端点。不包含权重、授权或相机标定。";
+  } catch (error) {
+    atlasAnchorMessage.textContent = `Export refused: ${String(error)}`;
+  }
+});
+atlasAnchorImport.addEventListener("change", () => {
+  const file = atlasAnchorImport.files?.[0];
+  atlasAnchorImport.value = "";
+  const originalInventory = atlasViewer?.sourceInventory();
+  if (!file || !originalInventory) return;
+  if (file.size < 1 || file.size > 2_000_000) {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Anchor JSON must be 1–2 MB." : "端点 JSON 文件大小必须为 1–2 MB。";
+    return;
+  }
+  atlasAnchorImport.disabled = true;
+  void file.text().then((text) => {
+    const current = atlasViewer?.sourceInventory();
+    if (!current ||
+        current.sourceSHA256 !== originalInventory.sourceSHA256 ||
+        current.fileSizeBytes !== originalInventory.fileSizeBytes) {
+      throw new Error("The local original model changed during anchor import.");
+    }
+    const raw: unknown = JSON.parse(text);
+    const checked = parseAnchorDraft(raw, current, atlasMappings);
+    atlasAnchors.clear();
+    atlasViewer?.cancelAnchorPick();
+    for (const [id, pair] of checked) atlasAnchors.set(id, pair);
+    atlasAnchorMessage.textContent = locale === "en"
+      ? `Loaded ${checked.size} LOCAL anchor drafts (not calibrated or legally cleared).`
+      : `已导入 ${checked.size} 组本地端点草稿（未经校准或版权审核）。`;
+    refreshAtlasAnchorStatus();
+  }).catch((error) => {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? `Anchor import refused: ${String(error)}`
+      : `端点导入被拒绝：${String(error)}`;
+  }).finally(() => {
+    refreshAtlasAnchorStatus();
   });
 });
 
@@ -877,6 +1050,7 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
 });
 atlasDialog.addEventListener("close", () => {
   atlasViewer?.cancelPendingLoad();
+  atlasViewer?.cancelAnchorPick();
   atlasViewer?.setAnimationPlaying(false);
   atlasViewer?.stop();
   atlasPlayAnimation.disabled = atlasClipSelect.disabled;
@@ -919,6 +1093,9 @@ atlasFile.addEventListener("change", () => {
     atlasResetCamera.disabled = false;
     atlasExportInventory.disabled = false;
     atlasMappings.clear();
+    atlasAnchors.clear();
+    atlasViewer?.cancelAnchorPick();
+    atlasAnchorMessage.textContent = "";
     atlasMapError.textContent = "";
     atlasPageLimit = 60;
     atlasPart.textContent = locale === "en"
