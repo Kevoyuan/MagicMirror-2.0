@@ -79,3 +79,15 @@ tracking. Every local source inventory must retain
 `rightsStatus=NOT_REVIEWED`. Never treat a valid clip or
 well-formed joint as evidence that the author approved
 redistribution of the geometry.
+
+## W2d rig-mapping drafts are NOT rights or animation approvals
+
+Human-entered per-mesh `PoseSegmentId` assignments are
+bound to exact original model SHA-256, byte size and real
+mesh identity. Preserve the source fields and FAIL CLOSED
+on all unknown/forged license/retargeting states. Never
+automatically classify source mesh names as bones, assign
+skin weights, or activate real camera anatomy AR based only
+on a matching JSON. A matching original source and draft
+are still **not** a legal redistribution grant, calibrated
+rest pose or authored animation rig.

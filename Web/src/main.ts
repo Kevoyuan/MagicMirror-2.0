@@ -8,6 +8,10 @@ import { TemporalPoseStabilizer } from "./smoothing";
 import type { LocalAtlasViewer, LocalAtlasStats } from "./atlas-viewer";
 import { searchAtlasParts, type AtlasPart } from "./atlas-catalog";
 import { inventoryDownloadName } from "./atlas-inventory";
+import {
+  makeDraftMapping, mappingDownloadName, parseDraftMapping,
+  POSE_SEGMENTS, type PoseSegmentId,
+} from "./atlas-mapping";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
@@ -179,6 +183,18 @@ root.innerHTML = `
         <button id="atlas-restore" type="button" disabled>退出独立显示</button>
         <button id="atlas-reset-camera" type="button" disabled>重置视角</button>
         <button id="atlas-export-inventory" type="button" disabled>导出来源清单 JSON</button>
+      </div>
+      <div class="atlas-mapping-tools" aria-labelledby="atlas-map-title">
+        <h4 id="atlas-map-title">人工姿态映射草稿 · 非实际骨骼绑定</h4>
+        <p>请根据原始网格名称与实际模型，自行标记对应的 MediaPipe 体表参考段。映射未经过解剖、骨骼绑定或相机校准审核。</p>
+        <div class="atlas-map-actions">
+          <span id="atlas-map-count" role="status" aria-live="polite">未映射任何原始网格</span>
+          <button id="atlas-map-export" type="button" disabled>导出映射草稿</button>
+          <label for="atlas-map-import">导入本地映射 JSON</label>
+          <input id="atlas-map-import" type="file" accept=".json,application/json" disabled />
+          <button id="atlas-map-clear" type="button" disabled>清空映射</button>
+        </div>
+        <div id="atlas-map-error" class="atlas-map-message" role="status" aria-live="polite"></div>
       </div>
       <div id="atlas-part-list" class="atlas-part-list" role="list"
         aria-label="已导入模型的来源部件列表"></div>
@@ -578,6 +594,12 @@ const atlasRestore = element<HTMLButtonElement>("#atlas-restore");
 const atlasResetCamera = element<HTMLButtonElement>("#atlas-reset-camera");
 const atlasExportInventory = element<HTMLButtonElement>("#atlas-export-inventory");
 const atlasMore = element<HTMLButtonElement>("#atlas-more");
+const atlasMapExport = element<HTMLButtonElement>("#atlas-map-export");
+const atlasMapImport = element<HTMLInputElement>("#atlas-map-import");
+const atlasMapClear = element<HTMLButtonElement>("#atlas-map-clear");
+const atlasMapCount = element<HTMLElement>("#atlas-map-count");
+const atlasMapError = element<HTMLElement>("#atlas-map-error");
+const atlasMappings = new Map<number, PoseSegmentId>();
 let atlasPageLimit = 60;
 const atlasSection = element<HTMLSelectElement>("#atlas-section");
 const atlasLevel = element<HTMLInputElement>("#atlas-level");
@@ -630,6 +652,12 @@ function refreshAtlasParts(): void {
   atlasRestore.disabled = isolated === null;
   atlasMore.hidden = !truncated;
   atlasMore.disabled = atlasPageLimit >= 300;
+  atlasMapCount.textContent = locale === "en"
+    ? `${atlasMappings.size} mapped / ${totalParts} source meshes · uncalibrated manual draft`
+    : `人工映射 ${atlasMappings.size} / ${totalParts} 个来源网格 · 未经校准`;
+  atlasMapExport.disabled = totalParts === 0;
+  atlasMapImport.disabled = totalParts === 0;
+  atlasMapClear.disabled = atlasMappings.size === 0;
 
   const fragment = document.createDocumentFragment();
   let lastGroup = "";
@@ -707,7 +735,25 @@ function refreshAtlasParts(): void {
       }
     });
 
-    entry.append(caption, count, visibilityLabel, isolate, focus);
+    const mapping = document.createElement("select");
+    mapping.className = "atlas-map-segment";
+    mapping.setAttribute("aria-label", (locale === "en"
+      ? "Draft MediaPipe surface segment for " : "为来源网格选择体表参考段：") + part.path);
+    mapping.title = locale === "en" ? "Draft only · no physical bone rig" : "仅人工草稿 · 非骨骼绑定";
+    mapping.add(new Option(locale === "en" ? "Unassigned" : "未映射", ""));
+    for (const segment of POSE_SEGMENTS) {
+      mapping.add(new Option(locale === "en" ? segment.en : segment.zh, segment.id));
+    }
+    mapping.value = atlasMappings.get(part.id) ?? "";
+    mapping.addEventListener("change", () => {
+      if (mapping.value === "") atlasMappings.delete(part.id);
+      else if (POSE_SEGMENTS.some((segment) => segment.id === mapping.value)) {
+        atlasMappings.set(part.id, mapping.value as PoseSegmentId);
+      }
+      atlasMapError.textContent = "";
+      refreshAtlasParts();
+    });
+    entry.append(caption, count, mapping, visibilityLabel, isolate, focus);
     fragment.append(entry);
   }
   atlasPartList.replaceChildren(fragment);
@@ -752,6 +798,69 @@ atlasExportInventory.addEventListener("click", () => {
       : "无法导出本地 JSON 清单。";
     console.error("Local inventory export failed", error);
   }
+});
+
+atlasMapClear.addEventListener("click", () => {
+  atlasMappings.clear();
+  atlasMapError.textContent = "";
+  refreshAtlasParts();
+});
+atlasMapExport.addEventListener("click", () => {
+  const inventory = atlasViewer?.sourceInventory();
+  if (!inventory) return;
+  try {
+    const draft = makeDraftMapping(inventory, atlasMappings);
+    const blob = new Blob([JSON.stringify(draft, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = mappingDownloadName(inventory.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasMapError.textContent = locale === "en"
+      ? "Downloaded a LOCAL, UNCALIBRATED source-to-surface-segment draft. No assets or rights are cleared."
+      : "已在本地导出未经校准的网格-体表映射草稿；不包含模型、不构成授权。";
+  } catch (error) {
+    atlasMapError.textContent = String(error);
+  }
+});
+atlasMapImport.addEventListener("change", () => {
+  const file = atlasMapImport.files?.[0];
+  atlasMapImport.value = "";
+  const originalInventory = atlasViewer?.sourceInventory();
+  if (!file || !originalInventory) return;
+  if (file.size < 1 || file.size > 2_000_000) {
+    atlasMapError.textContent = locale === "en"
+      ? "Mapping JSON must be 1–2 MB." : "映射 JSON 大小必须为 1–2 MB。";
+    return;
+  }
+  atlasMapImport.disabled = true;
+  void file.text().then((source) => {
+    const current = atlasViewer?.sourceInventory();
+    if (!current ||
+        current.sourceSHA256 !== originalInventory.sourceSHA256 ||
+        current.fileSizeBytes !== originalInventory.fileSizeBytes) {
+      throw new Error("Local source model changed during mapping import.");
+    }
+    const parsed: unknown = JSON.parse(source);
+    const validated = parseDraftMapping(parsed, current);
+    // Atomic update only after EVERY input/source field has passed checks.
+    atlasMappings.clear();
+    for (const [id, segment] of validated) atlasMappings.set(id, segment);
+    atlasMapError.textContent = locale === "en"
+      ? `Loaded ${validated.size} manually assigned parts. Source hash verified; no rig calibration or license validation.`
+      : `已载入 ${validated.size} 项人工映射；原始模型哈希匹配，但未校准或完成版权审核。`;
+    refreshAtlasParts();
+  }).catch((error) => {
+    atlasMapError.textContent = locale === "en"
+      ? `Mapping import refused: ${String(error)}`
+      : `映射导入被拒绝：${String(error)}`;
+  }).finally(() => {
+    atlasMapImport.disabled = !atlasViewer?.sourceInventory();
+  });
 });
 
 element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () => {
@@ -809,6 +918,8 @@ atlasFile.addEventListener("change", () => {
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
     atlasExportInventory.disabled = false;
+    atlasMappings.clear();
+    atlasMapError.textContent = "";
     atlasPageLimit = 60;
     atlasPart.textContent = locale === "en"
       ? "Select a source mesh to examine its original name and geometry."

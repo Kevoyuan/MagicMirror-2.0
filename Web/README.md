@@ -268,3 +268,29 @@ physical browser validation. A real tracked anatomical
 skeleton requires an independently authored cohesive rig,
 pose-to-joint retargeter, anatomical camera registration,
 per-part rights signoff and measured performance.
+
+## W2d: Manually map original source meshes to pose segments
+
+In **Anatomy layers → Load local FBX / GLB → Original meshes and
+hierarchy**, each imported source mesh row now has a dropdown:
+**Unassigned** (default), or one of the **12 visible
+MediaPipe surface-reference segments** (upper arms, forearms,
+thighs, shins, torso/shoulder/hip spans). This is a manual
+study draft; several source parts may share a segment.
+
+Choose mappings explicitly, then click **Export mapping draft**
+to save local JSON. Later, after choosing the *identical*
+original model, use **Import local mapping JSON**. The importer
+checks original source SHA-256, file size, actual mesh list
+count, original source names, hierarchy paths, triangle counts,
+valid segments, duplicates and forged approval fields.
+A failure leaves existing assignments unchanged. The local
+mapping can be cleared at any time.
+
+The JSON includes **no original vertices, no camera images, no
+source assets, and no redistribution/license grant**.
+Every entry is `USER_DRAFT_UNCALIBRATED`; overall model-space,
+retargeting and commercial clearance remain
+`UNVERIFIED / NOT_READY / NOT_REVIEWED`. This is a foundation
+for proper rig authoring, not an active real-time Z-Anatomy
+skeleton overlay and not validated physical anatomy.
