@@ -482,3 +482,8 @@ to opt into the heavier Chromium job in the
 publicly deployable release, not Z-Anatomy
 usage permission and **not physical iPhone Safari
 or real camera acceptance**.
+
+Browser CI pins **Ubuntu 24.04** for Playwright's supported Chromium
+runtime; ordinary source checks continue on the current GitHub
+default runner. The browser smoke is specifically software WebGL,
+not an iPhone/physical GPU performance or medical anatomy acceptance.
