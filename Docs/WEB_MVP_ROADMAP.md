@@ -253,3 +253,34 @@ rights. Typechecking alone is not a shipped MVP.
   hierarchy, explicit geometry-to-joint association,
   physical camera extrinsics and retargeting acceptance.
   Neither W2d nor W2e enables true live model AR.
+
+## W2f · Single source-mesh rigid pivot preview (SOURCE IMPLEMENTED; real browser QA OPEN)
+
+- [x] Restrict to **one user-selected non-skinned original
+  mesh** with exact W2d original-mesh mapping and two
+  distinct W2e user-chosen A/B local model points.
+- [x] User-driven start, choose **source-model X/Y/Z**
+  rotation axis, bounded ±90° angle slider, and
+  **Restore original pose** (no autoplay, live tracking,
+  camera input, saved geometry, or model redistribution).
+- [x] Use immutable source original root/parent/world
+  matrix baselines; each angle applies a fresh pivot
+  delta around manually selected A, preserving geometry
+  and making reset exact. Move the B reference marker
+  along with the rigid source part.
+- [x] Fail closed for `SkinnedMesh`, authored
+  `AnimationClip` models, invisible or unselected
+  parts, missing/overlapping endpoints, or invalid
+  transform data. Invalidate preview when W2d mapping,
+  W2e anchors, model source or study modal changes.
+- [x] Pure deterministic unit tests for pivot invariance,
+  transformed parent frames, source-geometry identity,
+  reset, extreme angles and no accumulated drift.
+- [ ] Real local Z-Anatomy FBX / known rigged GLB
+  physical-browser WebGL and camera-space validation
+  on desktop Chrome and mobile Safari.
+- [ ] Distinct future work: actual whole-rig skeleton
+  hierarchy authoring, joint limits, mesh/skin weights,
+  MediaPipe **3D** pose calibration, multi-joint
+  retargeting and exact source-frame synchronized AR,
+  with independent per-original-mesh rights evidence.

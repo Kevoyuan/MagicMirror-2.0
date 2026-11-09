@@ -328,3 +328,38 @@ as **NOT READY / NOT REVIEWED**.
 
 The real original Z-Anatomy FBX and mobile Safari
 performance still require physical browser QA.
+
+## W2f: Reversible local single-part motion experiment
+
+Inside the PRIVATE **Anatomy study** viewer:
+
+1. Import a user-owned original FBX/GLB. Select a
+   visible **ordinary non-skinned mesh** and manually
+   assign it to a MediaPipe 2D surface-reference
+   segment in the source parts list.
+2. Mark two different original-root points A and B
+   on that SAME part (W2e). **A** acts as the pivot;
+   **B** is a movement reference (not a biological joint).
+3. Click **Start local rigid preview** in the new
+   **Single-mesh rigid rotation** panel. Choose a
+   **SOURCE X/Y/Z axis** and move the ±90° slider.
+   Only that source mesh rotates; a B marker follows
+   its synthetic rigid movement.
+4. Click **Restore original pose**, select a
+   different mesh or close the viewer to reset the
+   original matrix exactly. No animated or changed
+   source FBX/GLB is exported.
+
+This experiment does **not** support an already skinned
+mesh or a model containing authored animation clips;
+such files should continue to use the separate
+authored-animation player. There is **no live
+MediaPipe-to-mesh retargeting**, whole-skeleton rig,
+physiological range-of-motion calibration, camera
+registration or model redistribution grant.
+
+The W2f code has synthetic pure matrix tests and
+source compilation checks. Real original FBX on
+desktop/iPhone browsers, GPU latency, exact
+reference orientation and multi-bone rig quality
+require actual hardware and human anatomy review.

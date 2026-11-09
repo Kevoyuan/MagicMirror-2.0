@@ -104,3 +104,17 @@ verified bone anatomy, authored skin weights,
 rest pose or commercial rights from these
 arbitrary local reference points. No unreviewed
 model asset or source-rig file goes into Git.
+
+## W2f rigid-preview safety contract
+
+Any new feature built on original-mesh W2f motion
+must preserve exact reset to source mesh matrices
+and reject source `SkinnedMesh` and authored clips.
+The source file and vertices must remain unmodified.
+A/B are human-clicked, **not** joint ground truth,
+and X/Y/Z axes are original model axes, **not**
+anatomically verified flexion or extension. Avoid
+claims of live patient skeleton alignment; keep
+rig/rights/SDK gates unapproved until verified
+separately. Require synthetic matrix no-drift tests
+plus real browser functional inspection.

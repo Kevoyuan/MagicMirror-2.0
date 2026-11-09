@@ -283,3 +283,36 @@ it contains no mesh vertices, camera frames,
 source asset bytes or automatic recording.
 A changed mapping or model invalidates stale points,
 and importing another model's JSON fails closed.
+
+## W2f source-space single rigid part experiment
+
+The PRIVATE Folio II now supports a reversible source-mesh
+rotation experiment. After a human chooses an actual imported
+`Mesh` (never a `SkinnedMesh`), manually provides a
+surface-segment mapping and A/B source-root positions,
+`Web/src/rigid-preview.ts` computes a rigid 4×4 source
+matrix around **A** using an explicitly chosen source
+X/Y/Z axis. It bounds the angle to ±90° and rejects
+nonfinite/singular frames, missing/overlapping points
+and unrecognized axes.
+
+On each slider update, the original mesh's immutable
+baseline WORLD matrix is transformed in the imported
+original-root frame, then converted back into the actual
+mesh-parent frame; the Three.js object uses a reversible
+`matrixAutoUpdate=false` preview matrix. No geometry,
+weights, material or original source file are changed.
+The user can restore the exact original matrix/auto-update
+setting; changing selected mesh, hiding the part, replacing
+source, or closing the dialog also restores the original.
+The B reference marker moves along with the rigid
+reference end; A remains the pivot.
+
+A model containing any previewable source animation clips
+or a selected `SkinnedMesh` is rejected deliberately;
+the experiment does not mix with authored AnimationMixer
+motion. This is not a articulated/weighted anatomical
+rig, not an anatomically verified bone hinge, not a
+person-specific camera transform or patient X-ray.
+The public model rights and SDK privacy release gates
+remain unchanged and unapproved.
