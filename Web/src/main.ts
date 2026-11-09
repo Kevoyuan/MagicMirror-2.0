@@ -581,6 +581,13 @@ languageButton.addEventListener("click", () => {
   if (atlasViewer) refreshAtlasParts();
   else refreshAtlasAnchorStatus();
   if (lastAtlasRigStats) renderAtlasRigInfo();
+  atlasChainStatus.textContent = atlasViewer?.getChainPreviewActive()
+    ? (locale === "en"
+      ? "Local virtual chain preview · NOT a real skeletal or camera retarget."
+      : "仅本地虚拟运动链预览 · 非真实骨骼或摄像头动作映射。")
+    : (locale === "en"
+      ? "Select 2–12 real source meshes with manual A/B points for study."
+      : "请选择 2–12 个已人工标记端点的真实来源网格。");
   if (atlasViewer?.getRigidPreviewPartId() !== null &&
       atlasViewer?.getRigidPreviewPartId() !== undefined) {
     atlasRigidStatus.textContent = locale === "en"
