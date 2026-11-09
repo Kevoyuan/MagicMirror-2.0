@@ -167,3 +167,18 @@ not grant redistribution rights; an actual public anatomy overlay
 remains gated by per-component source licenses, human-reviewed
 joint hierarchy, real rig/weights, camera/pose registration,
 occlusion and mobile performance.
+
+## Interactive anatomy notes
+
+When the live educational **3D proxy** is visible, click/tap a
+rendered arm, forearm, thigh, shin or torso reference segment to
+open a compact Leonardo field-note card. It contains Chinese
+and English *region* labels and a short factual anatomy note.
+Close with × or allow tracking loss to hide the note. No
+landmark or bone dimension is saved; these labels **do not**
+represent scanned, diagnosed or personally measured bones.
+
+Local FBX/GLB study mesh picking remains a different feature:
+it shows the **actual mesh name** from the user-provided file,
+not validated anatomical metadata. Truly animated, layered
+Z-Anatomy remains a subsequent rights- and rig-gated milestone.
