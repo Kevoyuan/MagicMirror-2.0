@@ -237,7 +237,7 @@ function showGuidance(text: string | null): void {
 function setLocale(next: Locale): void {
   locale = next;
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
-  translateStaticDOM(root, locale);
+  translateStaticDOM(root!, locale);
   languageButton.textContent = locale === "zh" ? "EN" : "中文";
   languageButton.setAttribute("aria-label",
     locale === "zh" ? "Switch to English" : "切换到中文");
