@@ -693,6 +693,7 @@ function refreshAtlasAnchorStatus(): void {
   const partId = atlasViewer?.getSelectedPartId() ?? null;
   const assigned = partId !== null ? atlasMappings.get(partId) : undefined;
   const selectedPoints = partId !== null ? atlasAnchors.get(partId) : undefined;
+  atlasViewer?.showAnchorMarkers(selectedPoints ?? null);
   const count = completeAnchorPairCount(atlasAnchors);
   const inventory = atlasViewer?.sourceInventory();
   atlasAnchorStart.disabled = !assigned;
