@@ -415,3 +415,38 @@ or true pose retargeting feature. No third-party
 FBX is automatically downloaded or distributed.
 Full GLB export/import and WebGL interaction
 must still be verified in real Chrome/Safari.
+
+
+## W2i local keyframe editor and loop
+
+Start a W2g virtual 2–12 source-mesh chain. In
+**Local angle keyframes & loop replay** choose
+a time on the 0–6s slider (up to 10s for
+imported drafts), set per-node angles in the
+virtual chain panel, then click **Capture
+current angles**. Capture another pose at a
+different time. **Loop playback** interpolates
+the TEST ANGLES only, **Pause** stops,
+and dragging the timeline scrubs a static
+virtual pose. Frame chips jump to authored
+positions. You can delete a frame, clear
+them all, or explicitly download/reimport
+a model-hash-bound JSON draft.
+
+The original three-box demo already includes
+three synthetic training frames at 0s,
+1.5s and 3.0s. It never captures camera
+frames. All source file SHA/size, original
+mesh identity, parent chain, A/B points
+and rotation axes must match to import
+old keyframes. Import rejects any false
+medical/camera or rights signoff. Editing
+the parent structure or an axis invalidates
+the old frames; hidden tabs/closing the
+viewer pause replay.
+
+This is **NOT** live MediaPipe motion
+retargeting, a human joint motion log,
+a licensed bone or a medical scan.
+Run a real browser interaction test
+before considering it hardware verified.

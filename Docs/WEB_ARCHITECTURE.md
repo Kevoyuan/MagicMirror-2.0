@@ -372,3 +372,34 @@ or confirmation that the Z-Anatomy FBX works
 with skinning/animation. The tutorial helps
 reviewers exercise the UI without needing to
 acquire restricted source assets first.
+
+
+## W2i offline source-keyframe playback engine
+
+`Web/src/study-timeline.ts` is the pure, bounded,
+camera-free angle timeline: up to 32 manually
+selected source-angle frames across 0–10 s,
+original source/root graph SHA + mesh identity,
+per-node fixed axes and ±90° angles. Interpolation
+is deterministic and linear, with a neutral
+first/last hold outside the authored interval.
+Imported JSON MUST match original model SHA-256,
+file size, mesh count, exact W2g manually authored
+parent graph and W2e source anchor coordinates.
+All source model rights/retarget states stay
+NOT_REVIEWED/not calibrated.
+
+The Folio II user can capture keyframes at a
+time slider, delete/clear, import/export local
+JSON and explicitly Play/Pause a loop.
+`LocalAtlasViewer.setChainPose` applies all
+joint values to 2–12 separate THREE.js ghost
+meshes in one update pass; original source
+geometry and camera frames remain untouched.
+The finite requestAnimationFrame loop stops
+on hidden document, study modal close or
+source mapping change. No cloud or auto
+recording, author bone-weight change,
+physical 3D camera calibration, real
+human pose animation or public model
+distribution is authorized by these frames.

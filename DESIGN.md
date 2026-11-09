@@ -657,3 +657,19 @@ ghost joint chain without committing anatomy
 binaries or requiring an external 41MB FBX.
 Keep the 3D study viewport prominent and
 the rest of the Leonardo mirror unchanged.
+
+
+## Folio II · Motion test keyframe timeline (2026-11-09)
+
+Below the existing gold virtual chain controls,
+add one compact parchment timeline for manually
+authored TEST ANGLES: slider, capture frame,
+play/pause/loop, local JSON export/import and
+small frame chips. Do not crowd the main
+camera view. The original three-box scene
+has three synthetic frames on first-run.
+Use clear labels distinguishing locally
+generated source motion from real body
+pose recording, clinical animation,
+licensed Z-Anatomy geometry or
+actual 3D camera registration.
