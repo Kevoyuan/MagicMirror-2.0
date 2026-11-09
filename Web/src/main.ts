@@ -2,13 +2,15 @@ import { coverageFor, type Coverage, type Focus } from "./pose";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
-import { educationFor } from "./education";
+import { educationFor, type EducationNote } from "./education";
+import { translate, translateStaticDOM, type Locale } from "./i18n";
 import { TemporalPoseStabilizer } from "./smoothing";
 import type { LocalAtlasViewer } from "./atlas-viewer";
 import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
+let locale: Locale = "zh";
 const root = document.querySelector<HTMLDivElement>("#app");
 if (!root) throw new Error("Missing application root");
 
@@ -19,6 +21,7 @@ root.innerHTML = `
         <span class="brand-mark" aria-hidden="true">M<span class="brand-leaf">·</span>M</span>
         <div><span class="brand-title">MAGICMIRROR</span><span class="brand-subtitle">Anatomical Field Notes · Web Study 01</span></div>
       </div>
+      <button id="language-toggle" class="language-switch" type="button" aria-label="切换中文与英文">EN</button>
       <div id="tracking-status" class="status-pill is-ready" role="status" aria-live="polite">
         <span class="status-led" aria-hidden="true"></span>
         <span id="status-text">准备就绪</span>
@@ -171,10 +174,14 @@ const metric = element<HTMLElement>("#frame-metric");
 const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
+const languageButton = element<HTMLButtonElement>("#language-toggle");
 const opacitySlider = element<HTMLInputElement>("#opacity");
 const opacityValue = element<HTMLOutputElement>("#opacity-value");
 
 let lastStatusText = "";
+let lastStatusKind: StatusKind = "ready";
+let lastGuidanceRaw: string | null = null;
+let currentNote: EducationNote | null = null;
 let proxy: ProxySkeletonRenderer | undefined;
 try {
   proxy = new ProxySkeletonRenderer(canvas);
@@ -204,16 +211,40 @@ const staleMs = 350;
 
 type StatusKind = "ready" | "active" | "error";
 function setStatus(text: string, kind: StatusKind): void {
-  if (lastStatusText !== text) {
-    statusText.textContent = text;
+  if (lastStatusText !== text || lastStatusKind !== kind) {
+    statusText.textContent = translate(text, locale);
     lastStatusText = text;
+    lastStatusKind = kind;
   }
   status.className = `status-pill is-${kind}`;
 }
-function hideNote(): void { noteCard.hidden = true; }
+function hideNote(): void {
+  noteCard.hidden = true;
+  currentNote = null;
+}
+function renderCurrentNote(): void {
+  if (!currentNote) return;
+  noteTitle.textContent = locale === "en" ? currentNote.titleEn : currentNote.titleZh;
+  noteSubtitle.textContent = locale === "en" ? currentNote.titleZh : currentNote.titleEn;
+  noteDescription.textContent = locale === "en"
+    ? currentNote.descriptionEn : currentNote.descriptionZh;
+}
 function showGuidance(text: string | null): void {
+  lastGuidanceRaw = text;
   guidance.hidden = !text;
-  if (text) guidance.textContent = text;
+  if (text) guidance.textContent = translate(text, locale);
+}
+function setLocale(next: Locale): void {
+  locale = next;
+  document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  translateStaticDOM(root!, locale);
+  languageButton.textContent = locale === "zh" ? "EN" : "中文";
+  languageButton.setAttribute("aria-label",
+    locale === "zh" ? "Switch to English" : "切换到中文");
+  statusText.textContent = translate(lastStatusText || "准备就绪", locale);
+  if (lastGuidanceRaw !== null) guidance.textContent = translate(lastGuidanceRaw, locale);
+  overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
+  renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
   stopButton.disabled = !running;
@@ -246,7 +277,7 @@ function stopCamera(message = "相机已关闭"): void {
   lastFoundAt = -Infinity;
   previousCoverage = "none";
   overlayPaused = false;
-  overlayButton.textContent = "暂停叠加";
+  overlayButton.textContent = translate("暂停叠加", locale);
   proxy?.hide();
   hideNote();
   setCameraButtons(false);
@@ -413,12 +444,14 @@ canvas.addEventListener("click", (event) => {
     hideNote();
     return;
   }
-  noteTitle.textContent = note.titleZh;
-  noteSubtitle.textContent = note.titleEn;
-  noteDescription.textContent = note.descriptionZh;
+  currentNote = note;
+  renderCurrentNote();
   noteCard.hidden = false;
 });
 element<HTMLButtonElement>("#close-part-note").addEventListener("click", hideNote);
+languageButton.addEventListener("click", () => setLocale(locale === "zh" ? "en" : "zh"));
+setLocale("zh");
+
 startButton.addEventListener("click", () => void startCamera());
 stopButton.addEventListener("click", () => stopCamera());
 snapshotButton.addEventListener("click", () => {
@@ -450,7 +483,7 @@ switchButton.addEventListener("click", () => {
 });
 overlayButton.addEventListener("click", () => {
   overlayPaused = !overlayPaused;
-  overlayButton.textContent = overlayPaused ? "恢复叠加" : "暂停叠加";
+  overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
   if (overlayPaused) proxy?.hide();
   setStatus(overlayPaused ? "参考叠加已暂停" : "正在追踪", "ready");
 });

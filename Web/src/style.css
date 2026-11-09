@@ -343,3 +343,21 @@ a { color: inherit; }
   font-size: 12px; font-weight: 600;
 }
 .smooth-control input { width: 17px; height: 17px; accent-color: #345b50; }
+
+/* Language toggle: small, keyboard-accessible, no locale cloud dependency */
+.language-switch {
+  flex: none; min-width: 44px; min-height: 44px;
+  border: 1px solid #827d63; border-radius: 8px;
+  background: #283b30; color: #eee2c4;
+  padding: 5px 8px;
+  font: 700 11px/1.2 Georgia, serif;
+  letter-spacing: .04em;
+}
+.language-switch:hover { background: #385446; }
+@media (max-width: 600px) {
+  .topbar { gap: 6px; }
+  .brand { gap: 6px; }
+  .brand-subtitle { max-width: 115px; }
+  .status-pill { max-width: 38vw; }
+  .language-switch { min-width: 40px; min-height: 40px; padding: 5px; }
+}

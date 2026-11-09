@@ -192,3 +192,12 @@ rather than guessing where a user's real bone might be.
 Disable it for a direct visual comparison with raw MediaPipe pose
 observations. Large one-frame teleports are hidden before reacquire.
 Neither mode is a clinical measurement or calibrated 3D tracking.
+
+## Chinese and English controls
+
+The compact **EN / 中文** button in the top row switches the Web
+mirror's core controls, feedback, privacy notes and interactive
+educational cards using local UI strings, with no translation
+server or camera data upload. The visible model source filenames
+and mesh names remain unchanged. Some long-form/debug messages
+still require manual translation QA before public release.
