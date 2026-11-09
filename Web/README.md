@@ -392,3 +392,26 @@ animation inspector. This does not create a rig,
 generate skinning or reconstruct a patient skeleton.
 Real hardware/Safari tests, actual source permissions,
 rest-pose semantics and camera space are still open.
+
+
+## One-click ORIGINAL demo (no Z-Anatomy source needed)
+
+Open **Anatomy layers → Local FBX/GLB viewer** and
+choose **Try an ORIGINAL 3-part 3D demo**. MagicMirror
+generates three simple box-like parts in this browser
+and imports its own tiny self-contained GLB. It
+prefills a three-part tutorial-only source mesh
+mapping, reference A/B points and an example
+parent/child chain, then shows the gold wireframe
+ghost pose. Click node chips to select one segment,
+adjust model-space X/Y/Z angle, Zero all or Stop.
+You can still inspect the original mesh list and
+try local JSON source inventory export.
+
+This generated scene consists of **three simple
+rectangular bars**, NOT bones or organs, NOT a
+clinical atlas, NOT Z-Anatomy, and NOT a webcam
+or true pose retargeting feature. No third-party
+FBX is automatically downloaded or distributed.
+Full GLB export/import and WebGL interaction
+must still be verified in real Chrome/Safari.

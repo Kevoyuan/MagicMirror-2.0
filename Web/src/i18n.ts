@@ -121,6 +121,10 @@ const en: Record<string, string> = {
   "导出映射草稿": "Export mapping draft",
   "导入本地映射 JSON": "Import local mapping JSON",
   "清空映射": "Clear mappings",
+  "直接体验原创 3D 三连杆示例（无需下载文件）":
+    "Try an ORIGINAL 3-part 3D demo (no downloads needed)",
+  "此示例由 MagicMirror 在浏览器内临时生成，包含三个简单方块及预设参考点；不是 Z-Anatomy、真实骨骼或人体摄像头追踪。":
+    "This original MagicMirror example generates three simple bars and predefined reference points inside the browser. It is NOT Z-Anatomy, actual human bones or live camera tracking.",
   "多部件运动链 · 原模型虚拟预览": "Multi-mesh virtual chain · Original-model study",
   "选择至少两个已标记 A/B 的普通来源网格，手动指定父部件。运动以独立金色线框副本呈现，原始网格完全不修改。模型坐标轴和端点未经过医学、相机或真实关节校准。":
     "Select at least two original plain meshes with A/B points and manually assign parents. Gold wireframe ghosts move while all source geometry stays unchanged. Model axes and clicked points are NOT medically, camera or joint calibrated.",

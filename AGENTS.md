@@ -406,3 +406,27 @@ patient anatomy, redistributed Z-Anatomy geometry nor
 commercial rights authorization. Continue blocking public
 release until per-mesh rights and Google model-weight
 privacy/redistribution evidence and actual physical device QA.
+
+
+## 16. Original, zero-download Web movement tutorial (2026-11-09)
+
+A user-triggered **original three-box movement fixture** is
+permitted in the private Web Folio II. It must be generated
+from MIT-licensed MagicMirror code, with NO actual human
+bones, external Z-Anatomy/BodyParts3D geometry, model
+downloads, image recording or camera input. The generated
+self-contained local GLB must pass the SAME file/SHA/mesh
+import pipeline and real names as user-selected files.
+The authored fixture owns its source-local A/B points,
+three original mesh names and simple virtual parent links,
+but is not evidence of anatomical joint hierarchy,
+skeletal skinning, 3D camera calibration or commercial
+redistribution rights for ANY third-party source.
+
+Synthetic fixture metadata may prefill W2d/W2e
+mappings/points solely for this example; no unreviewed
+anatomy file is included and no user-created mapping
+is silently uploaded or persisted. The tutorial
+must be opt-in via a direct button, explain the
+three **boxes** are not bones, and leave public
+anatomy/model release approval locked.

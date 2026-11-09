@@ -19,6 +19,9 @@ import {
 import type { SliceOrientation } from "./atlas-source";
 import type { SourceAxis } from "./rigid-preview";
 import {
+  ORIGINAL_STUDY_DEMO, createOriginalStudyDemoFile,
+} from "./study-demo";
+import {
   countLargeStudyGaps, orderStudyChain,
   type StudyChainNode,
 } from "./kinematic-chain";
@@ -146,6 +149,8 @@ root.innerHTML = `
     <p class="atlas-disclaimer">仅本地查看。导入模型不会发送到服务器，也不会用于公共下载或自动授权；它<strong>不能跟随人体动作</strong>，剖面沿模型坐标轴而非真实医学解剖轴。</p>
     <label class="atlas-file-picker" for="atlas-file">选择本机 .fbx 或 .glb（≤75MB，建议电脑使用）</label>
     <input id="atlas-file" type="file" accept=".fbx,.glb" aria-label="选择仅本地读取的 FBX 或 GLB 文件"/>
+    <button id="atlas-demo" class="atlas-demo-button" type="button">直接体验原创 3D 三连杆示例（无需下载文件）</button>
+    <p class="atlas-demo-disclaimer">此示例由 MagicMirror 在浏览器内临时生成，包含三个简单方块及预设参考点；不是 Z-Anatomy、真实骨骼或人体摄像头追踪。</p>
     <div class="atlas-viewport"><canvas id="atlas-canvas" aria-label="可以拖动旋转、滚轮缩放、点击查看原始部件名称的三维模型"></canvas></div>
     <div class="atlas-tools">
       <label>模型空间切面
@@ -666,6 +671,7 @@ element<HTMLInputElement>("#stabilize").addEventListener("change", (event) => {
 const atlasDialog = element<HTMLDialogElement>("#atlas-dialog");
 const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
 const atlasFile = element<HTMLInputElement>("#atlas-file");
+const atlasDemoButton = element<HTMLButtonElement>("#atlas-demo");
 const atlasInfo = element<HTMLElement>("#atlas-info");
 const atlasPart = element<HTMLElement>("#atlas-part");
 const atlasRigInfo = element<HTMLElement>("#atlas-rig-info");
@@ -1414,10 +1420,9 @@ atlasDialog.addEventListener("close", () => {
   atlasPlayAnimation.disabled = atlasClipSelect.disabled;
   atlasPauseAnimation.disabled = true;
 });
-atlasFile.addEventListener("change", () => {
-  const file = atlasFile.files?.[0];
-  if (!file) return;
+function loadAtlasFile(file: File, builtInDemo = false): void {
   atlasFile.disabled = true;
+  atlasDemoButton.disabled = true;
   atlasInfo.textContent = "正在本地解析模型；大体积 FBX 可能导致浏览器暂时变慢…";
   void ensureAtlasViewer().then((viewer) => viewer.load(file)).then((stats) => {
     resetStudyChainDraft();
@@ -1463,13 +1468,75 @@ atlasFile.addEventListener("change", () => {
       ? "Select a source mesh to examine its original name and geometry."
       : "点击或搜索来源网格，查看其原始名称和几何结构。";
     refreshAtlasParts();
+    if (builtInDemo) initializeOriginalDemoStudy();
   }).catch((error) => {
     if (!atlasDialog.open) return;
     atlasInfo.textContent = "无法导入：" + (error instanceof Error ? error.message : String(error));
     console.warn("Local model parsing failed (no upload attempted)", error);
   }).finally(() => {
     atlasFile.disabled = false;
+    atlasDemoButton.disabled = false;
     atlasFile.value = "";
+  });
+}
+function initializeOriginalDemoStudy(): void {
+  const viewer = atlasViewer;
+  if (!viewer) throw new Error("Original demo viewer not initialized");
+  const parts = viewer.getParts();
+  const byName = new Map(parts.map(part => [part.name, part.id]));
+  // No guessed identifier/index: check all expected original fixture names.
+  if (parts.length !== ORIGINAL_STUDY_DEMO.length ||
+      ORIGINAL_STUDY_DEMO.some(info => !byName.has(info.sourceName))) {
+    throw new Error("The generated original study GLB did not match its authored source metadata");
+  }
+  resetStudyChainDraft();
+  atlasMappings.clear();
+  atlasAnchors.clear();
+  for (const info of ORIGINAL_STUDY_DEMO) {
+    const id = byName.get(info.sourceName)!;
+    atlasMappings.set(id, info.intendedSurfaceReference);
+    atlasAnchors.set(id, { start: info.start, end: info.end });
+    atlasChainIds.add(id);
+    atlasChainAngles.set(id, { axis: "z", degrees: info.initialAngle });
+    const parent = info.parentSourceName === null
+      ? null : byName.get(info.parentSourceName);
+    if (parent === undefined) throw new Error("Original demo parent mesh missing");
+    atlasChainParents.set(id, parent);
+  }
+  const nodes = chainNodesForCurrentStudy();
+  if (!viewer.beginChainPreview(nodes)) {
+    resetStudyChainDraft();
+    throw new Error("Original demo chain cannot be previewed");
+  }
+  const firstId = byName.get(ORIGINAL_STUDY_DEMO[0].sourceName)!;
+  viewer.selectPart(firstId);
+  atlasChainStatus.textContent = locale === "en"
+    ? "Original 3-box DEMO is ready: select a chain node and adjust its angle. Not human bones or camera tracking."
+    : "原创三方块示例已就绪：点击运动链节点并拖动角度。此模型不是人体骨骼或摄像头追踪。";
+  atlasInfo.textContent = locale === "en"
+    ? "Original procedural training fixture (3 generated source meshes). No external anatomy data or download."
+    : "原创程序生成的训练示例（3 个来源网格），没有外部解剖资源、无需下载。";
+  refreshAtlasParts();
+  refreshAtlasChainControls();
+}
+atlasFile.addEventListener("change", () => {
+  const file = atlasFile.files?.[0];
+  if (file) loadAtlasFile(file);
+});
+atlasDemoButton.addEventListener("click", () => {
+  atlasDemoButton.disabled = true;
+  atlasInfo.textContent = locale === "en"
+    ? "Generating an original, self-contained local GLB in this browser…"
+    : "正在浏览器内生成原创独立 GLB 示例…";
+  void createOriginalStudyDemoFile().then(file => {
+    if (!atlasDialog.open) return;
+    loadAtlasFile(file, true);
+  }).catch(error => {
+    atlasDemoButton.disabled = false;
+    atlasInfo.textContent = locale === "en"
+      ? `Could not generate the original demo: ${String(error)}`
+      : `无法生成原创示例：${String(error)}`;
+    console.error("Local original demo generation failed", error);
   });
 });
 atlasClipSelect.addEventListener("change", () => {

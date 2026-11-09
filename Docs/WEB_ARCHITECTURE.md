@@ -347,3 +347,28 @@ This is a local, ORIGINAL-model coordinate preview.
 No camera extrinsics, 3D pose identity, bone proportions,
 medical skeletal joint axes, retarget weights or
 redistribution rights have been reviewed.
+
+
+## W2h original GLB demonstration as an onboarding/QA fixture
+
+`Web/src/study-demo.ts` owns three original MIT-app
+thin 3D box meshes and explicit sample geometry
+positions, manually-authored A/B reference endpoints,
+source mesh identifiers and a 3-node virtual chain.
+On explicit user interaction, the Three.js
+GLTFExporter serializes the generated scene as
+a self-contained in-memory GLB `File`. The app
+routes that file through the SAME local GLTFLoader,
+original source SHA-256 generation, part inspection,
+mapping, point annotations and W2g wireframe ghost
+viewer as a user-provided file. No third-party
+mesh, body data, original anatomical source or
+network resource is included in the fixture.
+
+This is an internal original 3D spatial/math
+demo, **NOT** a medical anatomical model,
+a MediaPipe tracking demonstration, an auto-rigger
+or confirmation that the Z-Anatomy FBX works
+with skinning/animation. The tutorial helps
+reviewers exercise the UI without needing to
+acquire restricted source assets first.

@@ -314,3 +314,26 @@ rights. Typechecking alone is not a shipped MVP.
   anatomical rest joints, genuine per-mesh rigging,
   MediaPipe world-frame/camera calibration and physical
   body motion retargeting; these remain separately blocked.
+
+
+## W2h · One-click original 3D self-contained tutorial (SOURCE IMPLEMENTED)
+
+- [x] Create a 3-piece nonmedical bar/box GLB *entirely
+  in the browser* from authored MagicMirror geometry,
+  with no external source files or model-rights ambiguity.
+- [x] Use the real existing local GLB loader, original
+  mesh names/positions, SHA-256 and user-only study viewer.
+- [x] Explicitly label the synthetic source as **NOT
+  Z-Anatomy, NOT a human bone, NOT camera retargeting**.
+- [x] Preconfigure original source-anchored W2d mapping
+  reference, W2e A/B positions and W2g three-node
+  virtual parent chain for a working tutorial.
+- [x] Existing camera/real model release/privacy
+  gates remain fail-closed; no original anatomy assets
+  are added to Git, model uploads or analytics.
+- [x] Synthetic tests cover authored original names,
+  unique geometry anchors, 3-level graph and gap bounds.
+- [ ] Run the full GLTFExporter→GLTFLoader→WebGL
+  desktop Chrome and iPhone Safari interaction path
+  on actual browsers; compile/unit tests alone do
+  not establish runtime or mobile touch success.
