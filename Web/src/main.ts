@@ -28,7 +28,10 @@ root.innerHTML = `
 
       <div class="stage-heading">
         <span class="folio-caption">FIG. 01 / THE HUMAN FORM</span>
-        <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+        <div class="stage-utilities">
+          <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+          <button id="snapshot" type="button" class="snapshot-button" disabled title="下载当前参考画面为 PNG">保存画面</button>
+        </div>
       </div>
 
       <div id="empty-state" class="empty-state">
@@ -93,7 +96,7 @@ root.innerHTML = `
   <dialog id="privacy-dialog" class="folio-dialog" aria-labelledby="privacy-title">
     <div class="dialog-heading"><span>PRIVACY & PROVENANCE</span><button class="close-dialog" data-close="privacy-dialog" aria-label="关闭说明">×</button></div>
     <h2 id="privacy-title">隐私与来源</h2>
-    <p>相机帧在浏览器内交给 MediaPipe 进行姿态估算；本项目代码不上传、记录或保存摄像头画面。MediaPipe SDK 可能按其隐私声明处理使用指标，正式公开部署前仍需单独核查。</p>
+    <p>相机帧在浏览器内交给 MediaPipe 进行姿态估算；本项目代码不会自动上传、录制或保存摄像头画面。仅当你主动点击“保存画面”，浏览器才会在本地生成 PNG 并提供下载。MediaPipe SDK 可能按其隐私声明处理使用指标，正式公开部署前仍需单独核查。</p>
     <p>推理模型来自 Google MediaPipe，首次开发准备阶段下载并校验哈希；WASM 与模型需通过本地静态服务器提供。首次启用和站点部署需要 HTTPS（localhost 例外）。</p>
     <p>目前可见的是 MagicMirror 原创程序生成的三维示意骨架，<strong>没有使用或分发任何未经审核的 Z-Anatomy 网格</strong>。真实解剖模型及其署名将按资产来源逐项审核。</p>
     <p><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js" target="_blank" rel="noopener noreferrer">MediaPipe Pose Landmarker 文档</a></p>
@@ -116,6 +119,7 @@ const switchButton = element<HTMLButtonElement>("#switch-camera");
 const emptyState = element<HTMLElement>("#empty-state");
 const guidance = element<HTMLElement>("#guidance");
 const metric = element<HTMLElement>("#frame-metric");
+const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
 const opacitySlider = element<HTMLInputElement>("#opacity");
@@ -161,6 +165,7 @@ function showGuidance(text: string | null): void {
 }
 function setCameraButtons(running: boolean): void {
   stopButton.disabled = !running;
+  snapshotButton.disabled = !running;
   switchButton.disabled = !running;
   overlayButton.disabled = !running;
   startButton.disabled = running;
@@ -234,6 +239,7 @@ async function startCamera(): Promise<void> {
     mirrored = actualFacing === "user" || (!actualFacing && preferredFacing === "user");
     video.classList.toggle("mirror-video", mirrored);
     await video.play();
+    if (currentSession !== session) return;
     setStatus("加载本地模型…", "ready");
     const engine = new LivePoseInference({
       modelURL: modelUrl("models/pose_landmarker_lite.task"),
@@ -260,6 +266,7 @@ async function startCamera(): Promise<void> {
     setStatus("寻找人体姿态", "ready");
     animationFrame = requestAnimationFrame(tick);
   } catch (error) {
+    if (currentSession !== session) return;
     console.error("Camera or local model failed", error);
     const text = error instanceof DOMException && error.name === "NotAllowedError"
       ? "摄像头权限已拒绝，请在浏览器设置中开启"
