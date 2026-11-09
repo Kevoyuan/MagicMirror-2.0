@@ -725,7 +725,10 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
     atlasInfo.textContent = "WebGL 模型查看器无法启动：" + String(error);
   });
 });
-atlasDialog.addEventListener("close", () => atlasViewer?.stop());
+atlasDialog.addEventListener("close", () => {
+  atlasViewer?.cancelPendingLoad();
+  atlasViewer?.stop();
+});
 atlasFile.addEventListener("change", () => {
   const file = atlasFile.files?.[0];
   if (!file) return;
@@ -752,6 +755,7 @@ atlasFile.addEventListener("change", () => {
       : "点击或搜索来源网格，查看其原始名称和几何结构。";
     refreshAtlasParts();
   }).catch((error) => {
+    if (!atlasDialog.open) return;
     atlasInfo.textContent = "无法导入：" + (error instanceof Error ? error.message : String(error));
     console.warn("Local model parsing failed (no upload attempted)", error);
   }).finally(() => {
