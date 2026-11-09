@@ -1,6 +1,6 @@
 # AGENTS.md — MagicMirror 2.0 coding contract
 
-> **Authoritative platform revision:** 2026-11-08. The user explicitly
+> **Authoritative platform revision:** 2026-11-09 (W1 continuation). The user explicitly
 > switched to **Web open source first**, kept the native iOS code but
 > **paused all new native iOS development**, and canceled Android.
 > This replaces the previous iOS-only operating contract in AGENTS.md.
@@ -77,7 +77,52 @@ build an independently reviewed cohesive rig and camera registration.
 A separate public CC BY-SA package is possible only with compatible
 actual rights; do not pretend this solves all legal issues.
 
-## 4. Engineering and test workflow
+## 4. W1 development contract — owner tested first Web build (2026-11-09)
+
+The owner reports having **tested the Web MVP**, but did not supply the
+browser/device, screenshots, measured tracking success, performance,
+camera facing, or error logs. Treat this as a useful hands-on smoke-test
+report, **not verified cross-browser acceptance or full W0 completion**.
+
+Prioritize implementation, tests, and documentation over repeated plans.
+The owner's request to "continue all features" means work through the
+active Web backlog **in order**, as far as evidence and rights permit,
+without falsely claiming it is all finished. Implement release-independent
+capabilities now; never invent legal clearances or 3D atlas assets.
+
+**W1 execution order:**
+1. Reliable capture lifecycle: one active session, stop ended/interrupted
+   tracks, ignore results from stale/replaced cameras, handle user gesture
+   and permission failures, recover via a new user action.
+2. Prefer off-main-thread MediaPipe VIDEO inference using a worker with
+   transferable ImageBitmap and a strict latest-only, one-in-flight
+   frame budget; **gracefully fall back** to throttled synchronous
+   main-thread inference on unsupported Worker/OffscreenCanvas browsers.
+   If worker throws, fail closed/hide its geometry rather than reuse old
+   results; fallback must be safe.
+3. Add actual local per-frame inference time, output cadence, dropped
+   samples and capture-to-overlay delivery (not mislabeled screen FPS,
+   camera hardware latency or personally measured anatomy).
+4. Keep a real Three.js GPU model for the procedural learning proxy,
+   but no unreviewed Z-Anatomy meshes. Organ/section-layer toggles only
+   become actionable when actual independently cleared assets exist.
+5. Synthetic tests for ordering/session-stale/stalled/partial pose and
+   crop/flip; Web CI must compile source and the worker entry point.
+6. Optional *explicit user-action* export may save a photo locally,
+   with clear consent, no automatic recording/upload, and no misleading
+   medical/X-ray labels. Never capture or persist by default.
+
+**W2–W4 constraints:** real whole-atlas mesh rights evidence and
+reviewed coherent rig, independent camera registration, layer/section
+rendering and open-source publishing are separate gated milestones.
+If not genuinely ready, keep them disabled and list the blocker.
+
+**Product invariant:** The user-facing result must remain "3D educational
+reference based on observed surface pose", not their actual bones.
+A worker improves responsiveness; it does not fix image-to-rig 3D
+camera calibration.
+
+## 5. Engineering and test workflow
 
 1. Inspect repository branches/active PRs and current CI; choose the
    smallest Web milestone. Do not re-activate old mobile milestones.
