@@ -1,4 +1,10 @@
 :root {
+  --mm-paper: #e5dac1;
+  --mm-paper-light: #f4ead4;
+  --mm-ink: #25352e;
+  --mm-sepia: #8b7658;
+  --mm-verdigris: #345b50;
+  --mm-camera-scrim: #152820e8;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", sans-serif;
   color: #efe8d6;
   background: #13211e;
@@ -10,7 +16,7 @@ html, body, #app { width: 100%; min-height: 100%; margin: 0; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .45; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #8bc4b5; outline-offset: 3px; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible, select:focus-visible { outline: 3px solid #8bc4b5; outline-offset: 3px; }
 [hidden] { display: none !important; }
 a { color: inherit; }
 .mirror-app {
@@ -158,7 +164,7 @@ a { color: inherit; }
 .segmented label { flex: 1; position: relative; display: flex; min-width: 0; }
 .segmented input { appearance: none; opacity: 0; position: absolute; inset: 0; margin: 0; }
 .segmented span {
-  width: 100%; min-height: 34px; display: grid; place-items: center;
+  width: 100%; min-height: 44px; display: grid; place-items: center;
   text-align: center; border-radius: 5px; font-size: 12px; cursor: pointer;
 }
 .segmented input:checked + span { background: #345b50; color: #f7f0dc; box-shadow: 0 2px 4px #0002; }
@@ -169,7 +175,7 @@ a { color: inherit; }
 .action-button {
   flex: 1; border: 1px solid #b0a083;
   background: #eae4d4; color: #355148;
-  border-radius: 7px; min-height: 37px;
+  border-radius: 7px; min-height: 44px;
   padding: 7px 9px; font-size: 12px; font-weight: 600;
 }
 .action-button:hover:not(:disabled) { background: #f7f1df; }
@@ -213,13 +219,20 @@ a { color: inherit; }
   .control-folio { padding-left: max(40px, calc((100vw - 1100px)/2)); padding-right: max(40px, calc((100vw - 1100px)/2)); }
 }
 @media (max-width: 600px) {
-  .topbar { height: 56px; min-height: 56px; }
+  .topbar {
+    height: auto; min-height: 52px;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-bottom: 6px;
+  }
   .brand-mark { width: 34px; height: 34px; }
   .brand-title { font-size: 12px; }
-  .brand-subtitle { max-width: 160px; font-size: 9px; }
+  .brand-subtitle { display: none; }
   .status-pill { font-size: 10px; max-width: 43vw; padding: 6px 8px; }
   .stage-heading { top: 17px; }
   .control-folio { padding-top: 9px; padding-bottom: 8px; }
+  .folio-rule { display: none; }
+  .stage-heading .folio-caption,
+  .stage-corner-note { display: none; }
   .control-row { gap: 14px; }
   .action-row { gap: 5px; }
   .action-button { font-size: 11px; padding-inline: 3px; }
@@ -259,7 +272,7 @@ a { color: inherit; }
 @media (max-width: 600px) {
   .stage-utilities { max-width: 61%; }
   .stage-utilities .frame-metric { font-size: 9px; }
-  .snapshot-button { min-height: 36px; }
+  .snapshot-button { min-height: 44px; }
 }
 
 /* W2 private local anatomy inspector: static, never an AR/rights claim. */
@@ -294,9 +307,9 @@ a { color: inherit; }
   align-items: flex-end;
 }
 .atlas-tools label { display: grid; gap: 5px; font-size: 11px; font-weight: 600; color: #52644e; flex: 1 1 148px; }
-.atlas-tools select { width: 100%; border: 1px solid #aaad8b; border-radius: 6px; background: #f6edda; color: #253d34; min-height: 34px; padding: 5px 8px; }
+.atlas-tools select { width: 100%; border: 1px solid #aaad8b; border-radius: 6px; background: #f6edda; color: #253d34; min-height: 44px; padding: 5px 8px; }
 .atlas-tools input[type=range] { width: 100%; accent-color: #315b4d; }
-.atlas-tools .atlas-checkbox { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; min-height: 34px; }
+.atlas-tools .atlas-checkbox { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; min-height: 44px; }
 .atlas-info, .atlas-part {
   padding: 9px 11px; border: 1px solid #beb298a8;
   background: #d9cfb4a8; border-radius: 6px;
@@ -314,8 +327,9 @@ a { color: inherit; }
 /* W4 original, bilingual educational notes over observed proxy segments */
 .camera-stage canvas { pointer-events: auto; touch-action: manipulation; }
 .part-note {
-  position: absolute; left: clamp(15px, 3vw, 36px); top: 62px;
-  z-index: 8; max-width: min(340px, calc(100% - 30px));
+  position: absolute; left: clamp(15px, 3vw, 36px); bottom: 68px;
+  z-index: 8; max-width: min(340px, calc(100% - 30px)); max-height: min(52dvh, 460px);
+  overflow-y: auto; overscroll-behavior: contain;
   padding: 13px 15px 11px;
   background: #e9dcc4f5; color: #263f34;
   border: 1px solid #ad9367; border-radius: 10px;
@@ -324,7 +338,7 @@ a { color: inherit; }
 .part-note-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .part-note-kicker { color: #836c4c; font: 10px Georgia,serif; letter-spacing: .13em; }
 .part-note-head button {
-  flex: none; width: 36px; height: 36px;
+  flex: none; width: 44px; height: 44px;
   border: 0; background: transparent; color: #34594f;
   font-size: 24px;
 }
@@ -333,7 +347,11 @@ a { color: inherit; }
 .part-note p { margin: 9px 0; line-height: 1.6; font-size: 12px; }
 .part-note small { color: #7d765e; font-size: 10px; }
 @media (max-width: 600px) {
-  .part-note { top: 58px; }
+  .part-note {
+    top: auto; bottom: 72px;
+    max-width: calc(100% - 30px);
+    max-height: 46dvh;
+  }
 }
 
 /* W1b: optional procedural reference-only smoothing */
@@ -359,7 +377,7 @@ a { color: inherit; }
   .brand { gap: 6px; }
   .brand-subtitle { max-width: 115px; }
   .status-pill { max-width: 38vw; }
-  .language-switch { min-width: 40px; min-height: 40px; padding: 5px; }
+  .language-switch { min-width: 44px; min-height: 44px; padding: 5px; }
 }
 
 /* Folio II — local source hierarchy browser: search, focus and isolate */
@@ -450,4 +468,159 @@ a { color: inherit; }
   .atlas-part-isolate, .atlas-part-focus { min-height: 36px; min-width: 33px; }
   .atlas-part-name { font-size: 11px; }
   .atlas-part-list { max-height: 28dvh; }
+}
+
+/* Leonardo Web v1.0 · camera-first progressively disclosed folio controls.
+   A single design token family is shared by stage and paper surfaces.
+   The foldouts are semantic <details>: keyboard/VoiceOver/JS-free accessible. */
+.opacity-disclosure {
+  flex: 0 1 142px;
+  min-width: 112px;
+  align-self: flex-end;
+  position: relative;
+}
+.opacity-disclosure > summary,
+.diagnostics-disclosure > summary,
+.part-note-more > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.opacity-disclosure > summary::-webkit-details-marker,
+.diagnostics-disclosure > summary::-webkit-details-marker,
+.part-note-more > summary::-webkit-details-marker { display: none; }
+.opacity-disclosure > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #a99a7e;
+  border-radius: 8px;
+  background: #f1e9d6;
+  color: var(--mm-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.opacity-disclosure[open] > summary span { transform: rotate(180deg); }
+.opacity-disclosure .opacity-field {
+  margin-top: 9px;
+  min-width: 0;
+}
+.opacity-disclosure .opacity-field input { min-height: 26px; margin-bottom: 1px; }
+.diagnostics-disclosure { position: relative; flex: none; }
+.diagnostics-disclosure > summary {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid #d8c9a39c;
+  border-radius: 7px;
+  background: #14291fdb;
+  color: #f0e5ca;
+  font: 600 11px/1.3 -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.diagnostics-disclosure[open] > .frame-metric {
+  display: block;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(300px, 74vw);
+  padding: 11px 13px;
+  border: 1px solid #bea57b99;
+  border-radius: 8px;
+  background: #12251eeF;
+  color: #f6ecd6;
+  box-shadow: 0 8px 22px #0006;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.5;
+}
+.diagnostics-disclosure:not([open]) > .frame-metric { display: none; }
+.part-note-more { margin-top: 6px; }
+.part-note-more > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--mm-verdigris);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.part-note-more[open] > summary { margin-bottom: 4px; }
+.control-folio { background: var(--mm-paper); color: var(--mm-ink); }
+.disclaimer { font-size: 11px; }
+.folio-dialog p { font-size: 14px; }
+.layer-row { font-size: 14px; }
+
+@media (max-width: 600px) {
+  .control-row { align-items: flex-end; gap: 9px; }
+  .opacity-disclosure { flex-basis: 102px; min-width: 94px; }
+  .opacity-disclosure > summary { padding: 8px; font-size: 12px; }
+  .segmented span { font-size: 12px; }
+  .action-row { margin-top: 8px; }
+  .action-button { font-size: 11px; padding: 7px 5px; }
+  .part-note h3 { font-size: 17px; }
+  .control-folio { padding-inline: 12px; }
+  .stage-heading { top: 10px; right: 12px; justify-content: flex-end; }
+}
+
+@media (max-height: 650px) {
+  .mirror-app {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+  .camera-stage {
+    flex: none;
+    height: max(220px, 46dvh);
+    min-height: 220px;
+  }
+}
+
+/* Minimal UI transitions, with existing reduced-motion override. */
+.opacity-disclosure > summary span { transition: transform 140ms ease-out; }
+
+/* Folio II / Privacy: a bottom sheet on handheld browsers, centered
+   parchment pages on desktop. Native <dialog> retains keyboard trapping. */
+.folio-explainer { margin: 12px 0 0; }
+.folio-explainer > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--mm-verdigris);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.folio-explainer p {
+  margin: 2px 0 6px;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.layer-row { min-height: 44px; }
+@media (max-width: 600px) {
+  .folio-dialog,
+  .atlas-dialog {
+    position: fixed;
+    inset: auto 0 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(85dvh, 750px);
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    padding: 18px 18px max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .folio-dialog h2,
+  .atlas-dialog h2 { font-size: 23px; }
+  .local-model-hint { line-height: 1.5; }
 }
