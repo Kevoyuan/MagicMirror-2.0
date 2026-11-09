@@ -689,6 +689,29 @@ function displayAtlasPart(part: AtlasPart): void {
     : `来源部件：${part.path} · ${part.triangles.toLocaleString()} 个三角形。仅静态网格，不是实时追踪的骨骼。`;
 }
 
+function refreshAtlasAnchorStatus(): void {
+  const partId = atlasViewer?.getSelectedPartId() ?? null;
+  const assigned = partId !== null ? atlasMappings.get(partId) : undefined;
+  const selectedPoints = partId !== null ? atlasAnchors.get(partId) : undefined;
+  const count = completeAnchorPairCount(atlasAnchors);
+  const inventory = atlasViewer?.sourceInventory();
+  atlasAnchorStart.disabled = !assigned;
+  atlasAnchorEnd.disabled = !assigned;
+  atlasAnchorClear.disabled = !selectedPoints;
+  atlasAnchorExport.disabled = !inventory || atlasAnchors.size === 0;
+  atlasAnchorImport.disabled = !inventory || atlasMappings.size === 0;
+  const selectedStatus = !assigned
+    ? (locale === "en"
+      ? "Select a mapped original mesh before choosing endpoints."
+      : "请先选择一个已人工映射的来源网格。")
+    : (locale === "en"
+      ? `Selected source #${partId}: A ${selectedPoints?.start ? "✓" : "–"} / B ${selectedPoints?.end ? "✓" : "–"}.`
+      : `已选来源网格 #${partId}：起点 A ${selectedPoints?.start ? "✓" : "–"} / 终点 B ${selectedPoints?.end ? "✓" : "–"}。`);
+  atlasAnchorSummary.textContent = locale === "en"
+    ? `${count} complete / ${atlasAnchors.size} annotated source meshes. ${selectedStatus} NOT calibrated.`
+    : `完整端点 ${count} 组 / 共标记 ${atlasAnchors.size} 个网格。 ${selectedStatus} 未经校准。`;
+}
+
 function refreshAtlasParts(): void {
   const parts = atlasViewer?.getParts() ?? [];
   const { matches, totalMatches, totalParts, hiddenParts, truncated } =
@@ -924,6 +947,90 @@ atlasMapImport.addEventListener("change", () => {
       : `映射导入被拒绝：${String(error)}`;
   }).finally(() => {
     atlasMapImport.disabled = !atlasViewer?.sourceInventory();
+  });
+});
+
+function beginLocalAnchor(endpoint: AnchorEndpoint): void {
+  const id = atlasViewer?.getSelectedPartId() ?? null;
+  if (id === null || !atlasMappings.has(id) ||
+      !atlasViewer?.beginAnchorPick(id, endpoint)) {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Select a mapped, visible source mesh and pause any authored animation before marking."
+      : "请先选择并映射一个可见原始网格，并暂停模型动画后再标记。";
+    return;
+  }
+  atlasAnchorMessage.textContent = locale === "en"
+    ? `Click the selected source mesh #${id} in the 3D viewer to mark the ${endpoint} point. Isolate it if occluded.`
+    : `请在 3D 模型视图点击选中的来源网格 #${id}，标记${endpoint === "start" ? "起点 A" : "终点 B"}；如被遮挡，请先独显。`;
+}
+atlasAnchorStart.addEventListener("click", () => beginLocalAnchor("start"));
+atlasAnchorEnd.addEventListener("click", () => beginLocalAnchor("end"));
+atlasAnchorClear.addEventListener("click", () => {
+  const id = atlasViewer?.getSelectedPartId();
+  if (id !== null && id !== undefined) atlasAnchors.delete(id);
+  atlasViewer?.cancelAnchorPick();
+  atlasAnchorMessage.textContent = locale === "en"
+    ? "Cleared anchor points for the selected mesh."
+    : "已清除当前选中来源网格的两个端点。";
+  refreshAtlasAnchorStatus();
+});
+atlasAnchorExport.addEventListener("click", () => {
+  const inventory = atlasViewer?.sourceInventory();
+  if (!inventory) return;
+  try {
+    const manifest = makeAnchorDraft(inventory, atlasMappings, atlasAnchors);
+    const filename = mappingDownloadName(inventory.fileName)
+      .replace("-manual-pose-map.json", "-source-anchor-draft.json");
+    const blob = new Blob([JSON.stringify(manifest, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Saved LOCAL uncalibrated model-coordinate points. No weights, rights or camera calibration included."
+      : "已在本地保存未经校准的原始模型端点。不包含权重、授权或相机标定。";
+  } catch (error) {
+    atlasAnchorMessage.textContent = `Export refused: ${String(error)}`;
+  }
+});
+atlasAnchorImport.addEventListener("change", () => {
+  const file = atlasAnchorImport.files?.[0];
+  atlasAnchorImport.value = "";
+  const originalInventory = atlasViewer?.sourceInventory();
+  if (!file || !originalInventory) return;
+  if (file.size < 1 || file.size > 2_000_000) {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? "Anchor JSON must be 1–2 MB." : "端点 JSON 文件大小必须为 1–2 MB。";
+    return;
+  }
+  atlasAnchorImport.disabled = true;
+  void file.text().then((text) => {
+    const current = atlasViewer?.sourceInventory();
+    if (!current ||
+        current.sourceSHA256 !== originalInventory.sourceSHA256 ||
+        current.fileSizeBytes !== originalInventory.fileSizeBytes) {
+      throw new Error("The local original model changed during anchor import.");
+    }
+    const raw: unknown = JSON.parse(text);
+    const checked = parseAnchorDraft(raw, current, atlasMappings);
+    atlasAnchors.clear();
+    atlasViewer?.cancelAnchorPick();
+    for (const [id, pair] of checked) atlasAnchors.set(id, pair);
+    atlasAnchorMessage.textContent = locale === "en"
+      ? `Loaded ${checked.size} LOCAL anchor drafts (not calibrated or legally cleared).`
+      : `已导入 ${checked.size} 组本地端点草稿（未经校准或版权审核）。`;
+    refreshAtlasAnchorStatus();
+  }).catch((error) => {
+    atlasAnchorMessage.textContent = locale === "en"
+      ? `Anchor import refused: ${String(error)}`
+      : `端点导入被拒绝：${String(error)}`;
+  }).finally(() => {
+    refreshAtlasAnchorStatus();
   });
 });
 
