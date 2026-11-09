@@ -11,4 +11,13 @@ describe("Web bilingual presentation", () => {
     expect(translate("解剖图层", "zh")).toBe("解剖图层");
     expect(translate("SkeletalSystem100.fbx", "en")).toBe("SkeletalSystem100.fbx");
   });
+  it("keeps camera-first disclosure controls bilingual", () => {
+    expect(translate("透明度", "en")).toBe("Opacity");
+    expect(translate("诊断", "en")).toBe("Diagnostics");
+    expect(translate("阅读解剖说明", "en")).toBe("Read anatomy note");
+    expect(translate("图层与许可说明", "en")).toBe("Layers & licensing");
+    expect(translate("图层与许可说明", "zh")).toBe("图层与许可说明");
+    expect(translate("AnatomicalOriginalMesh.fbx", "en")).toBe("AnatomicalOriginalMesh.fbx");
+  });
+
 });
