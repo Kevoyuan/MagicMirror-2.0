@@ -6,7 +6,7 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { inspectLocalAtlasFile, normalizeSlice, sliceNormal,
   type SliceOrientation } from "./atlas-source";
-import { sourcePathForPart, type AtlasPart } from "./atlas-catalog";
+import { effectivePartVisibility, sourcePathForPart, type AtlasPart } from "./atlas-catalog";
 import { buildLocalAtlasInventory, type AtlasInventory } from "./atlas-inventory";
 
 interface LocalMeshEntry {
@@ -195,8 +195,9 @@ export class LocalAtlasViewer {
 
   private applyVisibility(): void {
     for (const part of this.parts) {
-      part.mesh.visible = this.isolatedPartId === null
-        ? part.userVisible : part.id === this.isolatedPartId;
+      part.mesh.visible = effectivePartVisibility(
+        part.userVisible, part.id, this.isolatedPartId
+      );
     }
     if (this.selectedPartId !== null &&
         !this.findPart(this.selectedPartId)?.mesh.visible) this.clearSelection();
