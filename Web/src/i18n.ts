@@ -125,6 +125,18 @@ const en: Record<string, string> = {
     "Try an ORIGINAL 3-part 3D demo (no downloads needed)",
   "此示例由 MagicMirror 在浏览器内临时生成，包含三个简单方块及预设参考点；不是 Z-Anatomy、真实骨骼或人体摄像头追踪。":
     "This original MagicMirror example generates three simple bars and predefined reference points inside the browser. It is NOT Z-Anatomy, actual human bones or live camera tracking.",
+  "离线关键帧与循环回放": "Local angle keyframes & loop replay",
+  "仅对当前原创或本地来源的虚拟运动链记录角度，不包含摄像头画面或真实人体骨骼。每帧绑定原始文件哈希、人工网格父子关系和模型空间端点。":
+    "Record only test angles for an original/local virtual chain, never camera footage or actual human bones. Each frame is bound to original file hash, manually authored hierarchy and model-space points.",
+  "时间轴（毫秒）": "Timeline (milliseconds)",
+  "记录当前角度": "Capture current angles",
+  "删除此关键帧": "Delete this keyframe",
+  "循环播放": "Loop playback",
+  "清空帧": "Clear keyframes",
+  "导出本地动作草稿": "Export local motion draft",
+  "导入动作草稿 JSON": "Import motion JSON",
+  "请先预览 2–12 个原始网格，然后记录两个不同时间的关键帧；不执行真实人体追踪。":
+    "Preview 2–12 original meshes, then capture at least two distinct keyframes; no actual human pose recording.",
   "多部件运动链 · 原模型虚拟预览": "Multi-mesh virtual chain · Original-model study",
   "选择至少两个已标记 A/B 的普通来源网格，手动指定父部件。运动以独立金色线框副本呈现，原始网格完全不修改。模型坐标轴和端点未经过医学、相机或真实关节校准。":
     "Select at least two original plain meshes with A/B points and manually assign parents. Gold wireframe ghosts move while all source geometry stays unchanged. Model axes and clicked points are NOT medically, camera or joint calibrated.",
@@ -204,7 +216,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status"
+      "#tracking-status,#guidance,#part-note,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);
