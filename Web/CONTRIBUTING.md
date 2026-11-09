@@ -91,3 +91,16 @@ skin weights, or activate real camera anatomy AR based only
 on a matching JSON. A matching original source and draft
 are still **not** a legal redistribution grant, calibrated
 rest pose or authored animation rig.
+
+## Local source-point drafts are not verified joint anchors
+
+The source-raycast points in W2e originate from an
+explicit user selection on the SAME locally loaded
+original mesh. Validate the exact source SHA-256
+and current W2d manual segment relation before
+import, and preserve uncalibrated/not-ready/not-
+reviewed statuses. Do not infer 3D human joints,
+verified bone anatomy, authored skin weights,
+rest pose or commercial rights from these
+arbitrary local reference points. No unreviewed
+model asset or source-rig file goes into Git.
