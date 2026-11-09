@@ -49,6 +49,8 @@ export class LocalAtlasViewer {
   private readonly mouse = new Vector2();
   private frame = 0;
   private loaded = false;
+  private loadGeneration = 0;
+  private disposed = false;
   private lastLoaded?: Object3D;
   private parts: LocalMeshEntry[] = [];
   private isolatedPartId: number | null = null;
@@ -113,6 +115,10 @@ export class LocalAtlasViewer {
   stop(): void {
     if (this.frame) cancelAnimationFrame(this.frame);
     this.frame = 0;
+  }
+
+  cancelPendingLoad(): void {
+    this.loadGeneration++;
   }
 
   setWireframe(enabled: boolean): void {
@@ -279,10 +285,18 @@ export class LocalAtlasViewer {
   }
 
   async load(file: File): Promise<LocalAtlasStats> {
+    if (this.disposed) throw new Error("Model inspector was closed.");
+    const generation = ++this.loadGeneration;
+    const checkActive = () => {
+      if (this.disposed || generation !== this.loadGeneration) {
+        throw new Error("Local model import canceled.");
+      }
+    };
     const format = inspectLocalAtlasFile(file);
     // Read the file once and parse locally; no fetch(URL.createObjectURL)
     // which could accidentally leak the file to a remote worker/CDN.
     const bytes = await file.arrayBuffer();
+    checkActive();
     if (!crypto.subtle) {
       throw new Error("Secure-context SHA-256 is required for local source provenance.");
     }
@@ -290,12 +304,15 @@ export class LocalAtlasViewer {
     const sourceSHA256 = Array.from(digestBytes, (value) =>
       value.toString(16).padStart(2, "0")
     ).join("");
+    checkActive();
     let object: Object3D;
     if (format === "fbx") {
       const { FBXLoader } = await import("three/addons/loaders/FBXLoader.js");
+      checkActive();
       object = new FBXLoader(this.localOnlyLoaderManager()).parse(bytes, "");
     } else {
       const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+      checkActive();
       const parsed = await new Promise<Object3D>((resolve, reject) => {
         new GLTFLoader(this.localOnlyLoaderManager()).parse(
           bytes, "", (gltf) => resolve(gltf.scene), reject
@@ -303,6 +320,7 @@ export class LocalAtlasViewer {
       });
       object = parsed;
     }
+    checkActive();
 
     let importedMeshes = 0, triangles = 0, skinnedMeshes = 0;
     const parsedParts: LocalMeshEntry[] = [];
@@ -343,8 +361,8 @@ export class LocalAtlasViewer {
     // Cap just before integrating GPU-heavy high-detail external models.
     // The known ~1.1m-triangle Z-Anatomy source fits for desktop research,
     // but phones may be too slow. Never silently decimate source meshes.
-    if (triangles > 2_000_000) {
-      throw new Error("More than 2 million triangles: please simplify offline first.");
+    if (triangles > 2_000_000 || importedMeshes > 5_000) {
+      throw new Error("Model exceeds the 2 million-triangle / 5,000-mesh research preview limits. Simplify offline first.");
     }
     const bounds = new Box3().setFromObject(object);
     const size = bounds.getSize(new Vector3());
@@ -353,6 +371,7 @@ export class LocalAtlasViewer {
     if (!Number.isFinite(longest) || longest < 1e-8) {
       throw new Error("Model dimensions cannot be normalized.");
     }
+    checkActive();
     this.clearModel();
     this.parts = parsedParts;
     this.isolatedPartId = null;
@@ -425,6 +444,8 @@ export class LocalAtlasViewer {
   }
 
   dispose(): void {
+    this.disposed = true;
+    this.cancelPendingLoad();
     this.stop();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointerup", this.onPointerUp);
