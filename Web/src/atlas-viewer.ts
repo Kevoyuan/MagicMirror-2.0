@@ -1,6 +1,6 @@
 import {
   AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Group,
-  Mesh, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
+  LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Plane, Raycaster,
   Scene, Vector2, Vector3, WebGLRenderer, type Object3D,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -116,6 +116,20 @@ export class LocalAtlasViewer {
     this.render();
   }
 
+  private localOnlyLoaderManager(): LoadingManager {
+    const manager = new LoadingManager();
+    // Untrusted FBX/GLB files may refer to remote textures/resources.
+    // Reject actual network fetches: use a harmless 1x1 pixel instead.
+    // Keep embedded local data/blob URIs, never expose original bytes.
+    const pixel = "data:image/png;base64," +
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAF" +
+      "gAI/ScLttAAAAABJRU5ErkJggg==";
+    manager.setURLModifier((url) =>
+      /^(data:|blob:)/i.test(url) ? url : pixel
+    );
+    return manager;
+  }
+
   async load(file: File): Promise<LocalAtlasStats> {
     const format = inspectLocalAtlasFile(file);
     // Read the file once and parse locally; no fetch(URL.createObjectURL)
@@ -124,11 +138,13 @@ export class LocalAtlasViewer {
     let object: Object3D;
     if (format === "fbx") {
       const { FBXLoader } = await import("three/addons/loaders/FBXLoader.js");
-      object = new FBXLoader().parse(bytes, "");
+      object = new FBXLoader(this.localOnlyLoaderManager()).parse(bytes, "");
     } else {
       const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
       const parsed = await new Promise<Object3D>((resolve, reject) => {
-        new GLTFLoader().parse(bytes, "", (gltf) => resolve(gltf.scene), reject);
+        new GLTFLoader(this.localOnlyLoaderManager()).parse(
+          bytes, "", (gltf) => resolve(gltf.scene), reject
+        );
       });
       object = parsed;
     }
