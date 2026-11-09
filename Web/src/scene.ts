@@ -7,6 +7,7 @@ import {
   mapImageToViewport, visibleSegments,
   type Focus, type PosePoint,
 } from "./pose";
+import { pickSegment, type PickableSegment } from "./picking";
 
 /**
  * GPU-rendered 3D CYLINDERS projected onto 2D observed landmarks.
@@ -29,6 +30,7 @@ export class ProxySkeletonRenderer {
   });
   private readonly bonePool: Mesh[] = [];
   private readonly jointPool: Mesh[] = [];
+  private pickables: PickableSegment[] = [];
   private readonly yAxis = new Vector3(0, 1, 0);
   private readonly a = new Vector3();
   private readonly b = new Vector3();
@@ -92,6 +94,7 @@ export class ProxySkeletonRenderer {
     const segments = visibleSegments(points, focus);
     const radius = Math.max(3, Math.min(this.width, this.height) * 0.009);
     const seenJointIndices = new Set<number>();
+    this.pickables = [];
     let i = 0, j = 0;
     this.material.opacity = Math.max(0.1, Math.min(0.9, opacity)) * 0.8;
 
@@ -116,6 +119,10 @@ export class ProxySkeletonRenderer {
       bone.position.copy(this.a).add(this.b).multiplyScalar(0.5);
       bone.quaternion.setFromUnitVectors(this.yAxis, this.axis.normalize());
       bone.scale.set(radius * 2, length, radius * 2);
+      this.pickables.push({
+        fromIndex: segment.fromIndex, toIndex: segment.toIndex,
+        start: { x: a.x, y: a.y }, end: { x: b.x, y: b.y },
+      });
 
       for (const [idx, center] of [
         [segment.fromIndex, a],
@@ -140,7 +147,12 @@ export class ProxySkeletonRenderer {
     this.renderer.render(this.scene, this.camera);
   }
 
+  pickAt(x: number, y: number): PickableSegment | null {
+    return pickSegment(x, y, this.pickables, 24);
+  }
+
   hide(): void {
+    this.pickables = [];
     for (const mesh of this.bonePool) mesh.visible = false;
     for (const mesh of this.jointPool) mesh.visible = false;
     this.renderer.render(this.scene, this.camera);
