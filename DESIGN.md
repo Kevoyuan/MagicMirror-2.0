@@ -643,3 +643,17 @@ on the untouched static imported source. This is a
 research instrument for viewing parent/child spatial
 relationships, NEVER a clinically accurate joint
 tree or live patient skeleton projection.
+
+
+## Folio II · Original model try-it-now entry (2026-11-09)
+
+Add one compact **TRY ORIGINAL 3D CHAIN** button
+beneath the user-selected FBX/GLB file picker.
+It generates and previews three simple original
+bars, clearly marked as a tutorial, NOT any
+real anatomical model. This gives reviewers a
+one-click meaningful experience with the gold
+ghost joint chain without committing anatomy
+binaries or requiring an external 41MB FBX.
+Keep the 3D study viewport prominent and
+the rest of the Leonardo mirror unchanged.

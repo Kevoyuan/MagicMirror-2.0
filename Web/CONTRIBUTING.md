@@ -132,3 +132,18 @@ disposing shared geometry; preserve exact original source
 matrices, source labels and authored animation clips.
 No live camera retargeting or public anatomy rights is
 approved by synthetic graph tests alone.
+
+
+## Original tutorial fixture for source UI work
+
+Prefer the W2h *code-generated, no third-party
+asset* three-bar GLB tutorial when smoke-testing
+the static source viewer, manual A/B marking,
+virtual chain and UI strings. Keep its authored
+model-space points and mesh names consistent
+with the geometry. NEVER replace it with a
+copied Z-Anatomy or textbook model without
+correct source-level license review and explicit
+public distribution approval. Document all
+physical browser validation separately from
+synthetic unit tests.
