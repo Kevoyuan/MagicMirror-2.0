@@ -15,6 +15,10 @@ import {
   previewMeshLocalMatrix, transformedSourceEnd, validRigidSource,
   type SourceAxis,
 } from "./rigid-preview";
+import {
+  orderStudyChain, studyChainDeltas, studyGhostWorldMatrix,
+  transformedStudyPoint, type StudyChainNode,
+} from "./kinematic-chain";
 
 interface LocalRigidPreview {
   readonly id: number;
@@ -96,6 +100,17 @@ export class LocalAtlasViewer {
   private anchorPickTarget: { id: number; endpoint: AnchorEndpoint } | null = null;
   private displayedAnchorPoints: { start: SourcePoint3 | null; end: SourcePoint3 | null } | null = null;
   private rigidPreview: LocalRigidPreview | null = null;
+  private readonly studyGhostMaterial = new MeshBasicMaterial({
+    color: "#ffba64", wireframe: true, transparent: true,
+    opacity: 0.84, depthTest: true, side: DoubleSide,
+  });
+  private chainGhosts = new Map<number, {
+    ghost: Mesh;
+    originalWorld: Matrix4;
+  }>();
+  private chainNodes: StudyChainNode[] | null = null;
+  private chainRootWorld: Matrix4 | null = null;
+  private chainDeltas = new Map<number, Matrix4>();
   private sourceIdentity: {
     fileName: string;
     fileSizeBytes: number;
@@ -192,6 +207,7 @@ export class LocalAtlasViewer {
     this.loadGeneration++;
     this.anchorPickTarget = null;
     this.resetRigidPreview();
+    this.resetChainPreview();
   }
 
   setWireframe(enabled: boolean): void {
@@ -256,6 +272,7 @@ export class LocalAtlasViewer {
    */
   beginAnchorPick(id: number, endpoint: AnchorEndpoint): boolean {
     this.resetRigidPreview();
+    this.resetChainPreview();
     const entry = this.findPart(id);
     if (!entry || !entry.mesh.visible || this.animationPlaying ||
         (endpoint !== "start" && endpoint !== "end")) return false;
@@ -283,7 +300,11 @@ export class LocalAtlasViewer {
             this.rigidPreview.start, this.rigidPreview.end,
             this.rigidPreview.axis, this.rigidPreview.angleDegrees
           ) : null;
-        const position = movingEnd ?? point;
+        const selectedDelta = this.selectedPartId !== null
+          ? this.chainDeltas.get(this.selectedPartId) : undefined;
+        const position = selectedDelta
+          ? transformedStudyPoint(point, selectedDelta) ?? point
+          : movingEnd ?? point;
         marker.position.copy(this.lastLoaded.localToWorld(
           new Vector3(position[0], position[1], position[2])
         ));
@@ -316,6 +337,7 @@ export class LocalAtlasViewer {
     if (!root || !start || !end) return false;
     const entry = this.findPart(id)!;
     this.resetRigidPreview();
+    this.resetChainPreview();
     const mesh = entry.mesh;
     mesh.updateWorldMatrix(true, false);
     const parent = mesh.parent;
@@ -379,6 +401,112 @@ export class LocalAtlasViewer {
     this.showAnchorMarkers(this.displayedAnchorPoints);
   }
 
+  /** W2g: separate WORLD-space ghost geometry; source Mesh stays immutable. */
+  getChainPreviewActive(): boolean { return this.chainNodes !== null; }
+  getChainPreviewIds(): number[] {
+    return this.chainNodes?.map(node => node.sourceMeshId) ?? [];
+  }
+
+  canChainPreview(nodes: readonly StudyChainNode[]): boolean {
+    if (!this.lastLoaded || this.animationClips.length || this.animationPlaying ||
+        this.disposed) return false;
+    try {
+      for (const node of orderStudyChain(nodes)) {
+        const part = this.findPart(node.sourceMeshId);
+        if (!part || !part.mesh.visible ||
+            (part.mesh as import("three").SkinnedMesh).isSkinnedMesh) return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  beginChainPreview(nodes: readonly StudyChainNode[]): boolean {
+    if (!this.canChainPreview(nodes) || !this.lastLoaded) return false;
+    this.resetRigidPreview();
+    this.resetChainPreview();
+    const ordered = orderStudyChain(nodes);
+    this.lastLoaded.updateWorldMatrix(true, true);
+    const baseline = this.lastLoaded.matrixWorld.clone();
+    const ghosts = new Map<number, { ghost: Mesh; originalWorld: Matrix4 }>();
+    for (const node of ordered) {
+      const mesh = this.findPart(node.sourceMeshId)!.mesh;
+      mesh.updateWorldMatrix(true, false);
+      const ghost = new Mesh(mesh.geometry, this.studyGhostMaterial);
+      ghost.matrixAutoUpdate = false;
+      ghost.frustumCulled = false;
+      this.scene.add(ghost); // scene is world-identity; NOT source group
+      ghosts.set(node.sourceMeshId, {
+        ghost, originalWorld: mesh.matrixWorld.clone(),
+      });
+    }
+    this.chainNodes = ordered.map(node => ({ ...node }));
+    this.chainRootWorld = baseline;
+    this.chainGhosts = ghosts;
+    if (!this.updateChainGhosts()) {
+      this.resetChainPreview();
+      return false;
+    }
+    return true;
+  }
+
+  setChainJoint(id: number, axis: SourceAxis, degrees: number): boolean {
+    const nodes = this.chainNodes;
+    if (!nodes || !this.chainGhosts.has(id)) return false;
+    const updated = nodes.map(node =>
+      node.sourceMeshId === id ? { ...node, axis, degrees } : node
+    );
+    if (!this.canChainPreview(updated)) {
+      this.resetChainPreview();
+      return false;
+    }
+    this.chainNodes = updated;
+    if (!this.updateChainGhosts()) {
+      this.resetChainPreview();
+      return false;
+    }
+    return true;
+  }
+
+  private updateChainGhosts(): boolean {
+    if (!this.chainNodes || !this.chainRootWorld) return false;
+    const deltas = studyChainDeltas(this.chainNodes);
+    const targets = new Map<number, Matrix4>();
+    for (const [id, {originalWorld}] of this.chainGhosts) {
+      const delta = deltas.get(id);
+      if (!delta) return false;
+      const transformed = studyGhostWorldMatrix(
+        this.chainRootWorld, originalWorld, delta
+      );
+      if (!transformed) return false;
+      targets.set(id, transformed);
+    }
+    // Commit only after all mesh matrices have been checked.
+    for (const [id, matrix] of targets) {
+      const ghost = this.chainGhosts.get(id)!.ghost;
+      ghost.matrix.copy(matrix);
+      ghost.updateMatrixWorld(true);
+    }
+    this.chainDeltas = deltas;
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+    this.render();
+    return true;
+  }
+
+  resetChainPreview(): void {
+    if (!this.chainNodes) return;
+    this.chainNodes = null;
+    this.chainDeltas.clear();
+    this.chainRootWorld = null;
+    for (const { ghost } of this.chainGhosts.values()) {
+      this.scene.remove(ghost);
+      // Intentionally do NOT dispose source geometry: ghosts share it.
+    }
+    this.chainGhosts.clear();
+    this.showAnchorMarkers(this.displayedAnchorPoints);
+  }
+
   getAnimationClips(): AnimationStudyClip[] {
     return this.animationClips.map((clip, id) => ({
       id,
@@ -402,7 +530,7 @@ export class LocalAtlasViewer {
   }
 
   setAnimationPlaying(playing: boolean): boolean {
-    if (!this.activeAnimation || (playing && this.rigidPreview)) return false;
+    if (!this.activeAnimation || (playing && (this.rigidPreview || this.chainNodes))) return false;
     this.activeAnimation.paused = !playing;
     this.animationPlaying = playing;
     this.lastAnimationFrameMs = 0;
@@ -428,12 +556,14 @@ export class LocalAtlasViewer {
     this.clearSelection();
     this.selectedPartId = id;
     selected.mesh.material = this.highlightMaterial;
+    this.showAnchorMarkers(this.displayedAnchorPoints);
     this.render();
     return { id, name: selected.name, path: selected.path,
       triangles: selected.triangles, visible: true };
   }
 
   private applyVisibility(): void {
+    if (this.chainNodes) this.resetChainPreview();
     if (this.rigidPreview &&
         !this.findPart(this.rigidPreview.id)?.mesh.visible) {
       this.resetRigidPreview();
@@ -737,6 +867,7 @@ export class LocalAtlasViewer {
 
   private clearModel(): void {
     this.anchorPickTarget = null;
+    this.resetChainPreview();
     this.resetRigidPreview();
     this.showAnchorMarkers(null);
     this.animationPlaying = false;
@@ -776,6 +907,7 @@ export class LocalAtlasViewer {
     this.controls.dispose();
     this.material.dispose();
     this.highlightMaterial.dispose();
+    this.studyGhostMaterial.dispose();
     this.anchorMarkerGeometry.dispose();
     for (const material of this.anchorMarkerMaterials) material.dispose();
     this.renderer.dispose();
