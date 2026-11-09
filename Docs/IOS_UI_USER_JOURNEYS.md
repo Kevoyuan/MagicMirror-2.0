@@ -140,3 +140,35 @@ QA: test zero assets, requested-but-unavailable system, multiple
 ready systems, Solo, Reset, individual opacity, active badge changes
 on tracking loss, section centering, bilingual VoiceOver and large
 Dynamic Type. These tests are independently required beyond compilation.
+
+## 11. Folio-first controls and accessibility layout (2026-11-09)
+
+The anatomy sheet now opens with a **compact manuscript title** followed
+immediately by **Systems / Sections**. The first useful system or section
+row appears without first scrolling through a multi-line introduction.
+
+**Systems:** a compact camera-relative state card displays the reference
+proxy or selected registered systems. Only after the layer rows does an
+optional **How anatomy layers work** disclosure provide Solo/multi-layer
+explanations. The reference disclaimer remains outside this disclosure.
+
+**Sections:** a brief textual readiness status precedes the orientation
+choices, and the longer explanation moves below the controls into
+**What do section planes show?**. No scientific limitation is omitted;
+only its hierarchy changes. Axial/sagittal/coronal still cannot trigger
+real clipping without a registered supported atlas.
+
+**Screen-size rules:** at standard Dynamic Type, native sheet medium and
+large detents remain available; at accessibility text sizes, the native
+Anatomy, Field Notes and Study sheets prefer large detents and scroll.
+The body region picker, camera buttons and sheet close controls remain
+usable without a tiny icon target or horizontal scrolling.
+
+**Review protocol:** confirm on an actual compact/standard/large iPhone
+in English and Simplified Chinese. Start with the native .medium
+Anatomy sheet; check that first useful model row is reachable without
+scrolling. Increase Dynamic Type to accessibility sizes and verify the
+large sheet, scroll, Done action, VoiceOver order, Solo/locked rows,
+optional disclosure expansion, long Chinese copy, plus the persistent
+nonmedical reference statement. Record screenshots and device models.
+Compilation / test-target linking do not replace that QA.
