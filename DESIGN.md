@@ -26,7 +26,7 @@ Leonardo Mirror (live, default)
 │   ├── Pause overlay / Flip camera / Stop / Layers
 │   └── Always-visible reference / nonmedical disclosure
 └── On-demand dialogs
-    ├── Anatomy layers and rights: actual Proxy first; unavailable systems locked
+    ├── Anatomy layers: Proxy/rig mode switch (Proxy default); rights after controls
     ├── Local FBX / GLB research: static inspector, no pose binding
     └── Privacy and provenance
 ```
@@ -36,7 +36,7 @@ Leonardo Mirror (live, default)
 - Live camera is the focal surface; no landing-page gallery, account, multi-tab dashboard, backend inference, forced tutorials, or decorative camera filter.
 - The ordinary RGB camera does **not** measure actual bones. No X-ray, person-specific reconstruction, clinical diagnosis or calibrated anatomical section claims.
 - A visible arm or leg can support partial reference tracking; do not demand full-body framing to start. Hide uncertain segments instead of predicting missing joints.
-- Only the actual **procedural proxy** can be presented as live camera-tracked today. Imported FBX/GLB models are user-chosen, local-only, static research models; source model axes are not validated anatomical planes.
+- Only **original procedural geometry** can be presented as live camera-tracked: the W0 independent-segment proxy (default) and the W3a opt-in original articulated demonstration rig. Both are screen-aligned teaching diagrams, not measured bones. Imported FBX/GLB models are user-chosen, local-only, static research models; source model axes are not validated anatomical planes.
 - No model rights are granted merely by MIT-licensing the new Web code. Public deployment remains subject to verified task-weight redistribution, SDK privacy, mesh-by-mesh rights and honest attribution.
 - Unavailable Z-Anatomy bones, muscles, organs and true cross-sections are informational states, not active colored toggles.
 
@@ -72,7 +72,7 @@ The Web styling uses coherent, restrained values rather than a parchment-themed 
 2. **Opacity:** native `<details>` foldout presents the same working reference transparency slider. The closed state still remains keyboard/screen-reader discoverable.
 3. **Diagnostics:** optional `<details>` exposes measured **local processing** indicators, never mislabelled as true display FPS or camera motion-to-photon latency.
 4. **Proxy study note:** when a real visible segment is tapped, show its title and source-safe subtitle. Longer learning copy appears after an explicit expansion, with the nonmedical limitation visible in the full text. A note and framing guidance must not cover each other.
-5. **Anatomy layers:** show **Proxy available** and local model entry before the long licensing explanation; use a disclosure after the genuine controls. Planned systems remain locked/unavailable.
+5. **Anatomy layers:** show a **Live overlay mode** radio group first — `Reference Proxy` selected by default, `Live Original Rig (Experimental)` as an explicit opt-in — with a short honest status line and a collapsed limitation disclosure. Keep **Proxy available** and the local model entry before the long licensing explanation. Planned systems remain locked/unavailable.
 6. **Local model study:** never substitute its static viewer for live AR, never silently upload, and always label model-axis clipping rather than medically registered transverse/sagittal/coronal planes.
 
 ### Locale and accessibility
@@ -758,3 +758,45 @@ generated source motion from real body
 pose recording, clinical animation,
 licensed Z-Anatomy geometry or
 actual 3D camera registration.
+
+
+## Web Layers · implemented experimental overlay mode switch (2026-11-09)
+
+Implemented UI behavior only; this section is not a plan.
+
+Inside `dialog#layers-dialog`, above the existing layer rows, a
+`fieldset#overlay-mode-field` now presents a **Live overlay mode**
+radio group. The first option, **Reference Proxy / 参考骨架**, is
+`checked` on load and keeps the original independent-segment
+skeleton. The second, **Live Original Rig (Experimental) /
+实时原创铰接模型（实验）**, is an explicit opt-in; selecting it
+shows a completely original procedural 2.5D shoulder → upper arm →
+elbow → forearm chain on the same camera overlay. The control uses
+native `input[type=radio]`, a real `legend`, 36–40px label rows and
+the existing verdigris accent, so it stays keyboard reachable and
+does not shrink the camera stage.
+
+Two truthful copy surfaces accompany the switch:
+
+- `#rig-mode-status` is a `role="status"` line with locally authored
+  简体中文 / EN text. It states the default, the screen-aligned 2.5D
+  limitation, the live segment count or the reason a frame was hidden,
+  the fallback when the renderer cannot be created, and the isolation
+  notice when local FBX/GLB study is opened. It is deliberately skipped
+  by `translateStaticDOM` so dynamic state is never re-translated.
+- A collapsed `<details>` explains that the mode uses only
+  MagicMirror-original geometry, is not real bones/camera-space 3D/
+  medical imaging, and never retargets imported models.
+
+Visual ownership stays in `Web/src/style.css` (`.rig-mode-field`,
+`.rig-mode-option`, `.rig-mode-status`) using the existing paper,
+sepia and verdigris tokens. No new always-visible panel, no icon-only
+toggle, no second camera-stage canvas, and no decorative calibration
+marks were added. Opening the local model study dialog still closes
+the layers dialog and stops the camera; the two experiences remain
+visually and behaviorally distinct.
+
+**Not claimed here:** physical iPhone Safari or Apple GPU acceptance,
+camera permission UX on real hardware, anatomical accuracy, licensed
+anatomy layers, skinning, or public release. The review acceptance
+matrix above still applies unchanged.

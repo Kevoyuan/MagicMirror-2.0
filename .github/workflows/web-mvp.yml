@@ -99,7 +99,7 @@ jobs:
         run: npm install --legacy-peer-deps --no-audit --no-fund
       - name: Install isolated Chromium and WebKit browser engines
         run: npx playwright install --with-deps chromium webkit
-      - name: Exercise GLB/WebGL and original timeline on desktop and iPhone-size WebKit
+      - name: Exercise GLB/WebGL, original timeline and W3a rig on Chromium + iPhone-size WebKit
         env:
           CI: "true"
         run: npm run test:browser

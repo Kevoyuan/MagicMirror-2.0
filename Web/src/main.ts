@@ -35,6 +35,7 @@ import {
   type StudyChainNode,
 } from "./kinematic-chain";
 import { ProxySkeletonRenderer } from "./scene";
+import { LiveRigOverlay, type OverlayMode } from "./live-rig";
 import "./style.css";
 
 let locale: Locale = "zh";
@@ -139,6 +140,24 @@ root.innerHTML = `
   <dialog id="layers-dialog" class="folio-dialog" aria-labelledby="layers-title">
     <div class="dialog-heading"><span>THE ANATOMY FOLIO</span><button class="close-dialog" data-close="layers-dialog" aria-label="关闭图层">×</button></div>
     <h2 id="layers-title">解剖图层</h2>
+    <fieldset id="overlay-mode-field" class="rig-mode-field">
+      <legend class="field-label">实时叠加模式</legend>
+      <div class="rig-mode-options" role="radiogroup" aria-label="实时叠加模式">
+        <label class="rig-mode-option">
+          <input name="overlay-mode" type="radio" value="proxy" checked>
+          <span>参考骨架 / Reference Proxy</span>
+        </label>
+        <label class="rig-mode-option">
+          <input name="overlay-mode" type="radio" value="rig">
+          <span>实时原创铰接模型（实验） / Live Original Rig (Experimental)</span>
+        </label>
+      </div>
+      <p id="rig-mode-status" class="rig-mode-status" role="status" aria-live="polite">默认：独立线段参考骨架。未开启实验模式。</p>
+      <details class="folio-explainer">
+        <summary>实验模式的边界</summary>
+        <p>实验模式只使用 MagicMirror 原创程序化几何，把可见的肩—肘—腕组成屏幕对齐的 2.5D 铰接链，前臂继承上臂枢轴。它不是真实骨骼、解剖配准、相机空间 3D 重建或医学成像；导入的 FBX / GLB 模型不会参与实时跟随。</p>
+      </details>
+    </fieldset>
     <div class="layer-row"><strong>◉ 参考骨架 / Proxy</strong><span class="available-label">已实现</span></div>
     <label class="smooth-control"><input id="stabilize" type="checkbox" checked> <span>稳定显示示意骨架（无关节预测）</span></label>
     <button id="open-atlas-studio" class="primary-button atlas-entry" type="button">导入本地 FBX / GLB 解剖模型</button>
@@ -364,6 +383,25 @@ const statusText = element<HTMLElement>("#status-text");
 const languageButton = element<HTMLButtonElement>("#language-toggle");
 const opacitySlider = element<HTMLInputElement>("#opacity");
 const opacityValue = element<HTMLOutputElement>("#opacity-value");
+const rigModeStatus = element<HTMLElement>("#rig-mode-status");
+const rigModeRadios = document.querySelectorAll<HTMLInputElement>(
+  'input[name="overlay-mode"]'
+);
+
+const RIG_MODE_COPY = {
+  proxy: {
+    zh: "默认：独立线段参考骨架。未开启实验模式。",
+    en: "Default: independent reference segments. Experimental mode is off.",
+  },
+  rig: {
+    zh: "实验模式：屏幕对齐 2.5D 原创铰接链；未进行相机空间 3D 配准。",
+    en: "Experimental: screen-aligned 2.5D original articulated chain; no camera-space 3D registration.",
+  },
+  unavailable: {
+    zh: "实验渲染器不可用，已恢复参考骨架。",
+    en: "Experimental renderer unavailable; reverted to Reference Proxy.",
+  },
+} as const;
 
 let lastStatusText = "";
 let lastStatusKind: StatusKind = "ready";
@@ -377,6 +415,17 @@ try {
   startButton.disabled = true;
   console.error("Three.js initialization failed", error);
 }
+
+/**
+ * W3a: creation of the experimental rig is the ONLY Three.js ownership in
+ * main.ts. All math, session gating and per-frame transforms live in the
+ * live-rig modules; the rig shares proxy's existing WebGLRenderer/scene.
+ */
+let rigOverlay: LiveRigOverlay | undefined;
+if (proxy) rigOverlay = new LiveRigOverlay(proxy);
+let overlayMode: OverlayMode = "proxy";
+let lastInferenceMode: "worker" | "main" | undefined;
+let lastRigStatus: { en: string; zh: string } = { ...RIG_MODE_COPY.proxy };
 
 let runner: LivePoseInference | undefined;
 const processing = new ProcessingWindow();
@@ -432,6 +481,7 @@ function setLocale(next: Locale): void {
   statusText.textContent = translate(lastStatusText || "准备就绪", locale);
   if (lastGuidanceRaw !== null) guidance.textContent = translate(lastGuidanceRaw, locale);
   overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
+  refreshRigModeCopy();
   renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
@@ -441,6 +491,43 @@ function setCameraButtons(running: boolean): void {
   overlayButton.disabled = !running;
   startButton.disabled = running;
   emptyState.hidden = running;
+}
+
+/** Dynamic rig status is authored locally in BOTH languages, never machine-translated. */
+function setRigModeStatus(en: string, zh: string): void {
+  lastRigStatus = { en, zh };
+  rigModeStatus.textContent = locale === "en" ? en : zh;
+}
+function refreshRigModeCopy(): void {
+  rigModeStatus.textContent = locale === "en" ? lastRigStatus.en : lastRigStatus.zh;
+}
+function syncRigModeRadios(): void {
+  rigModeRadios.forEach((radio) => { radio.checked = radio.value === overlayMode; });
+}
+
+/** Hide the ACTIVE overlay. In rig mode a stale 3D chain must never remain. */
+function hideOverlay(): void {
+  if (overlayMode === "rig") rigOverlay?.hide();
+  else proxy?.hide();
+}
+
+function setOverlayMode(next: OverlayMode): void {
+  if (!rigOverlay && next === "rig") {
+    overlayMode = "proxy";
+    setRigModeStatus(RIG_MODE_COPY.unavailable.en, RIG_MODE_COPY.unavailable.zh);
+    syncRigModeRadios();
+    return;
+  }
+  // `setMode` fails closed to "proxy" if the experimental rig cannot be built.
+  const applied = next === "proxy" ? (rigOverlay?.setMode("proxy") ?? true)
+    : (rigOverlay?.setMode("rig") ?? false);
+  overlayMode = applied ? next : "proxy";
+  const copy = applied ? RIG_MODE_COPY[overlayMode] : RIG_MODE_COPY.unavailable;
+  setRigModeStatus(copy.en, copy.zh);
+  hideNote();
+  lastFoundAt = -Infinity;
+  previousCoverage = "none";
+  syncRigModeRadios();
 }
 
 function modelUrl(path: string): string {
@@ -466,7 +553,10 @@ function stopCamera(message = "相机已关闭"): void {
   previousCoverage = "none";
   overlayPaused = false;
   overlayButton.textContent = translate("暂停叠加", locale);
-  proxy?.hide();
+  lastInferenceMode = undefined;
+  // Full reset also drops the experimental chain's transform history.
+  rigOverlay?.reset();
+  hideOverlay();
   hideNote();
   setCameraButtons(false);
   showGuidance(null);
@@ -559,7 +649,8 @@ function handlePoseFrame(frame: InferenceFrame): void {
   const now = performance.now();
   if (frame.frameId <= lastReceivedFrameId) return;
   if (!freshResult(frame, session, now, staleMs)) {
-    proxy.hide();
+    rigOverlay?.clearTransforms();
+    hideOverlay();
     hideNote();
     previousCoverage = "none";
     setStatus("检测结果过期，正在重新识别", "ready");
@@ -567,6 +658,11 @@ function handlePoseFrame(frame: InferenceFrame): void {
     return;
   }
   lastReceivedFrameId = frame.frameId;
+  // A worker->main fallback must not interpolate across the engine switch.
+  if (runner.mode !== lastInferenceMode) {
+    if (lastInferenceMode !== undefined) rigOverlay?.clearTransforms();
+    lastInferenceMode = runner.mode;
+  }
   processing.record({
     observedAtMs: now,
     inferenceMs: frame.inferredInMs,
@@ -579,13 +675,17 @@ function handlePoseFrame(frame: InferenceFrame): void {
     交付 p95 ${p.deliveryP95Ms.toFixed(0)}ms`.replace(/\s+/g, " ").trim();
 
   const observed = frame.landmarks ?? undefined;
-  const points = stabilizingEnabled
+  const smoothed = stabilizingEnabled
     ? stabilizer.sample(observed, frame.capturedAtMs) ?? undefined
     : observed;
+  // The experimental chain owns its OWN bounded stabilization; feeding it the
+  // proxy's smoothed points would double-smooth and hide real discontinuities.
+  const points = overlayMode === "rig" ? observed : smoothed;
   const coverage = coverageFor(points);
   previousCoverage = coverage;
   if (!points || coverage === "none") {
-    proxy.hide();
+    rigOverlay?.clearTransforms();
+    hideOverlay();
     hideNote();
     setStatus("寻找人体姿态", "ready");
     showGuidance("将一个人移入画面；上半身或可见手臂均可尝试。");
@@ -593,8 +693,27 @@ function handlePoseFrame(frame: InferenceFrame): void {
   }
   lastFoundAt = now;
   if (overlayPaused) {
-    proxy.hide();
+    hideOverlay();
     setStatus("参考叠加已暂停", "ready");
+  } else if (overlayMode === "rig" && rigOverlay) {
+    const outcome = rigOverlay.apply(frame, {
+      session, nowMs: now, mirrored, focus, opacity,
+      stabilizing: stabilizingEnabled,
+    });
+    if (outcome.visibleSegments > 0) {
+      setStatus("实验模式 · 铰接跟随", "active");
+      setRigModeStatus(
+        `Experimental: ${outcome.visibleSegments} screen-aligned original articulated segment(s); NOT camera-space 3D.`,
+        `实验模式：${outcome.visibleSegments} 段屏幕对齐原创铰接示意；不是相机空间 3D。`
+      );
+    } else {
+      setStatus("实验模式 · 本帧已隐藏", "ready");
+      const reason = outcome.reasons[0] ?? "NO_SUPPORTED_SEGMENTS";
+      setRigModeStatus(
+        `Experimental: frame hidden (${reason}). No pose was invented.`,
+        `实验模式：本帧已隐藏（${reason}）。未虚构任何姿态。`
+      );
+    }
   } else {
     const visible = proxy.draw(
       points, frame.width, frame.height, focus, opacity, mirrored
@@ -603,7 +722,7 @@ function handlePoseFrame(frame: InferenceFrame): void {
       ? coverage === "torso" ? "已识别 · 躯干稳定" : "已识别 · 局部姿态"
       : "当前区域不可见", visible > 0 ? "active" : "ready");
   }
-  showGuidance(coverage === "partial"
+  showGuidance(coverage === "partial" && overlayMode === "proxy"
     ? "局部参考已启动。双肩与髋部可见时才有完整躯干参考。"
     : null);
 }
@@ -612,7 +731,8 @@ function tick(now: number): void {
   if (!active || !proxy || !runner) return;
   animationFrame = requestAnimationFrame(tick);
   if (now - lastFoundAt > staleMs && previousCoverage !== "none") {
-    proxy.hide();
+    rigOverlay?.clearTransforms();
+    hideOverlay();
     hideNote();
     previousCoverage = "none";
     setStatus("姿态已丢失 · 自动重新识别", "ready");
@@ -623,7 +743,8 @@ function tick(now: number): void {
 }
 
 canvas.addEventListener("click", (event) => {
-  if (!active || overlayPaused || !proxy) return;
+  // Learning-note picking targets the W0 independent proxy segments only.
+  if (!active || overlayPaused || !proxy || overlayMode === "rig") return;
   const rect = canvas.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return;
   const result = proxy.pickAt(event.clientX - rect.left, event.clientY - rect.top);
@@ -675,7 +796,9 @@ snapshotButton.addEventListener("click", () => {
   void (async () => {
     snapshotButton.disabled = true;
     try {
-      proxy.renderForCapture();
+      // Same single renderer/scene in both modes; draw once for explicit capture.
+      if (rigOverlay) rigOverlay.renderForCapture();
+      else proxy.renderForCapture();
       const blob = await captureLocalPNG(video, canvas, stage, mirrored);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -700,15 +823,33 @@ switchButton.addEventListener("click", () => {
 overlayButton.addEventListener("click", () => {
   overlayPaused = !overlayPaused;
   overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
-  if (overlayPaused) proxy?.hide();
+  if (overlayPaused) {
+    // pause() hides BOTH the rig and the proxy through the shared host.
+    if (rigOverlay) rigOverlay.pause();
+    else proxy?.hide();
+  } else {
+    rigOverlay?.resume();
+  }
   setStatus(overlayPaused ? "参考叠加已暂停" : "正在追踪", "ready");
 });
 document.querySelectorAll<HTMLInputElement>('input[name="focus"]').forEach((radio) => {
   radio.addEventListener("change", () => {
     if (radio.checked) {
       focus = radio.value as Focus;
-      proxy?.hide();
+      rigOverlay?.clearTransforms();
+      hideOverlay();
+      if (overlayMode === "rig" && focus === "legs") {
+        setRigModeStatus(
+          "Experimental: no original leg chain exists; nothing is drawn for the leg region.",
+          "实验模式：没有原创腿部铰接链；腿部区域不显示任何虚构骨骼。"
+        );
+      }
     }
+  });
+});
+rigModeRadios.forEach((radio) => {
+  radio.addEventListener("change", () => {
+    if (radio.checked) setOverlayMode(radio.value as OverlayMode);
   });
 });
 opacitySlider.addEventListener("input", () => {
@@ -727,7 +868,9 @@ element<HTMLInputElement>("#stabilize").addEventListener("change", (event) => {
   const control = event.currentTarget as HTMLInputElement;
   stabilizingEnabled = control.checked;
   stabilizer.reset();
-  proxy?.hide();
+  rigOverlay?.setStabilization(stabilizingEnabled);
+  rigOverlay?.clearTransforms();
+  hideOverlay();
   hideNote();
 });
 const atlasDialog = element<HTMLDialogElement>("#atlas-dialog");
@@ -1851,7 +1994,14 @@ atlasAnchorImport.addEventListener("change", () => {
 });
 
 element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () => {
+  // W3a isolation: local static FBX/GLB study NEVER becomes live retargeting.
   stopCamera("进入本地模型研究模式");
+  if (overlayMode === "rig") {
+    setRigModeStatus(
+      "Experimental rig paused for local model study; imported FBX/GLB files are never camera-retargeted.",
+      "实验模式在本地模型研究期间暂停；导入的 FBX / GLB 不会用于摄像头实时跟随。"
+    );
+  }
   element<HTMLDialogElement>("#layers-dialog").close();
   atlasDialog.showModal();
   void ensureAtlasViewer().then((viewer) => {
@@ -2069,6 +2219,7 @@ window.addEventListener("pagehide", () => {
   observer.disconnect();
   runner?.close();
   runner = undefined;
+  rigOverlay?.dispose();
   proxy?.dispose();
   atlasViewer?.dispose();
   atlasViewer = undefined;

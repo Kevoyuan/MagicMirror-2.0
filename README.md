@@ -38,19 +38,33 @@ Third-party binaries are intentionally excluded from Git. This
 developer workflow is not proof that hosting those weights publicly
 is permitted: see [rights & privacy](Docs/WEB_LICENSE_AND_PRIVACY.md).
 
-**Available in Web source W0:** camera start/stop/flip, local
-single-person pose inference, partial arms/legs confidence gates,
-translucent Three.js GPU 3D procedural proxy, video crop and front
-mirror projection, Whole/Arms/Legs controls, opacity, overlay-only
-pause, Leonardo paper dock, permission/recovery/layer/help states,
-and synthetic geometry tests.
+**Implemented in Web source (W0–W3a):** camera start/stop/flip,
+single-person pose inference in a **Web Worker** with a fail-closed
+main-thread fallback (W1/W1c), partial-body confidence gates, the
+translucent Three.js procedural proxy, video cover crop and front
+mirror projection, Whole/Arms/Legs controls, opacity, overlay pause,
+one-shot local PNG capture, latency diagnostics, the Leonardo paper
+dock, bilingual 中文/EN copy, a local-only static FBX/GLB study
+viewer with one-file study sessions (W2), opt-in Chromium/WebKit
+browser smoke tests, and — new in W3a — an **explicit opt-in
+"Live Original Rig (Experimental)"** Layers mode that drives a
+completely ORIGINAL screen-aligned articulated Three.js demonstration
+chain from live pose observations using the SAME single camera and
+overlay WebGL context. `Reference Proxy` remains the default.
+
+**W3a is NOT:** anatomical AR, real bones, camera-space 3D
+registration, depth measurement, skeletal skinning or medical
+imaging. It is an experimental 2.5D/screen-aligned articulation
+milestone with honest bilingual limitation copy. See
+[Web README](Web/README.md#w3a-opt-in-live-original-articulated-rig-experimental-25d).
 
 **Not yet completed/verified:** real-browser webcam testing on
-multiple devices, Web Worker inference, exact camera↔overlay frame
+physical devices (headless Chromium/WebKit ENGINE emulation is not
+iPhone Safari or Apple GPU acceptance), exact camera↔overlay frame
 lock, medically reviewed anatomical skeleton, genuine Z-Anatomy
-assets/rights, articulated skinning/rig, physical 3D registration,
-section layers, hosted public release or independent Google model
-weight redistribution clearance.
+assets/rights, real skeletal mesh rigging and skin weights, physical
+3D camera registration, section layers, hosted public release or
+independent Google model weight redistribution clearance.
 
 ### Web CI versus a public release
 
@@ -79,9 +93,12 @@ behavior first.
 | Google MediaPipe Tasks + pose task | SDK used by Web; weights developer-staged locally | SDK and weight-license checks separate |
 
 The core challenge remains: making a **genuinely reviewed, articulated
-3D anatomical model** move with human body observations. Replacing
-iOS with Web simplifies access and contribution, not the legal,
-kinematic or camera-registration science.
+3D anatomical model** move with human body observations. W3a's original
+procedural demonstration proves that a bounded parent-relative chain can
+follow observations, but it does not supply a reviewed anatomical rest
+rig, skin weights or camera extrinsics. Replacing iOS with Web simplifies
+access and contribution, not the legal, kinematic or camera-registration
+science.
 
 ### History (preserved, not active)
 

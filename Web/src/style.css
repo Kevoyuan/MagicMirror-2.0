@@ -362,6 +362,36 @@ a { color: inherit; }
 }
 .smooth-control input { width: 17px; height: 17px; accent-color: #345b50; }
 
+/* W3a: opt-in, explicit experimental overlay mode. Default is Reference Proxy. */
+.rig-mode-field {
+  margin: 10px 0 4px; padding: 9px 11px 10px;
+  border: 1px solid #b5a78a99; border-radius: 9px;
+  background: #e5d8b9;
+}
+.rig-mode-field > .field-label {
+  padding: 0 5px; color: #6d5c3f; font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.rig-mode-options { display: grid; gap: 4px; }
+.rig-mode-option {
+  display: flex; align-items: flex-start; gap: 8px;
+  min-height: 36px; padding: 4px 3px;
+  color: #33473a; font-size: 12px; line-height: 1.45; cursor: pointer;
+}
+.rig-mode-option input { flex: none; width: 17px; height: 17px; margin-top: 1px; accent-color: #345b50; }
+.rig-mode-status {
+  margin: 6px 0 0; padding: 6px 8px;
+  border-left: 2px solid #8a7351; border-radius: 3px;
+  background: #d9cca9; color: #4c5545;
+  font-size: 11px !important; line-height: 1.5 !important;
+}
+.rig-mode-field .folio-explainer { margin: 8px 0 0; }
+.rig-mode-field .folio-explainer p { margin: 6px 0 2px; font-size: 11px; line-height: 1.55; }
+@media (max-width: 600px) {
+  .rig-mode-field { padding: 7px 8px 8px; }
+  .rig-mode-option { font-size: 11px; min-height: 40px; }
+}
+
 /* Language toggle: small, keyboard-accessible, no locale cloud dependency */
 .language-switch {
   flex: none; min-width: 44px; min-height: 44px;

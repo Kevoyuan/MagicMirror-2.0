@@ -205,6 +205,18 @@ const en: Record<string, string> = {
     "Drag to rotate, scroll to zoom, click a mesh to inspect its original name.",
   "注意：即使可以导入 Z-Anatomy，本地静态浏览也不证明模型已绑定动画、逐网格许可合规或可公开商用。":
     "Even if Z-Anatomy loads, a local static preview does not establish skinning, component-by-component rights or commercial redistribution permission.",
+  // W3a opt-in experimental screen-aligned original articulated rig
+  "实时叠加模式": "Live overlay mode",
+  "参考骨架 / Reference Proxy": "Reference Proxy",
+  "实时原创铰接模型（实验） / Live Original Rig (Experimental)":
+    "Live Original Rig (Experimental)",
+  "默认：独立线段参考骨架。未开启实验模式。":
+    "Default: independent reference segments. Experimental mode is off.",
+  "实验模式的边界": "Limits of the experimental mode",
+  "实验模式只使用 MagicMirror 原创程序化几何，把可见的肩—肘—腕组成屏幕对齐的 2.5D 铰接链，前臂继承上臂枢轴。它不是真实骨骼、解剖配准、相机空间 3D 重建或医学成像；导入的 FBX / GLB 模型不会参与实时跟随。":
+    "The experimental mode uses ONLY MagicMirror-original procedural geometry. It joins visible shoulder–elbow–wrist observations into a screen-aligned 2.5D articulated chain whose forearm inherits the upper-arm pivot. It is NOT real bones, anatomical registration, camera-space 3D reconstruction or medical imaging; imported FBX / GLB files never take part in live tracking.",
+  "实验模式 · 铰接跟随": "Experimental · Articulated tracking",
+  "实验模式 · 本帧已隐藏": "Experimental · Frame hidden",
   // W2l one-file local study session (Folio II)
   "本地研究会话 · 单文件原子恢复": "Local study session · one-file atomic restore",
   "将人工映射、模型空间端点、虚拟运动链与角度关键帧合并为一份显式下载的本地 JSON。导入时先整体核验原始模型哈希与各草稿一致性，全部通过才一次性替换研究状态；不含模型几何、摄像头画面或任何版权授权。":
@@ -225,7 +237,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics"
+      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics,#rig-mode-status"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);
