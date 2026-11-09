@@ -819,3 +819,19 @@ a { color: inherit; }
   .atlas-chain-actions button { flex: 1 1 auto; }
   .atlas-chain-pose label { flex-basis: 140px; }
 }
+
+/* First-run, no-download ORIGINAL 3-box study fixture. Not anatomical content. */
+.atlas-demo-button {
+  display: block; width: 100%; min-height: 44px;
+  background: #35594a; color: #f4e8cf;
+  border: 1px solid #577866; border-radius: 7px;
+  padding: 10px 12px; margin: 10px 0 5px;
+  font: 600 12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.atlas-demo-button:hover:not(:disabled) { background: #427059; }
+.atlas-demo-button:disabled { opacity: .5; }
+.atlas-dialog .atlas-demo-disclaimer {
+  margin: 3px 0 10px;
+  font-size: 11px; line-height: 1.55;
+  color: #74674e;
+}
