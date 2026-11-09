@@ -34,9 +34,6 @@ describe("W2f reversible, source-local rigid pose preview", () => {
     const expectedWorld = root.clone()
       .multiply(sourceRootRigidDelta(start, end, "z", 90)!)
       .multiply(root.clone().invert()).multiply(originalWorld);
-    expect(actualWorld.elements).toEqual(
-      expect.arrayContaining([])
-    );
     for (let i = 0; i < 16; i++) {
       expect(actualWorld.elements[i]).toBeCloseTo(expectedWorld.elements[i], 8);
     }
@@ -47,6 +44,28 @@ describe("W2f reversible, source-local rigid pose preview", () => {
     for (let i = 0; i < 16; i++) {
       expect(reset.elements[i]).toBeCloseTo(baseline.elements[i], 9);
     }
+  });
+
+  it("preserves original matrices and a nonzero source pivot under nonuniform model frames", () => {
+    const root = new Matrix4().makeTranslation(7, -2, 5)
+      .multiply(new Matrix4().makeScale(2, 3, 1.5));
+    const parent = root.clone().multiply(
+      new Matrix4().makeTranslation(2, 1, -3)
+    );
+    const rest = parent.clone().multiply(
+      new Matrix4().makeTranslation(4, 2, -1)
+    );
+    const snapshot = rest.clone();
+    const a = [2, 1, -1] as const;
+    const b = [3, 1, -1] as const;
+    const delta = sourceRootRigidDelta(a, b, "y", 45)!;
+    expect(at(delta, [2, 1, -1]).distanceTo(new Vector3(2, 1, -1)))
+      .toBeLessThan(1e-8);
+    expect(previewMeshLocalMatrix(root, parent, rest, a, b, "y", 45))
+      .not.toBeNull();
+    expect(rest.equals(snapshot)).toBe(true);
+    expect(root.equals(new Matrix4().makeTranslation(7, -2, 5)
+      .multiply(new Matrix4().makeScale(2, 3, 1.5)))).toBe(true);
   });
 
   it("fails closed for absent, identical, malformed and extreme preview input", () => {
