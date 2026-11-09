@@ -310,3 +310,28 @@ a { color: inherit; }
   .atlas-tools { gap: 7px 10px; }
   .atlas-tools label { flex-basis: 130px; }
 }
+
+/* W4 original, bilingual educational notes over observed proxy segments */
+.camera-stage canvas { pointer-events: auto; touch-action: manipulation; }
+.part-note {
+  position: absolute; left: clamp(15px, 3vw, 36px); top: 62px;
+  z-index: 8; max-width: min(340px, calc(100% - 30px));
+  padding: 13px 15px 11px;
+  background: #e9dcc4f5; color: #263f34;
+  border: 1px solid #ad9367; border-radius: 10px;
+  box-shadow: 0 10px 24px #0004;
+}
+.part-note-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.part-note-kicker { color: #836c4c; font: 10px Georgia,serif; letter-spacing: .13em; }
+.part-note-head button {
+  flex: none; width: 36px; height: 36px;
+  border: 0; background: transparent; color: #34594f;
+  font-size: 24px;
+}
+.part-note h3 { margin: 0 0 2px; font: 600 18px Georgia,serif; }
+.part-note-subtitle { color: #887556; font: italic 11px Georgia,serif; }
+.part-note p { margin: 9px 0; line-height: 1.6; font-size: 12px; }
+.part-note small { color: #7d765e; font-size: 10px; }
+@media (max-width: 600px) {
+  .part-note { top: 58px; }
+}
