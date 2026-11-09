@@ -19,6 +19,7 @@ import {
   orderStudyChain, studyChainDeltas, studyGhostWorldMatrix,
   transformedStudyPoint, type StudyChainNode,
 } from "./kinematic-chain";
+import type { StudyJointAngle } from "./study-timeline";
 
 interface LocalRigidPreview {
   readonly id: number;
@@ -455,15 +456,29 @@ export class LocalAtlasViewer {
   }
 
   setChainJoint(id: number, axis: SourceAxis, degrees: number): boolean {
+    if (!this.chainNodes || !this.chainGhosts.has(id)) return false;
+    return this.setChainPose(this.chainNodes.map(node =>
+      node.sourceMeshId === id
+        ? { sourceMeshId: id, axis, degrees }
+        : { sourceMeshId: node.sourceMeshId, axis: node.axis, degrees: node.degrees }
+    ));
+  }
+
+  /** Apply all requested source-only joint angles in ONE atomic ghost redraw. */
+  setChainPose(angles: readonly StudyJointAngle[]): boolean {
     const nodes = this.chainNodes;
-    if (!nodes || !this.chainGhosts.has(id)) return false;
-    const updated = nodes.map(node =>
-      node.sourceMeshId === id ? { ...node, axis, degrees } : node
-    );
-    if (!this.canChainPreview(updated)) {
-      this.resetChainPreview();
-      return false;
+    if (!nodes || angles.length !== nodes.length) return false;
+    const byId = new Map<number, StudyJointAngle>();
+    for (const point of angles) {
+      if (!this.chainGhosts.has(point.sourceMeshId) ||
+          byId.has(point.sourceMeshId)) return false;
+      byId.set(point.sourceMeshId, point);
     }
+    const updated = nodes.map(node => {
+      const angle = byId.get(node.sourceMeshId);
+      return angle ? { ...node, axis: angle.axis, degrees: angle.degrees } : node;
+    });
+    if (!this.canChainPreview(updated)) return false;
     this.chainNodes = updated;
     if (!this.updateChainGhosts()) {
       this.resetChainPreview();
