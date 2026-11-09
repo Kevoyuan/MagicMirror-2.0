@@ -63,6 +63,27 @@ rights. Typechecking alone is not a shipped MVP.
   region selection. True anatomical atlas remains DISABLED until
   real geometry, motion, rights and camera gates pass.
 
+### W2a · Local-only anatomical research viewer (SOURCE IMPLEMENTED; QA OPEN)
+
+- [x] Let users choose their own `.fbx` or self-contained `.glb` in
+  browser with no automatic upload, extraction to a server, or
+  inclusion in the public release.
+- [x] Separate, clearly labelled **static** Three.js atlas inspection
+  from the working procedural camera-following proxy.
+- [x] Orbit rotate/zoom, source mesh name on click, wireframe,
+  transparency and mathematically real X/Y/Z **model-coordinate**
+  clipping planes (not validated human anatomical sections).
+- [x] Show real mesh/triangle/skinned mesh/joint counts; reject
+  >75MB original files and >2M triangle models before GPU integration.
+- [x] Route external texture/resource URLs from local FBX/GLB to a
+  local placeholder to avoid unexpected resource network requests.
+- [ ] Verify actual pinned Z-Anatomy source FBX renders on desktop
+  and measure memory, load duration, orientation and material status.
+- [ ] Verify mobile Safari handling or document a desktop-only limit.
+- [ ] Verify substantive per-original-mesh rights, authored weights,
+  mapping and calibrated true motion overlay before enabling
+  **real** anatomical layer controls.
+
 ## W3 · Body-to-camera 3D registration
 
 - Human-reviewed anatomical rest anchors/length constraints, stable

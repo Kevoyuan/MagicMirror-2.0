@@ -2,6 +2,8 @@ import { coverageFor, type Coverage, type Focus } from "./pose";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
+import type { LocalAtlasViewer } from "./atlas-viewer";
+import type { SliceOrientation } from "./atlas-source";
 import { ProxySkeletonRenderer } from "./scene";
 import "./style.css";
 
@@ -87,6 +89,8 @@ root.innerHTML = `
     <div class="dialog-heading"><span>THE ANATOMY FOLIO</span><button class="close-dialog" data-close="layers-dialog" aria-label="关闭图层">×</button></div>
     <h2 id="layers-title">解剖图层</h2>
     <p>只有原创程序生成的三维示意骨架可用。Z-Anatomy 的真实骨骼、肌肉与器官尚未通过授权、绑定和配准验收。</p>
+    <button id="open-atlas-studio" class="primary-button atlas-entry" type="button">导入本地 FBX / GLB 解剖模型</button>
+    <p class="local-model-hint">仅在本设备预览你主动选择的文件，模型不会上传。导入的是静态研究模型，尚未与人体姿态绑定。</p>
     <div class="layer-row"><strong>◉ 参考骨架 / Proxy</strong><span class="available-label">已实现</span></div>
     <div class="layer-row muted"><strong>骨骼 / Anatomy atlas</strong><span>待审核</span></div>
     <div class="layer-row muted"><strong>肌肉 / Muscles</strong><span>规划中</span></div>
@@ -101,6 +105,33 @@ root.innerHTML = `
     <p>推理模型来自 Google MediaPipe，首次开发准备阶段下载并校验哈希；WASM 与模型需通过本地静态服务器提供。首次启用和站点部署需要 HTTPS（localhost 例外）。</p>
     <p>目前可见的是 MagicMirror 原创程序生成的三维示意骨架，<strong>没有使用或分发任何未经审核的 Z-Anatomy 网格</strong>。真实解剖模型及其署名将按资产来源逐项审核。</p>
     <p><a href="https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js" target="_blank" rel="noopener noreferrer">MediaPipe Pose Landmarker 文档</a></p>
+  </dialog>
+  <dialog id="atlas-dialog" class="atlas-dialog" aria-labelledby="atlas-title">
+    <div class="dialog-heading">
+      <span>FOLIO II · THE ANATOMY STUDY</span>
+      <button class="close-dialog" data-close="atlas-dialog" aria-label="关闭本地模型查看器">×</button>
+    </div>
+    <h2 id="atlas-title">解剖模型研究台</h2>
+    <p class="atlas-disclaimer">仅本地查看。导入模型不会发送到服务器，也不会用于公共下载或自动授权；它<strong>不能跟随人体动作</strong>，剖面沿模型坐标轴而非真实医学解剖轴。</p>
+    <label class="atlas-file-picker" for="atlas-file">选择本机 .fbx 或 .glb（≤75MB，建议电脑使用）</label>
+    <input id="atlas-file" type="file" accept=".fbx,.glb" aria-label="选择仅本地读取的 FBX 或 GLB 文件"/>
+    <div class="atlas-viewport"><canvas id="atlas-canvas" aria-label="可以拖动旋转、滚轮缩放、点击查看原始部件名称的三维模型"></canvas></div>
+    <div class="atlas-tools">
+      <label>模型空间切面
+        <select id="atlas-section" aria-label="选择模型坐标轴切面">
+          <option value="none">关闭</option>
+          <option value="axial-y">横向 / Y 轴</option>
+          <option value="sagittal-x">左右 / X 轴</option>
+          <option value="coronal-z">前后 / Z 轴</option>
+        </select>
+      </label>
+      <label>剖面位置 <input id="atlas-level" type="range" min="0" max="100" value="50"></label>
+      <label>透明度 <input id="atlas-opacity" type="range" min="15" max="100" value="88"></label>
+      <label class="atlas-checkbox"><input id="atlas-wireframe" type="checkbox"> 显示网格</label>
+    </div>
+    <div id="atlas-info" class="atlas-info" role="status" aria-live="polite">尚未选择模型。原始 Z-Anatomy 的 FBX 可用于个人研究，但请确认模型来源和版权。</div>
+    <div id="atlas-part" class="atlas-part">拖动旋转，滚轮缩放，点击部件查看源网格名称。</div>
+    <p class="atlas-disclaimer">注意：即使可以导入 Z-Anatomy，本地静态浏览也不证明模型已绑定动画、逐网格许可合规或可公开商用。</p>
   </dialog>
 `;
 
@@ -399,6 +430,82 @@ for (const [buttonId, dialogId] of [
     element<HTMLDialogElement>(dialogId).showModal();
   });
 }
+const atlasDialog = element<HTMLDialogElement>("#atlas-dialog");
+const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
+const atlasFile = element<HTMLInputElement>("#atlas-file");
+const atlasInfo = element<HTMLElement>("#atlas-info");
+const atlasPart = element<HTMLElement>("#atlas-part");
+const atlasSection = element<HTMLSelectElement>("#atlas-section");
+const atlasLevel = element<HTMLInputElement>("#atlas-level");
+const atlasOpacity = element<HTMLInputElement>("#atlas-opacity");
+const atlasWireframe = element<HTMLInputElement>("#atlas-wireframe");
+let atlasViewer: LocalAtlasViewer | undefined;
+let atlasInit: Promise<LocalAtlasViewer> | undefined;
+
+async function ensureAtlasViewer(): Promise<LocalAtlasViewer> {
+  if (atlasViewer) return atlasViewer;
+  atlasInit ??= import("./atlas-viewer").then(({ LocalAtlasViewer }) => {
+    const viewer = new LocalAtlasViewer(atlasCanvas);
+    viewer.onPartSelected = (name) => {
+      atlasPart.textContent = "源部件：" + name + " · 静态网格，不是实时骨骼识别";
+    };
+    atlasViewer = viewer;
+    return viewer;
+  }).finally(() => { atlasInit = undefined; });
+  return atlasInit;
+}
+element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () => {
+  stopCamera("进入本地模型研究模式");
+  element<HTMLDialogElement>("#layers-dialog").close();
+  atlasDialog.showModal();
+  void ensureAtlasViewer().then((viewer) => {
+    if (!atlasDialog.open) return;
+    viewer.resize();
+    viewer.start();
+  }).catch((error) => {
+    atlasInfo.textContent = "WebGL 模型查看器无法启动：" + String(error);
+  });
+});
+atlasDialog.addEventListener("close", () => atlasViewer?.stop());
+atlasFile.addEventListener("change", () => {
+  const file = atlasFile.files?.[0];
+  if (!file) return;
+  atlasFile.disabled = true;
+  atlasInfo.textContent = "正在本地解析模型；大体积 FBX 可能导致浏览器暂时变慢…";
+  void ensureAtlasViewer().then((viewer) => viewer.load(file)).then((stats) => {
+    atlasInfo.textContent = stats.file + " · " +
+      stats.importedMeshes.toLocaleString() + " 网格 · " +
+      stats.triangles.toLocaleString() + " 三角形 · " +
+      stats.skinnedMeshes + " SkinnedMesh / " +
+      stats.authoredJoints + " 绑定关节。 " +
+      (stats.skinnedMeshes > 0 ? "模型具有骨骼绑定数据，尚未验证动画对齐。" :
+        "未发现可直接用于人体跟随的绑定网格；仅支持静态研究。");
+    atlasViewer?.setWireframe(atlasWireframe.checked);
+    atlasViewer?.setOpacity(Number(atlasOpacity.value) / 100);
+    atlasViewer?.setSection(atlasSection.value as SliceOrientation, Number(atlasLevel.value));
+  }).catch((error) => {
+    atlasInfo.textContent = "无法导入：" + (error instanceof Error ? error.message : String(error));
+    console.warn("Local model parsing failed (no upload attempted)", error);
+  }).finally(() => {
+    atlasFile.disabled = false;
+    atlasFile.value = "";
+  });
+});
+function applyAtlasSection(): void {
+  atlasViewer?.setSection(atlasSection.value as SliceOrientation, Number(atlasLevel.value));
+}
+atlasSection.addEventListener("change", applyAtlasSection);
+atlasLevel.addEventListener("input", applyAtlasSection);
+atlasOpacity.addEventListener("input", () =>
+  atlasViewer?.setOpacity(Number(atlasOpacity.value) / 100)
+);
+atlasWireframe.addEventListener("change", () =>
+  atlasViewer?.setWireframe(atlasWireframe.checked)
+);
+window.addEventListener("resize", () => {
+  if (atlasDialog.open) atlasViewer?.resize();
+});
+
 document.querySelectorAll<HTMLButtonElement>("[data-close]").forEach((button) => {
   button.addEventListener("click", () => {
     const id = button.dataset.close;
@@ -420,4 +527,6 @@ window.addEventListener("pagehide", () => {
   runner?.close();
   runner = undefined;
   proxy?.dispose();
+  atlasViewer?.dispose();
+  atlasViewer = undefined;
 });

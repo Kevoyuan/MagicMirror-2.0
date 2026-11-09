@@ -1,4 +1,4 @@
-# MagicMirror Web — active architecture v0.2 (W1 worker capture)
+# MagicMirror Web — active architecture v0.3 (W1 runtime + W2a local model study)
 
 **As of:** 2026-11-08. Active Web; native iOS held/frozen;
 Android canceled. This is the architecture of **existing Web source**,
@@ -93,6 +93,31 @@ then tries to recover with throttled main-thread inference once.
 - `Z-Anatomy`: potential future separately licensed anatomy
   source, **not** bundled as part of current Web.
 
+## W2a local anatomy inspection (parallel *study* only)
+
+A user-initiated File API reads a local `.fbx` or `.glb` and
+parses it in the browser through the Three.js examples loaders.
+The separate `LocalAtlasViewer` renders meshes in a dedicated
+modal. It is a static model explorer with an orbit camera,
+real GPU model-coordinate clipping and mesh-name picking.
+`Web/src/atlas-source.ts` deterministically bounds file size,
+extension and coordinate-slice controls.
+
+The camera is **stopped** before the inspector opens. Nothing about
+the local mesh is added to `Web/public/`, Git, a production ZIP,
+a remote server or the MediaPipe pose pipeline. A URL-modifying
+LoadingManager rejects external model-supplied resource fetches and
+replaces any missing image with a local 1x1 placeholder. The user
+selects their file and retains responsibility for its source rights.
+
+The viewer reports its actual number of mesh objects, triangles,
+skinned meshes and authored bone UUIDs. A raw Z-Anatomy FBX
+which lacks skinning weights can be viewed **statically**, but cannot
+move with the user until a separately reviewed rig is created.
+The X/Y/Z planes are in **model frame only**; a correct anatomical
+frame still needs a human review. No real 3D anatomy overlay has
+been shipped with this source.
+ 
 ## Future reviewed atlas pipeline
 
 ```text

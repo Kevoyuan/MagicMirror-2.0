@@ -261,3 +261,52 @@ a { color: inherit; }
   .stage-utilities .frame-metric { font-size: 9px; }
   .snapshot-button { min-height: 36px; }
 }
+
+/* W2 private local anatomy inspector: static, never an AR/rights claim. */
+.atlas-entry { width: 100%; margin: 8px 0 3px; font-size: 13px; background: #315b4d; color: #fff5dd; border-color: #315b4d; }
+.atlas-entry:hover:not(:disabled) { background: #3d725e; }
+.local-model-hint { margin: 4px 0 8px; font-size: 11px !important; }
+.atlas-dialog {
+  width: min(960px, calc(100vw - 24px));
+  max-width: 960px; max-height: 92dvh;
+  padding: 14px clamp(12px, 2vw, 25px) 18px;
+  border: 1px solid #9c865d; border-radius: 13px;
+  background: #ebdfc3; color: #283c31; box-shadow: 0 17px 60px #0007;
+  overflow-y: auto;
+}
+.atlas-dialog::backdrop { background: #0a1d16d9; backdrop-filter: blur(4px); }
+.atlas-dialog h2 { margin: 2px 0 5px; font: 26px Georgia, serif; }
+.atlas-dialog .atlas-disclaimer { font-size: 12px; color: #6c634f; line-height: 1.5; margin: 7px 0; }
+.atlas-file-picker { display: block; font-weight: 600; margin: 10px 0 4px; font-size: 12px; }
+.atlas-dialog input[type=file] {
+  display: block; width: 100%; padding: 9px 4px; color: #344b3d;
+  font-size: 12px;
+}
+.atlas-viewport {
+  height: clamp(210px, 46dvh, 590px);
+  margin-top: 7px; border: 1px solid #8b987d;
+  border-radius: 9px; overflow: hidden;
+  background: #192620;
+}
+.atlas-viewport canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.atlas-tools {
+  margin: 10px 0; display: flex; gap: 12px 16px; flex-wrap: wrap;
+  align-items: flex-end;
+}
+.atlas-tools label { display: grid; gap: 5px; font-size: 11px; font-weight: 600; color: #52644e; flex: 1 1 148px; }
+.atlas-tools select { width: 100%; border: 1px solid #aaad8b; border-radius: 6px; background: #f6edda; color: #253d34; min-height: 34px; padding: 5px 8px; }
+.atlas-tools input[type=range] { width: 100%; accent-color: #315b4d; }
+.atlas-tools .atlas-checkbox { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; min-height: 34px; }
+.atlas-info, .atlas-part {
+  padding: 9px 11px; border: 1px solid #beb298a8;
+  background: #d9cfb4a8; border-radius: 6px;
+  font: 12px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #455c4b; overflow-wrap: anywhere;
+}
+.atlas-part { margin-top: 6px; background: #f4ead4a6; }
+@media (max-width: 620px) {
+  .atlas-viewport { height: clamp(200px, 40dvh, 390px); }
+  .atlas-dialog h2 { font-size: 21px; }
+  .atlas-tools { gap: 7px 10px; }
+  .atlas-tools label { flex-basis: 130px; }
+}
