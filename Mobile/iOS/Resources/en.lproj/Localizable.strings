@@ -186,3 +186,7 @@
 "Reset the section plane to its center" = "Reset the section plane to its center";
 "Reviewed anatomy visible" = "Reviewed anatomy visible";
 "Reference proxy visible" = "Reference proxy visible";
+"How anatomy layers work" = "How anatomy layers work";
+"Surface clipping available" = "Surface clipping available";
+"Requires registered 3D anatomy" = "Requires registered 3D anatomy";
+"What do section planes show?" = "What do section planes show?";
