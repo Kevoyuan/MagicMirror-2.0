@@ -86,6 +86,7 @@ export class LocalAtlasViewer {
   private readonly anchorMarkers: Mesh[] = [];
   private animationMixer?: AnimationMixer;
   private animationClips: AnimationClip[] = [];
+  private originalAuthoredClipCount = 0;
   private activeAnimation?: AnimationAction;
   private animationPlaying = false;
   private lastAnimationFrameMs = 0;
@@ -236,6 +237,8 @@ export class LocalAtlasViewer {
       this.material.clippingPlanes = [this.slicePlane];
     }
     this.highlightMaterial.clippingPlanes = this.material.clippingPlanes;
+    this.studyGhostMaterial.clippingPlanes = this.material.clippingPlanes;
+    this.studyGhostMaterial.needsUpdate = true;
     this.material.needsUpdate = true;
     this.highlightMaterial.needsUpdate = true;
     this.render();
@@ -321,7 +324,7 @@ export class LocalAtlasViewer {
     const entry = this.findPart(id);
     return Boolean(entry && entry.mesh.visible && this.lastLoaded &&
       !(entry.mesh as import("three").SkinnedMesh).isSkinnedMesh &&
-      this.animationClips.length === 0 && !this.animationPlaying &&
+      this.originalAuthoredClipCount === 0 && !this.animationPlaying &&
       validRigidSource(points.start, points.end));
   }
 
@@ -408,8 +411,8 @@ export class LocalAtlasViewer {
   }
 
   canChainPreview(nodes: readonly StudyChainNode[]): boolean {
-    if (!this.lastLoaded || this.animationClips.length || this.animationPlaying ||
-        this.disposed) return false;
+    if (!this.lastLoaded || this.originalAuthoredClipCount > 0 ||
+        this.animationPlaying || this.disposed) return false;
     try {
       for (const node of orderStudyChain(nodes)) {
         const part = this.findPart(node.sourceMeshId);
@@ -796,6 +799,7 @@ export class LocalAtlasViewer {
     });
     this.loaded = true;
     this.lastLoaded = object;
+    this.originalAuthoredClipCount = sourceAnimations.length;
     this.animationClips = validClips;
     this.animationMixer = validClips.length ? new AnimationMixer(object) : undefined;
     this.sourceIdentity = {
@@ -878,6 +882,7 @@ export class LocalAtlasViewer {
     }
     this.animationMixer = undefined;
     this.animationClips = [];
+    this.originalAuthoredClipCount = 0;
     this.lastAnimationFrameMs = 0;
     this.clearSelection();
     this.parts = [];
