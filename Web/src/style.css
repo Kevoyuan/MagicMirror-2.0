@@ -624,3 +624,32 @@ a { color: inherit; }
   .atlas-dialog h2 { font-size: 23px; }
   .local-model-hint { line-height: 1.5; }
 }
+
+/* W2 local atlas part-browser parity: hierarchy actions remain finger-sized
+   even when the source mesh list wraps into two lines. */
+#atlas-search,
+.atlas-part-actions button,
+.atlas-more,
+.atlas-part-isolate,
+.atlas-part-focus {
+  min-height: 44px;
+}
+.atlas-part-isolate,
+.atlas-part-focus { min-width: 44px; }
+.atlas-part-row { min-height: 44px; }
+.atlas-part-name {
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  min-height: 44px;
+}
+.atlas-part-visibility {
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.atlas-dialog input[type=file] { min-height: 44px; }
+@media (max-width: 600px) {
+  .atlas-part-isolate,
+  .atlas-part-focus { min-height: 44px; min-width: 44px; }
+}
