@@ -147,6 +147,25 @@ root.innerHTML = `
       <label>透明度 <input id="atlas-opacity" type="range" min="15" max="100" value="88"></label>
       <label class="atlas-checkbox"><input id="atlas-wireframe" type="checkbox"> 显示网格</label>
     </div>
+    <section class="atlas-rig-panel" aria-labelledby="atlas-rig-heading">
+      <div class="atlas-browser-heading">
+        <h3 id="atlas-rig-heading">绑定与动画诊断</h3>
+        <span class="atlas-rig-tag">STATIC / LOCAL</span>
+      </div>
+      <p id="atlas-rig-info" class="atlas-rig-info" role="status">
+        尚未载入骨骼模型。仅检查模型内实际存在的关节、顶点权重及动画，不进行人体实时跟随。
+      </p>
+      <div class="atlas-animation-row">
+        <label for="atlas-clip">模型内置动画
+          <select id="atlas-clip" disabled>
+            <option value="">无可预览动画</option>
+          </select>
+        </label>
+        <button id="atlas-play-animation" type="button" disabled>播放</button>
+        <button id="atlas-pause-animation" type="button" disabled>暂停</button>
+      </div>
+      <small>仅播放导入文件自带的动作；不是 MediaPipe 身体动作驱动，也不是已校准的解剖骨骼绑定。</small>
+    </section>
     <section class="atlas-browser" aria-labelledby="atlas-browser-title">
       <div class="atlas-browser-heading">
         <h3 id="atlas-browser-title">原始部件与层级</h3>
@@ -542,6 +561,10 @@ const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
 const atlasFile = element<HTMLInputElement>("#atlas-file");
 const atlasInfo = element<HTMLElement>("#atlas-info");
 const atlasPart = element<HTMLElement>("#atlas-part");
+const atlasRigInfo = element<HTMLElement>("#atlas-rig-info");
+const atlasClipSelect = element<HTMLSelectElement>("#atlas-clip");
+const atlasPlayAnimation = element<HTMLButtonElement>("#atlas-play-animation");
+const atlasPauseAnimation = element<HTMLButtonElement>("#atlas-pause-animation");
 const atlasSearch = element<HTMLInputElement>("#atlas-search");
 const atlasPartList = element<HTMLElement>("#atlas-part-list");
 const atlasPartCount = element<HTMLElement>("#atlas-part-count");
@@ -727,7 +750,10 @@ element<HTMLButtonElement>("#open-atlas-studio").addEventListener("click", () =>
 });
 atlasDialog.addEventListener("close", () => {
   atlasViewer?.cancelPendingLoad();
+  atlasViewer?.setAnimationPlaying(false);
   atlasViewer?.stop();
+  atlasPlayAnimation.disabled = atlasClipSelect.disabled;
+  atlasPauseAnimation.disabled = true;
 });
 atlasFile.addEventListener("change", () => {
   const file = atlasFile.files?.[0];
@@ -745,6 +771,27 @@ atlasFile.addEventListener("change", () => {
     atlasViewer?.setWireframe(atlasWireframe.checked);
     atlasViewer?.setOpacity(Number(atlasOpacity.value) / 100);
     atlasViewer?.setSection(atlasSection.value as SliceOrientation, Number(atlasLevel.value));
+    const clips = atlasViewer?.getAnimationClips() ?? [];
+    atlasClipSelect.replaceChildren();
+    for (const clip of clips) {
+      const label = clip.name + " · " + clip.durationSeconds.toFixed(1) + "s";
+      atlasClipSelect.add(new Option(label, String(clip.id)));
+    }
+    if (!clips.length) atlasClipSelect.add(new Option(
+      locale === "en" ? "No authored animation clips" : "无模型内置动画", ""
+    ));
+    atlasClipSelect.disabled = clips.length === 0;
+    atlasPlayAnimation.disabled = clips.length === 0;
+    atlasPauseAnimation.disabled = true;
+    if (clips.length) atlasViewer?.selectAnimation(clips[0].id);
+
+    atlasRigInfo.textContent = stats.skinnedMeshes === 0
+      ? (locale === "en"
+        ? "No authored SkinnedMesh found: a source model without rig weights cannot follow a body. Static study remains available."
+        : "未发现已绑定的 SkinnedMesh：没有实际顶点权重的原始模型无法随人体动作。仍可静态研究。")
+      : (locale === "en"
+        ? `${stats.skinnedMeshes} bound meshes, ${stats.authoredJoints} joints. Sampled ${stats.rigSampledVertices} vertices: ${stats.rigUnweightedSamples} without weights, ${stats.rigInvalidWeightSamples} invalid weights, ${stats.rigInvalidJointReferences} invalid joint indices, ${stats.rigSuspiciousWeightSums} suspicious sums, ${stats.skinnedMeshesWithoutWeightAttributes} meshes missing attributes. Sample only—not complete rig approval.`
+        : `已绑定网格 ${stats.skinnedMeshes} 个、关节 ${stats.authoredJoints} 个。采样检查 ${stats.rigSampledVertices} 顶点：无权重 ${stats.rigUnweightedSamples}、异常权重 ${stats.rigInvalidWeightSamples}、越界关节 ${stats.rigInvalidJointReferences}、权重和异常 ${stats.rigSuspiciousWeightSums}、缺少权重属性网格 ${stats.skinnedMeshesWithoutWeightAttributes}。仅为抽样诊断，非绑定验收。`);
     atlasSearch.disabled = false;
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
@@ -763,6 +810,26 @@ atlasFile.addEventListener("change", () => {
     atlasFile.value = "";
   });
 });
+atlasClipSelect.addEventListener("change", () => {
+  const clipId = Number(atlasClipSelect.value);
+  if (atlasClipSelect.disabled || !Number.isSafeInteger(clipId)) return;
+  const selected = atlasViewer?.selectAnimation(clipId) ?? false;
+  atlasPlayAnimation.disabled = !selected;
+  atlasPauseAnimation.disabled = true;
+});
+atlasPlayAnimation.addEventListener("click", () => {
+  if (atlasViewer?.setAnimationPlaying(true)) {
+    atlasPlayAnimation.disabled = true;
+    atlasPauseAnimation.disabled = false;
+  }
+});
+atlasPauseAnimation.addEventListener("click", () => {
+  if (atlasViewer?.setAnimationPlaying(false)) {
+    atlasPlayAnimation.disabled = false;
+    atlasPauseAnimation.disabled = true;
+  }
+});
+
 function applyAtlasSection(): void {
   atlasViewer?.setSection(atlasSection.value as SliceOrientation, Number(atlasLevel.value));
 }
