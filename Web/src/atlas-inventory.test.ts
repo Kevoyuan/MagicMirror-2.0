@@ -40,7 +40,7 @@ describe("private original-model source inventory export", () => {
       "MagicMirror-SkeletalSystem100-source-inventory.json"
     );
     expect(inventoryDownloadName("未知模型.fbx")).toBe(
-      "MagicMirror-_-source-inventory.json"
+      "MagicMirror-local_atlas-source-inventory.json"
     );
   });
 });
