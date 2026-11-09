@@ -111,6 +111,7 @@ const en: Record<string, string> = {
   "显示全部": "Show all",
   "退出独立显示": "Exit isolate",
   "重置视角": "Reset view",
+  "导出来源清单 JSON": "Export source inventory JSON",
   "已导入模型的来源部件列表": "Imported original source mesh list",
   "显示更多匹配部件": "Show more matching meshes",
   "例如 Femur / Pelvis / 左侧名称": "e.g. Femur / Pelvis / left source name",
