@@ -709,3 +709,23 @@ This is **NOT** a 3D anatomy overlay, camera intrinsic/extrinsic
 calibration, measured Z/depth, actual human bone size or diagnostic
 medical content. Nothing is uploaded or persisted by this feature.
 See [W3b scope and limitations](../Docs/W3B_WORLD_OBSERVATION.md).
+
+## W3c — synthetic perspective reprojection (NOT a calibration)
+
+The existing, collapsed camera Diagnostics panel includes **Run synthetic
+camera check** (运行合成相机自检). It uses fixed original numeric points,
+explicit pinhole intrinsics and a *hypothetical* right-handed rigid transform.
+A successful result means ONLY that the geometry math reprojects synthetic
+points consistently. It runs **without a webcam, MediaPipe model, file
+upload, network or third-party mesh**, and the normal W3a/proxy overlay is
+unchanged. It is not a camera calibration or real human 3D reconstruction.
+
+Source: `src/camera-registration.ts`; generated test:
+`src/camera-registration-fixture.ts`. Matching unit and opt-in
+Playwright checks cover invalid camera parameters, negative depth,
+mirror/crop, outliers and no-calibration-approval invariants.
+
+Next independent milestones are physical calibration target data,
+per-device intrinsic/extrinsic evidence, real 3D registration and a
+rights-cleared anatomical rest rig. See
+[W3c engineering contract](../Docs/W3C_CAMERA_REPROJECTION.md).
