@@ -695,3 +695,17 @@ registration all remain separate blocked milestones. The exact next
 engineering milestone is a rights-cleared, reviewed anatomical rest rig
 with verified camera registration — not an extension of this
 screen-aligned original demonstration.
+
+## W3b — optional model-world consistency diagnostic
+
+The existing pose result now also transports MediaPipe's
+model-estimated, hip-relative 33-point `worldLandmarks` through
+the same local Worker/main inference path. Open the small
+**Diagnostics** disclosure for an EN/ZH matched-pair count and
+*in-plane* image-fitting residual. A missing world observation does
+not interrupt the default 2D tracking/experimental W3a rig.
+
+This is **NOT** a 3D anatomy overlay, camera intrinsic/extrinsic
+calibration, measured Z/depth, actual human bone size or diagnostic
+medical content. Nothing is uploaded or persisted by this feature.
+See [W3b scope and limitations](../Docs/W3B_WORLD_OBSERVATION.md).
