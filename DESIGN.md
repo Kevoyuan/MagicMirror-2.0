@@ -800,3 +800,14 @@ visually and behaviorally distinct.
 camera permission UX on real hardware, anatomical accuracy, licensed
 anatomy layers, skinning, or public release. The review acceptance
 matrix above still applies unchanged.
+
+### W3c · Simulation-only camera registration check (Web, opt-in)
+
+The existing camera-first Leonardo stage stays dominant. The on-demand
+Diagnostics disclosure now uses ONE compact stacked panel for live inference,
+W3b world-observation consistency and W3c synthetic perspective geometry.
+A minimum-44px button launches an authored numerical fixture only;
+the status explicitly says "SYNTHETIC ONLY" / "仅合成相机" and that no real
+device has been calibrated. This control MUST NOT capture camera frames,
+activate a new 3D overlay mode, import a model, imply X-ray imagery or
+expose runtime pose-injection hooks. EN/ZH text stays locally authored.
