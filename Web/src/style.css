@@ -392,6 +392,9 @@ a { color: inherit; }
   .rig-mode-option { font-size: 11px; min-height: 40px; }
 }
 
+/* W3b: local world-observation quality only, under the existing disclosure. */
+.world-pose-metric { display: block; margin-top: 5px; max-width: 270px; white-space: normal; font-size: 10px; line-height: 1.45; }
+
 /* Language toggle: small, keyboard-accessible, no locale cloud dependency */
 .language-switch {
   flex: none; min-width: 44px; min-height: 44px;
