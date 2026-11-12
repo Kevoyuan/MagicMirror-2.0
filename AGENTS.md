@@ -716,3 +716,29 @@ into real anatomy layers or bypass release-clearance. Keep unit
 coverage for mirror, crop, missing data, degenerate geometry, low
 confidence, outliers and corrupt worker payloads. Actual-device
 acceptance and rights/privacy review remain pending.
+
+## 24. W3c perspective geometry — evidence-first, synthetic only
+
+Keep `Web/src/camera-registration.ts` a pure, testable module that accepts
+explicit video-resolution-matched intrinsics and a valid right-handed rigid
+model-to-camera transform. Assume +X right/+Y down/+Z forward only in this
+hypothesis coordinate system; apply cover/mirror display mapping after
+pinhole projection, never swap anatomical sides. Match the exact
+frame/session, reject invalid/degenerate/nonfinite data, untrusted rotation,
+negative/near-plane depth, sparse correspondences and high reprojection
+error. Report RMSE, p95 and inliers, not alleged real-world scale.
+
+Synthetic and external-unverified hypotheses are the ONLY allowable
+provenance values. Every output MUST enforce
+`cameraCalibrationApproved === false`,
+`anatomyOverlayApproved === false` and the explicit diagnostic-only note.
+A numerical 3D consistency candidate NEVER establishes camera intrinsics,
+extrinsics, real MediaPipe depth, clinical bone geometry or rights to
+retarget anatomy. Do not add a production pose-injection API.
+
+A single static original-numeric fixture may be run from the existing
+collapsed EN/ZH diagnostics disclosure, with minimum 44px keyboard target
+and an explicit synthetic-only label. It MUST NOT call getUserMedia,
+load a model binary, upload/snapshot/store joint data, change W3a overlay
+mode or bypass the `releaseApproved: false` public gate. Keep Android
+canceled and iOS frozen. Continue real-device/lawful anatomy QA separately.
