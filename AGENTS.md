@@ -698,3 +698,21 @@ synthetic tests and headless browser tests are source evidence only.
 The exact next engineering milestone remains a separately reviewed,
 rights-cleared anatomical rest rig plus camera registration; neither is
 implied by this experimental screen-aligned demonstration.
+
+## 23. W3b model-estimated world landmark contract
+
+Web Worker and main fallback may transfer MediaPipe's OPTIONAL 33
+hip-relative world landmarks for the SAME accepted frame/session.
+The worker gate MUST reject malformed present world data without
+weakening the 2D frame/session/freshness contract; absent world data
+is not a 2D tracking failure. Never upload, log, export or persist
+body joint coordinates.
+
+The W3b weighted in-plane 2D similarity fit is **diagnostics only**.
+World Z is NOT measured camera depth. A small 2D residual is not
+camera extrinsics, a verified anatomical rig, true bone scale,
+medical evidence or model redistribution clearance. Never feed it
+into real anatomy layers or bypass release-clearance. Keep unit
+coverage for mirror, crop, missing data, degenerate geometry, low
+confidence, outliers and corrupt worker payloads. Actual-device
+acceptance and rights/privacy review remain pending.
