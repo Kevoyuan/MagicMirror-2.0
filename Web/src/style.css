@@ -95,8 +95,10 @@ a { color: inherit; }
 .registration-marks i:nth-child(2) { right: 0; top: 0; border-top: 1px solid; border-right: 1px solid; }
 .registration-marks i:nth-child(3) { left: 0; bottom: 0; border-bottom: 1px solid; border-left: 1px solid; }
 .registration-marks i:nth-child(4) { right: 0; bottom: 0; border-bottom: 1px solid; border-right: 1px solid; }
+/* Keep camera controls and diagnostics interactive even with the OFF-state
+   welcome layer above the video. The welcome panel remains underneath. */
 .stage-heading {
-  position: absolute; top: 17px; inset-inline: 25px; z-index: 5;
+  position: absolute; top: 17px; inset-inline: 25px; z-index: 8;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
   font: 10px Georgia, serif; letter-spacing: .13em;
   color: #e3d3ac; text-shadow: 0 2px 5px #0009;
