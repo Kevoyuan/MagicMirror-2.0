@@ -114,3 +114,8 @@ for future deliberate reactivation:
 **Contributions:** start with `Web/`, respect the exact source and
 license boundaries, and never commit unreviewed Z-Anatomy meshes,
 unknown model weights, camera frames or personal data.
+
+**W3b in development:** The Web branch also adds a local, optional
+model-estimated world-landmark 2D consistency diagnostic. This does
+not turn the screen-aligned W3a original demonstration into calibrated
+anatomy AR or approve third-party model redistribution.
