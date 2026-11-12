@@ -1,5 +1,6 @@
 import { coverageFor, type Coverage, type Focus } from "./pose";
 import { assessWorldPose, type WorldPoseDiagnostic } from "./world-pose";
+import { runSyntheticPerspectiveSelfCheck } from "./camera-registration-fixture";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
@@ -68,8 +69,12 @@ root.innerHTML = `
         <div class="stage-utilities">
           <details class="diagnostics-disclosure">
             <summary>诊断</summary>
-            <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
-            <span id="world-pose-metric" class="frame-metric world-pose-metric">三维观测 · 未运行（非相机标定）</span>
+            <div class="diagnostics-panel">
+              <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+              <span id="world-pose-metric" class="frame-metric world-pose-metric">三维观测 · 未运行（非相机标定）</span>
+              <button id="registration-self-check" class="diagnostics-self-check" type="button">运行合成相机自检</button>
+              <span id="registration-self-check-status" class="frame-metric registration-self-check-status" role="status">仅合成数据 · 未执行（不代表设备已标定）</span>
+            </div>
           </details>
           <button id="snapshot" type="button" class="snapshot-button" disabled title="下载当前参考画面为 PNG">保存画面</button>
         </div>
@@ -380,6 +385,33 @@ const noteDescription = element<HTMLElement>("#part-description");
 const noteExpansion = element<HTMLDetailsElement>("#part-note-more");
 const metric = element<HTMLElement>("#frame-metric");
 const worldMetric = element<HTMLElement>("#world-pose-metric");
+const registrationSelfCheckButton = element<HTMLButtonElement>("#registration-self-check");
+const registrationSelfCheckStatus = element<HTMLElement>("#registration-self-check-status");
+let lastGeometrySelfCheck = {
+  zh: "仅合成数据 · 未执行（不代表设备已标定）",
+  en: "Synthetic-only self-check not run · device NOT calibrated",
+};
+function renderGeometrySelfCheck(): void {
+  registrationSelfCheckStatus.textContent = locale === "en"
+    ? lastGeometrySelfCheck.en : lastGeometrySelfCheck.zh;
+}
+registrationSelfCheckButton.addEventListener("click", () => {
+  const result = runSyntheticPerspectiveSelfCheck();
+  if (result.status === "geometric-candidate" &&
+      !result.cameraCalibrationApproved && !result.anatomyOverlayApproved) {
+    const rmse = result.rmsePx?.toFixed(3) ?? "—";
+    lastGeometrySelfCheck = {
+      zh: `仅合成相机：${result.matchedPoints} 点 · 透视重投影 RMSE ${rmse}px · 真实设备未标定`,
+      en: `SYNTHETIC ONLY: ${result.matchedPoints} points · reprojection RMSE ${rmse}px · real device NOT calibrated`,
+    };
+  } else {
+    lastGeometrySelfCheck = {
+      zh: `合成几何自检未通过（${result.status}）· 未进行真实设备标定`,
+      en: `Synthetic geometry self-check failed (${result.status}) · real device NOT calibrated`,
+    };
+  }
+  renderGeometrySelfCheck();
+});
 let lastWorldMetric = {
   zh: "三维观测 · 未运行（非相机标定）",
   en: "3D observation · inactive (not camera calibration)",
@@ -490,6 +522,7 @@ function setLocale(next: Locale): void {
   overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
   refreshRigModeCopy();
   worldMetric.textContent = locale === "en" ? lastWorldMetric.en : lastWorldMetric.zh;
+  renderGeometrySelfCheck();
   renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
