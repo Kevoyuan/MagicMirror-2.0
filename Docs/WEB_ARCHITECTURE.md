@@ -702,3 +702,24 @@ never applies the fit to the live rig, stores/export points or opens
 real atlas layers.
 
 See [W3B_WORLD_OBSERVATION.md](W3B_WORLD_OBSERVATION.md).
+
+## W3c: explicit hypothetical camera model; no new tracking or atlas mode
+
+The pure `camera-registration.ts` checks a caller-supplied pinhole intrinsic
+matrix and right-handed world-to-camera rigid transform against same-frame
+world/image landmarks. It enforces frame/session identity, actual source
+resolution and cover/mirror display projection, positive hypothetical depth,
+confidence, spatial spread and RMSE/p95/inlier limits. It does not estimate
+intrinsics/extrinsics from model-landmark observations; there is no calibrated
+device camera, known person-scale or actual anatomical registration.
+
+`camera-registration-fixture.ts` generates original, static, numeric
+world/image landmarks using an independently encoded synthetic pinhole
+formula and returns diagnostics without starting MediaPipe or a camera.
+`main.ts` owns only the button and bilingual text, not projection math.
+All results explicitly disallow camera calibration or real anatomy overlay.
+
+The camera stage still uses the one existing WebGL canvas. The W3b + W3c
+small readouts use one contained, collapsed diagnostics panel rather than
+overlapping absolute-positioned rows. No data persistence or network
+services are added. Full contract: [W3C_CAMERA_REPROJECTION.md](W3C_CAMERA_REPROJECTION.md).
