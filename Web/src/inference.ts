@@ -171,6 +171,7 @@ export class LivePoseInference {
       mediaTimeSeconds: message.mediaTimeSeconds,
       width: message.width, height: message.height,
       inferredInMs: message.inferredInMs, landmarks: message.landmarks,
+      worldLandmarks: message.worldLandmarks ?? null,
     });
   };
 
@@ -241,10 +242,14 @@ export class LivePoseInference {
       const duration = Math.max(0, performance.now() - start);
       if (!this.frameIsCurrent(frame, false)) return;
       const points = result.landmarks[0] as PosePoint[] | undefined;
+      const worldPoints = result.worldLandmarks[0] as PosePoint[] | undefined;
       this.pendingFrameId = 0;
       this.options.onFrame({
         ...frame, inferredInMs: duration,
         landmarks: points ? points.map((p) => ({
+          x: p.x, y: p.y, z: p.z, visibility: p.visibility, presence: p.presence,
+        })) : null,
+        worldLandmarks: points && worldPoints ? worldPoints.map((p) => ({
           x: p.x, y: p.y, z: p.z, visibility: p.visibility, presence: p.presence,
         })) : null,
       });
