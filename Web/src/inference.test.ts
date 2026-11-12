@@ -61,6 +61,9 @@ class FakeWorker {
 const mocks = vi.hoisted(() => {
   const detectForVideo = vi.fn(() => ({
     landmarks: [[{ x: 0.2, y: 0.3, z: 0, visibility: 0.9, presence: 0.8 }]],
+    worldLandmarks: [Array.from({ length: 33 }, () => ({
+      x: 0.1, y: 0.2, z: 0.3, visibility: 0.9, presence: 0.8,
+    }))],
   }));
   const close = vi.fn();
   return {
@@ -151,9 +154,9 @@ describe("W1c LivePoseInference fail-closed lifecycle (synthetic)", () => {
     expect(first).toMatchObject({ frameId: 1, session: 5, width: 640, height: 480 });
     expect(bitmaps[0].closed).toBe(false); // ownership transferred to worker
 
-    worker.emitMessage(workerResult(first));
+    worker.emitMessage(workerResult(first, { worldLandmarks: null }));
     expect(frames).toHaveLength(1);
-    expect(frames[0]).toMatchObject({ frameId: 1, session: 5, inferredInMs: 12, landmarks: [point] });
+    expect(frames[0]).toMatchObject({ frameId: 1, session: 5, inferredInMs: 12, landmarks: [point], worldLandmarks: null });
     worker.emitMessage(workerResult(first)); // duplicate delivery
     worker.emitMessage(workerResult(first, { session: 6, frameId: 99 }));
     expect(frames).toHaveLength(1);
@@ -190,6 +193,8 @@ describe("W1c LivePoseInference fail-closed lifecycle (synthetic)", () => {
     expect(frames).toHaveLength(1);
     expect(frames[0].frameId).toBe(2);
     expect(frames[0].landmarks).toHaveLength(1);
+    expect(frames[0].worldLandmarks).toHaveLength(33);
+    expect(frames[0].worldLandmarks?.[0].z).toBeCloseTo(0.3);
     expect(mocks.detectForVideo).toHaveBeenCalledTimes(1);
     engine.close();
   });
