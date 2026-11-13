@@ -131,3 +131,9 @@ points against held-out original-image 2D points. This is not a
 camera solver, verified real-world measurement or real anatomy AR.
 Critical-path blockers are detailed in
 [the execution gates](Docs/EXECUTION_GATES.md).
+
+**W2m source-only improvement:** the local anatomical model inspector
+now exports and audits an exact-source-bound per-mesh rights worksheet,
+flagging noncommercial (NC), ShareAlike and missing-evidence items
+without automatically clearing copyright or enabling real anatomy
+retargeting. See [license research](Docs/W2M_ANATOMY_RIGHTS.md).
