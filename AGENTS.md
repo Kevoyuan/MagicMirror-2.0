@@ -766,3 +766,22 @@ Regardless of input or score:
 Do not let the local evidence file enable real atlas following, bypass
 release-clearance, or mark physical iPhone Safari/browser QA complete.
 See `Docs/EXECUTION_GATES.md` and `Docs/W3D_CAMERA_EVIDENCE.md`.
+
+## 26. W2m exact-source per-mesh rights evidence — NOT clearance
+
+Use `atlas-rights.ts` on the actual local source inventory only.
+Each exported row MUST retain source SHA-256, size, actual mesh
+index/name/hierarchy and unreviewed status; no derived/guessed rights
+for unseen geometry. Imported owner annotations may contain claimed
+author, original source URL, license identifier and evidence URL,
+but these are not authenticated grants. Reject cross-source imports,
+extra approved fields, unsafe URLs and invalid license claims.
+
+ALWAYS return `rightsStatus:NOT_REVIEWED`,
+`commercialUseApproved:false` and
+`redistributionApproved:false`. NC parts (including potentially
+upstream inner-ear/kidney exceptions) MUST be flagged, and
+ShareAlike duties separately disclosed. Source/origin must be verified
+by a human before a legitimate distributed rig can be prepared.
+This does NOT change the currently blocked Google model-weight,
+SDK privacy, anatomical rig, iOS freeze or Web release gates.
