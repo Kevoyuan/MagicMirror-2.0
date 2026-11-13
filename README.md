@@ -124,3 +124,10 @@ anatomy AR or approve third-party model redistribution.
 perspective projection self-check inside the folded diagnostics UI.
 Even zero synthetic reprojection error is NOT real camera calibration,
 measured bones, authorized anatomical overlays or a public release.
+
+**Current W3d1 engineering step:** a local, opt-in, strictly validated
+camera evidence JSON viewer independently checks declared 3D target
+points against held-out original-image 2D points. This is not a
+camera solver, verified real-world measurement or real anatomy AR.
+Critical-path blockers are detailed in
+[the execution gates](Docs/EXECUTION_GATES.md).

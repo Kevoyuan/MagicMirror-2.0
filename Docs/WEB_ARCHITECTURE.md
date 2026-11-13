@@ -723,3 +723,19 @@ The camera stage still uses the one existing WebGL canvas. The W3b + W3c
 small readouts use one contained, collapsed diagnostics panel rather than
 overlapping absolute-positioned rows. No data persistence or network
 services are added. Full contract: [W3C_CAMERA_REPROJECTION.md](W3C_CAMERA_REPROJECTION.md).
+
+## W3d1: local external-target reprojection audit (no calibration solver)
+
+`camera-evidence.ts` consumes a bounded, strict user-supplied JSON
+schema of declared 3D physical-target points and **unmirrored** source
+image pixels, split into independent reference and holdout observations.
+It reuses W3c's right-handed pinhole hypothesis validator and forward
+projector, rejecting invalid depth or degenerate targets. It computes
+RMSE and holdout p95, never reuses human model-predicted joints and
+never returns approved calibration/atlas status. The user-visible
+camera-evidence `<dialog>` opens from the existing collapsed
+diagnostics, processes only a click-selected local file, and retains
+only an anonymous EN/ZH summary string in page memory. No added
+backend, camera stream, persistence, automatic export or
+public model/mesh distribution. See
+[W3D_CAMERA_EVIDENCE.md](W3D_CAMERA_EVIDENCE.md).

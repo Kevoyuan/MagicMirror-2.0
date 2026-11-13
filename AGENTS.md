@@ -745,3 +745,24 @@ and an explicit synthetic-only label. It MUST NOT call getUserMedia,
 load a model binary, upload/snapshot/store joint data, change W3a overlay
 mode or bypass the `releaseApproved: false` public gate. Keep Android
 canceled and iOS frozen. Continue real-device/lawful anatomy QA separately.
+
+## 25. W3d source-locked independent camera evidence (not deployment approval)
+
+The user-visible evidence import is only a **click-selected local**
+JSON (max 128 KiB). Do not use MediaPipe hip-relative world landmarks
+as measured 3D target points. Require a declared pinhole camera
+intrinsics and right-handed R/t, source-image pixel coordinates,
+noncoplanar 3D target, reference and disjoint holdout point identities,
+bounded strictly typed numeric data and explicit provenance either
+`synthetic-fixture` or `external-unverified`. Disallow extra
+identity/photo/network/evidence-approval fields; never log or
+persist raw target observations. Positive depth, source resolution,
+rigid camera validation and independent RMSE/p95 are mandatory.
+
+Regardless of input or score:
+`cameraCalibrationApproved=false`,
+`sourceAuthenticityVerified=false`,
+`anatomyOverlayApproved=false`.
+Do not let the local evidence file enable real atlas following, bypass
+release-clearance, or mark physical iPhone Safari/browser QA complete.
+See `Docs/EXECUTION_GATES.md` and `Docs/W3D_CAMERA_EVIDENCE.md`.

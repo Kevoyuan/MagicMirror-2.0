@@ -107,7 +107,7 @@ function boundedPoint(p: PosePoint | undefined): p is PosePoint {
     (p.presence === undefined || finite(p.presence));
 }
 
-function validHypothesis(
+export function validHypothesis(
   hypothesis: PerspectiveHypothesis, display: PerspectiveDisplay,
 ): boolean {
   const { intrinsics: k, worldToCamera: t } = hypothesis;

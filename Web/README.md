@@ -729,3 +729,21 @@ Next independent milestones are physical calibration target data,
 per-device intrinsic/extrinsic evidence, real 3D registration and a
 rights-cleared anatomical rest rig. See
 [W3c engineering contract](../Docs/W3C_CAMERA_REPROJECTION.md).
+
+## W3d1: check independently supplied offline camera target evidence
+
+The folded Diagnostics panel offers **Check offline camera evidence**.
+It opens a standalone accessible modal for a local JSON file (max
+128 KiB), containing named noncoplanar 3D target points, corresponding
+original-image pixels and supplied pinhole intrinsics/rigid extrinsics.
+Separate disjoint reference and holdout residuals are reported (RMSE
+and p95); invalid formats, camera matrices, low point coverage or
+negative depths are rejected. The file is not uploaded, retained,
+stored or exported; only a small bilingual result is displayed.
+
+This **does not solve/calibrate a real camera**, prove the target
+measurements are authentic or enable anatomical AR. All results
+explicitly remain unverified, including near-zero error. No
+actual hardware test has been claimed. Read the
+[local evidence schema](../Docs/W3D_CAMERA_EVIDENCE.md) and
+[ordered remaining tasks](../Docs/EXECUTION_GATES.md).
