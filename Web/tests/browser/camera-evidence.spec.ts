@@ -63,6 +63,13 @@ test("W3d unverified external evidence remains unverified and bad files fail clo
     buffer: Buffer.from(JSON.stringify(corrupted)),
   });
   await expect(page.locator("#camera-evidence-status")).toContainText("证据文件无效");
+  await expect(upload).toHaveValue(""); // input buffers are immediately discarded
+  await upload.setInputFiles({
+    name: "oversized.json", mimeType: "application/json",
+    buffer: Buffer.alloc(131073, 0x20),
+  });
+  await expect(page.locator("#camera-evidence-status")).toContainText("证据文件无效");
+  await expect(upload).toHaveValue("");
   await expect(page.locator("#video")).toHaveJSProperty("srcObject", null);
   await expect(page.locator("#stage canvas")).toHaveCount(1);
 });
