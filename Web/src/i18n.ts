@@ -237,7 +237,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics,#rig-mode-status"
+      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#world-pose-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics,#rig-mode-status"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);

@@ -117,6 +117,33 @@ describe("W1c worker result gate (pure, synthetic)", () => {
     }
   });
 
+  it("accepts paired 33-point world observations and rejects corrupt world payloads", () => {
+    const image = Array.from({ length: 33 }, () => point);
+    const world = image.map(p => ({ ...p, z: 0.45 }));
+    expect(decideWorkerMessage(state(), result({
+      landmarks: image, worldLandmarks: world,
+    }))).toBe("accept");
+    expect(decideWorkerMessage(state(), result({
+      landmarks: image, worldLandmarks: null,
+    }))).toBe("accept");
+    for (const corrupt of [
+      world.slice(0, 32),
+      world.map((p, i) => i === 0 ? { ...p, z: NaN } : p),
+      world.map((p, i) => i === 0 ? { ...p, x: 1e9 } : p),
+      "world",
+    ]) {
+      expect(decideWorkerMessage(state(), result({
+        landmarks: image, worldLandmarks: corrupt,
+      }))).toBe("fatal");
+    }
+    expect(decideWorkerMessage(state(), result({
+      landmarks: null, worldLandmarks: world,
+    }))).toBe("fatal");
+    expect(decideWorkerMessage(state(), result({
+      landmarks: [point], worldLandmarks: world,
+    }))).toBe("fatal");
+  });
+
   it("checks frame/session identity before validating payloads", () => {
     // A corrupt result from an OLD frame is simply dropped, not treated as a
     // fresh fatal that would tear down a healthy session.

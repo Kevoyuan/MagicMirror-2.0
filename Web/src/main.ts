@@ -1,4 +1,5 @@
 import { coverageFor, type Coverage, type Focus } from "./pose";
+import { assessWorldPose, type WorldPoseDiagnostic } from "./world-pose";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
@@ -68,6 +69,7 @@ root.innerHTML = `
           <details class="diagnostics-disclosure">
             <summary>诊断</summary>
             <span id="frame-metric" class="frame-metric">本地推理 · 尚未运行</span>
+            <span id="world-pose-metric" class="frame-metric world-pose-metric">三维观测 · 未运行（非相机标定）</span>
           </details>
           <button id="snapshot" type="button" class="snapshot-button" disabled title="下载当前参考画面为 PNG">保存画面</button>
         </div>
@@ -377,6 +379,11 @@ const noteSubtitle = element<HTMLElement>("#part-subtitle");
 const noteDescription = element<HTMLElement>("#part-description");
 const noteExpansion = element<HTMLDetailsElement>("#part-note-more");
 const metric = element<HTMLElement>("#frame-metric");
+const worldMetric = element<HTMLElement>("#world-pose-metric");
+let lastWorldMetric = {
+  zh: "三维观测 · 未运行（非相机标定）",
+  en: "3D observation · inactive (not camera calibration)",
+};
 const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
@@ -482,6 +489,7 @@ function setLocale(next: Locale): void {
   if (lastGuidanceRaw !== null) guidance.textContent = translate(lastGuidanceRaw, locale);
   overlayButton.textContent = translate(overlayPaused ? "恢复叠加" : "暂停叠加", locale);
   refreshRigModeCopy();
+  worldMetric.textContent = locale === "en" ? lastWorldMetric.en : lastWorldMetric.zh;
   renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
@@ -503,6 +511,32 @@ function refreshRigModeCopy(): void {
 }
 function syncRigModeRadios(): void {
   rigModeRadios.forEach((radio) => { radio.checked = radio.value === overlayMode; });
+}
+
+/** W3b diagnostics never drives the overlay or stores/export body observations. */
+function setWorldMetric(result: WorldPoseDiagnostic | null): void {
+  if (!result) {
+    lastWorldMetric = {
+      zh: "三维观测 · 不可用（非相机标定）",
+      en: "3D model observation unavailable · not camera calibration",
+    };
+  } else if (result.status === "candidate" || result.status === "inconsistent") {
+    const error = result.rmsePx?.toFixed(1) ?? "—";
+    const pairs = result.matchedPoints;
+    lastWorldMetric = result.status === "candidate" ? {
+      zh: `三维模型候选一致 · ${pairs} 点 / 2D 拟合误差 ${error}px · 非相机标定`,
+      en: `3D model in-plane candidate · ${pairs} pairs / 2D fit ${error}px · NOT calibrated`,
+    } : {
+      zh: `三维模型与图像不一致 · ${pairs} 点 / 2D 拟合误差 ${error}px · 不做 3D 叠加`,
+      en: `3D model/image inconsistent · ${pairs} pairs / 2D fit ${error}px · no 3D overlay`,
+    };
+  } else {
+    lastWorldMetric = {
+      zh: `三维拟合不可用（${result.status} · ${result.matchedPoints} 点）· 非相机标定`,
+      en: `3D fit unavailable (${result.status} · ${result.matchedPoints} pairs) · NOT calibrated`,
+    };
+  }
+  worldMetric.textContent = locale === "en" ? lastWorldMetric.en : lastWorldMetric.zh;
 }
 
 /** Hide the ACTIVE overlay. In rig mode a stale 3D chain must never remain. */
@@ -561,6 +595,7 @@ function stopCamera(message = "相机已关闭"): void {
   setCameraButtons(false);
   showGuidance(null);
   metric.textContent = "本地推理 · 尚未运行";
+  setWorldMetric(null);
   setStatus(message, "ready");
 }
 
@@ -649,6 +684,7 @@ function handlePoseFrame(frame: InferenceFrame): void {
   const now = performance.now();
   if (frame.frameId <= lastReceivedFrameId) return;
   if (!freshResult(frame, session, now, staleMs)) {
+    setWorldMetric(null);
     rigOverlay?.clearTransforms();
     hideOverlay();
     hideNote();
@@ -674,6 +710,12 @@ function handlePoseFrame(frame: InferenceFrame): void {
     推理 p95 ${p.inferenceP95Ms.toFixed(0)}ms ·
     交付 p95 ${p.deliveryP95Ms.toFixed(0)}ms`.replace(/\s+/g, " ").trim();
 
+  // World points stay local and diagnostic-only: never camera extrinsics.
+  setWorldMetric(assessWorldPose(frame.landmarks, frame.worldLandmarks, {
+    sourceWidth: frame.width, sourceHeight: frame.height,
+    viewportWidth: stage.clientWidth, viewportHeight: stage.clientHeight,
+    mirrored,
+  }));
   const observed = frame.landmarks ?? undefined;
   const smoothed = stabilizingEnabled
     ? stabilizer.sample(observed, frame.capturedAtMs) ?? undefined
@@ -731,6 +773,7 @@ function tick(now: number): void {
   if (!active || !proxy || !runner) return;
   animationFrame = requestAnimationFrame(tick);
   if (now - lastFoundAt > staleMs && previousCoverage !== "none") {
+    setWorldMetric(null);
     rigOverlay?.clearTransforms();
     hideOverlay();
     hideNote();

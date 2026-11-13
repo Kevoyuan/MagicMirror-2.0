@@ -51,6 +51,21 @@ function validLandmarks(value: unknown): value is PosePoint[] | null {
 }
 
 /**
+ * Missing world points preserve 2D tracking. Malformed PRESENT world payloads
+ * must be rejected before entering local W3b diagnostics.
+ */
+function validWorldLandmarks(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  return Array.isArray(value) && value.length === 33 &&
+    value.every((point: unknown) => {
+      const p = asRecord(point);
+      return finite(p.x) && finite(p.y) && finite(p.z) &&
+        Math.abs(p.x) <= 100 && Math.abs(p.y) <= 100 && Math.abs(p.z) <= 100 &&
+        optionalFinite(p.visibility) && optionalFinite(p.presence);
+    });
+}
+
+/**
  * "accept" draws the frame; "ignore" drops a stale/late/unknown message;
  * "fatal" fails the worker closed (hide geometry, then safe fallback).
  */
@@ -78,7 +93,10 @@ export function decideWorkerMessage(
   if (!finite(data.capturedAtMs) || data.capturedAtMs < 0 ||
       !finite(data.mediaTimeSeconds) || data.mediaTimeSeconds < 0 ||
       !finite(width) || width <= 0 || !finite(height) || height <= 0 ||
-      !finite(inferred) || inferred < 0 || !validLandmarks(data.landmarks)) {
+      !finite(inferred) || inferred < 0 || !validLandmarks(data.landmarks) ||
+      !validWorldLandmarks(data.worldLandmarks) ||
+      (data.worldLandmarks != null &&
+        (!Array.isArray(data.landmarks) || data.landmarks.length !== 33))) {
     return "fatal";
   }
   return "accept";

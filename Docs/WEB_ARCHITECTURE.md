@@ -683,3 +683,22 @@ engine integration for the ORIGINAL screen-aligned rig. They do NOT prove
 camera-space 3D registration, anatomical accuracy, skinning, model rights,
 SDK privacy clearance, physical iPhone Safari acceptance or public release.
 `Web/release-clearance.json` remains `releaseApproved: false`.
+
+## W3b: world-landmark transport and local 2D consistency
+
+MediaPipe's model-estimated hip-centered 33-point `worldLandmarks`
+(often described in meters in SDK documentation) are collected from the
+SAME `detectForVideo` result as the image landmarks. The existing
+one-in-flight Worker and main fallback only pass bounded numeric arrays
+under the existing frame/session/timing identity. Missing world data
+keeps 2D pose usable; malformed present worker data fails closed.
+
+`Web/src/world-pose.ts` compares up to 12 paired 2D/world points and
+fits a weighted in-plane similarity to actual viewport coordinates after
+cover crop and mirror. This ignores predicted world Z. A low residual
+is only 2D consistency, **not** camera extrinsics or anatomical truth.
+`main.ts` presents a bilingual readout inside collapsed diagnostics,
+never applies the fit to the live rig, stores/export points or opens
+real atlas layers.
+
+See [W3B_WORLD_OBSERVATION.md](W3B_WORLD_OBSERVATION.md).

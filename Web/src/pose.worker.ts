@@ -47,11 +47,15 @@ scope.addEventListener("message", async (event: MessageEvent<WorkerInput>) => {
     const result = task.detectForVideo(data.bitmap, data.capturedAtMs);
     const inferredInMs = Math.max(0, performance.now() - started);
     const landmarks = result.landmarks[0] as PosePoint[] | undefined;
+    const world = result.worldLandmarks[0] as PosePoint[] | undefined;
     send({
       kind: "result", frameId: data.frameId, session: data.session,
       capturedAtMs: data.capturedAtMs, mediaTimeSeconds: data.mediaTimeSeconds,
       width: data.width, height: data.height,
       inferredInMs, landmarks: landmarks ? landmarks.map((p) => ({
+        x: p.x, y: p.y, z: p.z, visibility: p.visibility, presence: p.presence,
+      })) : null,
+      worldLandmarks: landmarks && world ? world.map((p) => ({
         x: p.x, y: p.y, z: p.z, visibility: p.visibility, presence: p.presence,
       })) : null,
     });

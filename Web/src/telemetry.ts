@@ -62,6 +62,8 @@ export interface CapturedFrame {
 export interface InferenceFrame extends CapturedFrame {
   inferredInMs: number;
   landmarks: import("./pose").PosePoint[] | null;
+  /** Hip-relative model-estimated 3D points; optional for legacy fixtures. */
+  worldLandmarks?: import("./pose").PosePoint[] | null;
 }
 
 /** One in-flight video snapshot and strictly monotonic media frames. */
