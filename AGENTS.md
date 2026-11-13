@@ -22,12 +22,15 @@ is needed for the browser prototype.
 4. `Web/README.md`, `Web/src/`, `Web/package.json`.
 5. `DESIGN.md` — Leonardo visual direction.
 
-**Frozen research:** `Mobile/iOS/` (SwiftUI/Metal, tests, CI, commercial
-gates and all associated draft PRs) is PRESERVED, not deleted or a
-new feature target. Draft PRs #49–#53 remain on hold; do not silently
-merge, rebase, close or port them merely to claim progress. The
-Unity/Python reference research is also preserved. **No native Android
-project at all.** Resume iOS only if the owner explicitly requests it.
+**Frozen research:** `Mobile/iOS/` (SwiftUI/Metal, tests, CI and commercial
+gates) is PRESERVED, not an active feature target. On 2026-11-13 the
+owner explicitly requested PR/branch cleanup: unmerged native Draft PRs
+#49–#53 were closed without merging and each original feature head was
+preserved as a verified Git tag `archive/ios-pr-N-2026-11-13` (N=49–53).
+Superseded branch refs were deleted; recover any work by branching from
+its corresponding archival tag. Do not resume, merge or port archived
+iOS features without a new owner decision. Unity/Python research stays
+preserved. **No native Android project at all.**
 
 ## 2. Honest Web MVP baseline
 
