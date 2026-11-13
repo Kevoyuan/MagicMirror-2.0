@@ -14,7 +14,7 @@ No automatic claim that a code check equals product acceptance.
 |---|---|---|---|
 | 1a | W3d external camera evidence parser & independent holdout audit; W3c | Implementing | Strict bounded input, known 3D points vs unmirrored image pixels, positive depth, nondegenerate target, RMSE+p95 separately on disjoint reference/holdout; tests and EN/ZH offline UI; always unverified |
 | 1b | W3d physical camera acceptance; 1a | Blocked: no measured device evidence supplied | Source-image resolution and measured target, device/browser/rotation, true intrinsics/distortion, physical reference and independent holdout reprojection, named test engineer, dated acceptance |
-| 2a | W2m per-mesh provenance checklist; current local atlas | Next | Source SHA-locked inventory, all actual source mesh identities, author, origin, declared license and exception/NC flags; no automatic redistribution clearance |
+| 2a | W2m per-mesh provenance checklist; current local atlas | Source implemented, real assets remain unreviewed | Source SHA-locked inventory, all actual source mesh identities, author, origin, declared license and exception/NC flags; no automatic redistribution clearance |
 | 2b | W2n lawful rigged anatomical rest source; 2a + reviewed rights | Blocked: verified asset + authored weights absent | Human-reviewed source geometry, body axes, normalized connected joint graph, skin weights, isolated poses, validated rig errors & measurable GPU cost |
 | 3 | W3e camera/body to REAL atlas skinning; 1b + 2b | Blocked | Camera-space projection residuals on physical devices, stable left/right, moving torso/arms/legs, occlusion fallbacks; no fake inner-bone precision |
 | 4 | W4 semantic skeleton/muscle/organ layers and learning; 2b + 3 | Partially existing original notes/static local study | Real material/section hierarchy, selection and EN/ZH sourced notes backed by reviewed meshes |
@@ -42,3 +42,30 @@ are approved and no real camera registration is accepted.
 `releaseApproved` must remain FALSE for this whole task series until
 independently reviewed. A composite percent would be judgmental, not
 an inspectable engineering KPI; prioritize critical-path milestones.
+
+### W2m1 source progress (2026-11-13)
+
+The source implementation now provides SHA-locked local per-mesh
+license evidence template export and local audit import,
+with NC/ShareAlike/missing counts and permanent false rights
+approval. The original "2a W2m" table row is therefore
+**source implemented / actual-source legal review still blocked**.
+A real Z-Anatomy mesh/source hash and independent author/asset
+rights review have not been provided. See
+[W2M_ANATOMY_RIGHTS.md](W2M_ANATOMY_RIGHTS.md).
+
+## GitHub acceptance issues (created 2026-11-13)
+
+These represent **open external or source-verified acceptance**, not
+work executed in the background. Follow the dependency order.
+
+- [#78](https://github.com/Kevoyuan/MagicMirror-2.0/issues/78) W3d2 physical camera/3D target evidence
+- [#79](https://github.com/Kevoyuan/MagicMirror-2.0/issues/79) W2n lawful canonical anatomical rest rig and skinning
+- [#80](https://github.com/Kevoyuan/MagicMirror-2.0/issues/80) W3e actual atlas camera-space retargeting
+- [#81](https://github.com/Kevoyuan/MagicMirror-2.0/issues/81) W4 genuine layered anatomy and source-backed study
+- [#82](https://github.com/Kevoyuan/MagicMirror-2.0/issues/82) W1 real iPhone Safari/desktop Chrome hardware QA
+- [#83](https://github.com/Kevoyuan/MagicMirror-2.0/issues/83) W4 public release weight/SDK/privacy/mesh rights
+
+Engineered first slices: W3d1 [#74](https://github.com/Kevoyuan/MagicMirror-2.0/pull/74),
+and W2m1 [#76](https://github.com/Kevoyuan/MagicMirror-2.0/pull/76).
+Source work does not close physical/legal issues.

@@ -12,6 +12,10 @@ import type { LocalAtlasViewer, LocalAtlasStats } from "./atlas-viewer";
 import { searchAtlasParts, type AtlasPart } from "./atlas-catalog";
 import { inventoryDownloadName } from "./atlas-inventory";
 import {
+  makeRightsWorksheet, auditRightsWorksheet,
+  rightsWorksheetDownloadName, MAX_RIGHTS_WORKSHEET_BYTES,
+} from "./atlas-rights";
+import {
   makeDraftMapping, mappingDownloadName, parseDraftMapping,
   POSE_SEGMENTS, type PoseSegmentId,
 } from "./atlas-mapping";
@@ -261,6 +265,16 @@ root.innerHTML = `
         <button id="atlas-reset-camera" type="button" disabled>重置视角</button>
         <button id="atlas-export-inventory" type="button" disabled>导出来源清单 JSON</button>
       </div>
+      <div class="atlas-rights-review" aria-labelledby="atlas-rights-title">
+        <h4 id="atlas-rights-title">逐网格版权证据 · 待人工审核</h4>
+        <p>每个原始网格必须单独核对作者、出处、许可证、原始证据与署名。含 NC（禁止商业使用）的网格必须独立排除或获得真实额外授权。模板和检查结果都不会自动批准分发。</p>
+        <div class="atlas-rights-actions">
+          <button id="atlas-rights-export" type="button" disabled>下载逐网格证据模板</button>
+          <label for="atlas-rights-import">核对已填写的本地授权 JSON</label>
+          <input id="atlas-rights-import" type="file" accept=".json,application/json" disabled aria-label="选择仅本地读取的逐网格版权证据 JSON" />
+        </div>
+        <p id="atlas-rights-status" role="status" aria-live="polite">未导入模型或授权证据；公开分发和商业使用未获批准。</p>
+      </div>
       <div class="atlas-mapping-tools" aria-labelledby="atlas-map-title">
         <h4 id="atlas-map-title">人工姿态映射草稿 · 非实际骨骼绑定</h4>
         <p>请根据原始网格名称与实际模型，自行标记对应的 MediaPipe 体表参考段。映射未经过解剖、骨骼绑定或相机校准审核。</p>
@@ -436,6 +450,14 @@ const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
 const languageButton = element<HTMLButtonElement>("#language-toggle");
+const atlasRightsStatus = element<HTMLElement>("#atlas-rights-status");
+let lastRightsStatus = {
+  zh: "未导入模型或授权证据；公开分发和商业使用未获批准。",
+  en: "No local model or rights evidence checked; redistribution and commercial use remain unapproved.",
+};
+function renderAtlasRightsStatus(): void {
+  atlasRightsStatus.textContent = locale === "en" ? lastRightsStatus.en : lastRightsStatus.zh;
+}
 const openCameraEvidence = element<HTMLButtonElement>("#open-camera-evidence");
 const cameraEvidenceDialog = element<HTMLDialogElement>("#camera-evidence-dialog");
 const cameraEvidenceFile = element<HTMLInputElement>("#camera-evidence-file");
@@ -591,6 +613,7 @@ function setLocale(next: Locale): void {
   worldMetric.textContent = locale === "en" ? lastWorldMetric.en : lastWorldMetric.zh;
   renderGeometrySelfCheck();
   renderEvidenceCopy();
+  renderAtlasRightsStatus();
   renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
@@ -1034,6 +1057,8 @@ const atlasShowAll = element<HTMLButtonElement>("#atlas-show-all");
 const atlasRestore = element<HTMLButtonElement>("#atlas-restore");
 const atlasResetCamera = element<HTMLButtonElement>("#atlas-reset-camera");
 const atlasExportInventory = element<HTMLButtonElement>("#atlas-export-inventory");
+const atlasRightsExport = element<HTMLButtonElement>("#atlas-rights-export");
+const atlasRightsImport = element<HTMLInputElement>("#atlas-rights-import");
 const atlasMore = element<HTMLButtonElement>("#atlas-more");
 const atlasMapExport = element<HTMLButtonElement>("#atlas-map-export");
 const atlasMapImport = element<HTMLInputElement>("#atlas-map-import");
@@ -1565,6 +1590,65 @@ atlasRestore.addEventListener("click", () => {
   refreshAtlasParts();
 });
 atlasResetCamera.addEventListener("click", () => atlasViewer?.resetView());
+atlasRightsExport.addEventListener("click", () => {
+  const inventory = atlasViewer?.sourceInventory();
+  if (!inventory) return;
+  try {
+    const manifest = makeRightsWorksheet(inventory);
+    const blob = new Blob([JSON.stringify(manifest, null, 2) + "\n"],
+      { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = rightsWorksheetDownloadName(inventory.fileName);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    lastRightsStatus = {
+      zh: `已导出 ${manifest.meshCount} 项待人工填写的网格证据模板；无任何授权批准。`,
+      en: `Exported ${manifest.meshCount} unreviewed mesh evidence rows; NO rights approved.`,
+    };
+  } catch {
+    lastRightsStatus = {
+      zh: "无法导出网格证据模板；未获许可。",
+      en: "Mesh rights worksheet export unavailable; nothing approved.",
+    };
+  }
+  renderAtlasRightsStatus();
+});
+atlasRightsImport.addEventListener("change", async () => {
+  const file = atlasRightsImport.files?.[0];
+  const original = atlasViewer?.sourceInventory();
+  if (!file || !original) return;
+  atlasRightsImport.disabled = true;
+  try {
+    if (file.size < 1 || file.size > MAX_RIGHTS_WORKSHEET_BYTES ||
+        !file.name.toLowerCase().endsWith(".json")) {
+      throw new Error("Invalid file");
+    }
+    const parsed = JSON.parse(await file.text()) as unknown;
+    const current = atlasViewer?.sourceInventory();
+    if (!current || current.sourceSHA256 !== original.sourceSHA256 ||
+        current.fileSizeBytes !== original.fileSizeBytes) {
+      throw new Error("Changed model");
+    }
+    const result = auditRightsWorksheet(parsed, current);
+    lastRightsStatus = {
+      zh: `原始网格 ${result.count} · NC 禁商用 ${result.nonCommercial} · SA 相同方式共享 ${result.shareAlike} · 缺证据 ${result.missingEvidence} · 许可证未明 ${result.unresolvedLicense}。全部待人工审核；不可公开分发。`,
+      en: `Source meshes ${result.count} · NC exclusions ${result.nonCommercial} · SA share-alike ${result.shareAlike} · missing evidence ${result.missingEvidence} · unresolved ${result.unresolvedLicense}. HUMAN review required; no redistribution approved.`,
+    };
+  } catch {
+    lastRightsStatus = {
+      zh: "逐网格证据不匹配或文件格式无效；禁止将其视为可商业使用或可分发证明。",
+      en: "Mesh evidence invalid or source mismatched. Cannot establish distribution or commercial rights.",
+    };
+  } finally {
+    atlasRightsImport.value = "";
+    atlasRightsImport.disabled = !atlasViewer?.sourceInventory();
+    renderAtlasRightsStatus();
+  }
+});
 atlasExportInventory.addEventListener("click", () => {
   const manifest = atlasViewer?.sourceInventory();
   if (!manifest) return;
@@ -2203,6 +2287,13 @@ function loadAtlasFile(file: File, builtInDemo = false): void {
     atlasShowAll.disabled = false;
     atlasResetCamera.disabled = false;
     atlasExportInventory.disabled = false;
+    atlasRightsExport.disabled = false;
+    atlasRightsImport.disabled = false;
+    lastRightsStatus = {
+      zh: "模型已导入：所有来源网格仍待逐项版权审核。可导出模板或导入人工证据进行检查。",
+      en: "Model loaded: ALL source meshes require individual rights review. Export a worksheet or inspect annotated evidence.",
+    };
+    renderAtlasRightsStatus();
     resetStudyChainDraft();
     stopLocalRigidPreview();
     atlasMappings.clear();

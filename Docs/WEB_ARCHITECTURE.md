@@ -739,3 +739,20 @@ only an anonymous EN/ZH summary string in page memory. No added
 backend, camera stream, persistence, automatic export or
 public model/mesh distribution. See
 [W3D_CAMERA_EVIDENCE.md](W3D_CAMERA_EVIDENCE.md).
+
+## W2m: source-hash-bound local rights research; never legal approval
+
+`atlas-rights.ts` derives one initially unreviewed row from each
+actual imported source inventory mesh. The owner may download the
+worksheet, annotate license/author/evidence in a separate JSON editor,
+and import it for local **triage**. Every row is checked against the
+current source SHA-256, file size, index, original name and hierarchy
+path. No label or URL grants permission: NC warning, ShareAlike duty,
+unresolved/missing evidence counts are informational. The parser
+rejects attempted approved status and unsafe/mismatched inputs;
+`redistributionApproved` and `commercialUseApproved` remain FALSE.
+
+UI is part of the separate local model study dialog; it is never
+connected to live rig, public release gate, camera feed, a network
+service or any included Z-Anatomy geometry. See
+[W2M_ANATOMY_RIGHTS.md](W2M_ANATOMY_RIGHTS.md).
