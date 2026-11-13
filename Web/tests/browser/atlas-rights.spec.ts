@@ -7,6 +7,8 @@ test("W2m actual local model exports source-locked UNKNOWN-rights entries; NC im
   await page.locator("#layers").click();
   await page.locator("#open-atlas-studio").click();
   await expect(page.locator("#atlas-dialog")).toBeVisible();
+  await expect(page.locator("#atlas-rights-export")).toBeDisabled();
+  await expect(page.locator("#atlas-rights-import")).toBeDisabled();
   await page.locator("#atlas-demo").click();
   await expect(page.locator("#atlas-rights-export")).toBeEnabled({ timeout: 50_000 });
   await expect(page.locator("#atlas-rights-import")).toBeEnabled();
@@ -35,6 +37,7 @@ test("W2m actual local model exports source-locked UNKNOWN-rights entries; NC im
     buffer: Buffer.from(JSON.stringify(worksheet)),
   });
   await expect(page.locator("#atlas-rights-status")).toContainText("NC 禁商用 1");
+  await expect(page.locator("#atlas-rights-status")).toContainText("SA 相同方式共享 1");
   await expect(page.locator("#atlas-rights-status")).toContainText("不可公开分发");
   await expect(importFile).toHaveValue("");
 

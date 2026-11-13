@@ -450,6 +450,14 @@ const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
 const languageButton = element<HTMLButtonElement>("#language-toggle");
+const atlasRightsStatus = element<HTMLElement>("#atlas-rights-status");
+let lastRightsStatus = {
+  zh: "未导入模型或授权证据；公开分发和商业使用未获批准。",
+  en: "No local model or rights evidence checked; redistribution and commercial use remain unapproved.",
+};
+function renderAtlasRightsStatus(): void {
+  atlasRightsStatus.textContent = locale === "en" ? lastRightsStatus.en : lastRightsStatus.zh;
+}
 const openCameraEvidence = element<HTMLButtonElement>("#open-camera-evidence");
 const cameraEvidenceDialog = element<HTMLDialogElement>("#camera-evidence-dialog");
 const cameraEvidenceFile = element<HTMLInputElement>("#camera-evidence-file");
@@ -1051,14 +1059,6 @@ const atlasResetCamera = element<HTMLButtonElement>("#atlas-reset-camera");
 const atlasExportInventory = element<HTMLButtonElement>("#atlas-export-inventory");
 const atlasRightsExport = element<HTMLButtonElement>("#atlas-rights-export");
 const atlasRightsImport = element<HTMLInputElement>("#atlas-rights-import");
-const atlasRightsStatus = element<HTMLElement>("#atlas-rights-status");
-let lastRightsStatus = {
-  zh: "未导入模型或授权证据；公开分发和商业使用未获批准。",
-  en: "No local model or rights evidence checked; redistribution and commercial use remain unapproved.",
-};
-function renderAtlasRightsStatus(): void {
-  atlasRightsStatus.textContent = locale === "en" ? lastRightsStatus.en : lastRightsStatus.zh;
-}
 const atlasMore = element<HTMLButtonElement>("#atlas-more");
 const atlasMapExport = element<HTMLButtonElement>("#atlas-map-export");
 const atlasMapImport = element<HTMLInputElement>("#atlas-map-import");
