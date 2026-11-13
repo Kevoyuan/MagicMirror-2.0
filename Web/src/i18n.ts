@@ -13,6 +13,14 @@ const en: Record<string, string> = {
   "本地推理 · 尚未运行": "On-device inference · Not started",
   "诊断": "Diagnostics",
   "运行合成相机自检": "Run synthetic camera check",
+  "逐网格版权证据 · 待人工审核": "Per-mesh rights evidence · human review pending",
+  "每个原始网格必须单独核对作者、出处、许可证、原始证据与署名。含 NC（禁止商业使用）的网格必须独立排除或获得真实额外授权。模板和检查结果都不会自动批准分发。":
+    "Verify each source mesh's author, origin, license, evidence and attribution. Noncommercial (NC) structures require exclusion or separately evidenced permission. Neither the worksheet nor its diagnostics approve redistribution.",
+  "下载逐网格证据模板": "Download per-mesh rights template",
+  "核对已填写的本地授权 JSON": "Check completed local rights JSON",
+  "选择仅本地读取的逐网格版权证据 JSON": "Choose local per-mesh rights JSON",
+  "未导入模型或授权证据；公开分发和商业使用未获批准。":
+    "No model or rights evidence; no redistribution or commercial approval.",
   "检查离线相机证据": "Check offline camera evidence",
   "关闭离线相机证据": "Close offline camera evidence",
   "离线相机几何证据": "Offline camera geometry evidence",
