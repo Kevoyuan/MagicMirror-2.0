@@ -747,3 +747,17 @@ explicitly remain unverified, including near-zero error. No
 actual hardware test has been claimed. Read the
 [local evidence schema](../Docs/W3D_CAMERA_EVIDENCE.md) and
 [ordered remaining tasks](../Docs/EXECUTION_GATES.md).
+
+## W2m — local per-mesh license evidence worksheet (never a grant)
+
+Open the local FBX/GLB study dialog and load your own source model.
+Use **Download per-mesh rights template** to obtain an exact
+SHA-256/mesh-index/name/path-bound checklist. Fill author, origin,
+declared license and attribution based on primary sources, then
+**Check completed local rights JSON** to see NC, ShareAlike and
+missing/unresolved counts. Inputs are processed locally and the
+model remains a static research object, not a live anatomy AR
+layer. A user-supplied license label never approves publication
+or commercial use; no real Z-Anatomy mesh is bundled. Full workflow
+and upstream NC exceptions:
+[W2M_ANATOMY_RIGHTS.md](../Docs/W2M_ANATOMY_RIGHTS.md).
