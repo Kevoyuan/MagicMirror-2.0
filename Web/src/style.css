@@ -1101,6 +1101,36 @@ a { color: inherit; }
   cursor: pointer;
 }
 .diagnostics-self-check:focus-visible { outline: 2px solid #f6ecd6; outline-offset: 2px; }
+/* W3d evidence remains a separate modal, never clipped by camera-stage. */
+.camera-evidence-dialog {
+  width: min(560px, 92vw);
+  max-height: min(80dvh, 650px);
+  overflow-y: auto;
+}
+.camera-evidence-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 12px 0 6px;
+}
+#camera-evidence-file {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  max-width: 100%;
+  font-size: 13px;
+}
+.camera-evidence-status {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #bfae83;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.camera-evidence-note { font-size: 12px; line-height: 1.6; }
+
 .diagnostics-panel > .registration-self-check-status {
   font-size: 10px;
   color: #e2d3b2;
