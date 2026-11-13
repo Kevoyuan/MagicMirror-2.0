@@ -1,6 +1,7 @@
 import { coverageFor, type Coverage, type Focus } from "./pose";
 import { assessWorldPose, type WorldPoseDiagnostic } from "./world-pose";
 import { runSyntheticPerspectiveSelfCheck } from "./camera-registration-fixture";
+import { reviewCameraEvidence, MAX_CAMERA_EVIDENCE_BYTES, type CameraEvidenceReview } from "./camera-evidence";
 import { LivePoseInference } from "./inference";
 import { ProcessingWindow, freshResult, type InferenceFrame } from "./telemetry";
 import { captureLocalPNG } from "./snapshot";
@@ -74,6 +75,7 @@ root.innerHTML = `
               <span id="world-pose-metric" class="frame-metric world-pose-metric">三维观测 · 未运行（非相机标定）</span>
               <button id="registration-self-check" class="diagnostics-self-check" type="button">运行合成相机自检</button>
               <span id="registration-self-check-status" class="frame-metric registration-self-check-status" role="status">仅合成数据 · 未执行（不代表设备已标定）</span>
+              <button id="open-camera-evidence" class="diagnostics-self-check" type="button">检查离线相机证据</button>
             </div>
           </details>
           <button id="snapshot" type="button" class="snapshot-button" disabled title="下载当前参考画面为 PNG">保存画面</button>
@@ -143,6 +145,20 @@ root.innerHTML = `
       <div><a href="https://github.com/Kevoyuan/MagicMirror-2.0" target="_blank" rel="noopener noreferrer">GitHub</a><button id="privacy" type="button">隐私与来源</button></div>
     </footer>
   </main>
+
+  <dialog id="camera-evidence-dialog" class="folio-dialog camera-evidence-dialog" aria-labelledby="camera-evidence-title">
+    <div class="dialog-heading">
+      <span>FOLIO III · CALIBRATION EVIDENCE</span>
+      <button class="close-dialog" data-close="camera-evidence-dialog" aria-label="关闭离线相机证据">×</button>
+    </div>
+    <h2 id="camera-evidence-title">离线相机几何证据</h2>
+    <p>仅检查你主动导入的本地 JSON 中声明的相机内参、刚体变换、三维标靶点和独立保留的 2D 观测点。不会上传、保存或启用摄像头，也不会将模型估计的关节点冒充实测标定点。</p>
+    <p><strong>即使误差很低，也不代表真实设备已标定，不能解锁真实解剖叠加。</strong></p>
+    <label class="camera-evidence-label" for="camera-evidence-file">选择离线标定证据 JSON（≤128 KB）</label>
+    <input id="camera-evidence-file" type="file" accept=".json,application/json" aria-label="选择仅本地读取的标定证据 JSON" />
+    <p id="camera-evidence-status" class="camera-evidence-status" role="status" aria-live="polite">尚未检查证据；所有标定和模型授权保持未通过。</p>
+    <p class="camera-evidence-note">文件不得包含相机画面、身份信息或网络资源。仅支持两组以上具有不同标靶点身份的参考 / 验证观测，要求明确的三维长度单位和相机坐标约定。<a href="https://github.com/Kevoyuan/MagicMirror-2.0/blob/main/Docs/W3D_CAMERA_EVIDENCE.md" target="_blank" rel="noopener noreferrer">查看格式与局限</a></p>
+  </dialog>
 
   <dialog id="layers-dialog" class="folio-dialog" aria-labelledby="layers-title">
     <div class="dialog-heading"><span>THE ANATOMY FOLIO</span><button class="close-dialog" data-close="layers-dialog" aria-label="关闭图层">×</button></div>
@@ -420,6 +436,57 @@ const snapshotButton = element<HTMLButtonElement>("#snapshot");
 const status = element<HTMLElement>("#tracking-status");
 const statusText = element<HTMLElement>("#status-text");
 const languageButton = element<HTMLButtonElement>("#language-toggle");
+const openCameraEvidence = element<HTMLButtonElement>("#open-camera-evidence");
+const cameraEvidenceDialog = element<HTMLDialogElement>("#camera-evidence-dialog");
+const cameraEvidenceFile = element<HTMLInputElement>("#camera-evidence-file");
+const cameraEvidenceStatus = element<HTMLElement>("#camera-evidence-status");
+let lastEvidenceCopy = {
+  zh: "尚未检查证据；所有标定和模型授权保持未通过。",
+  en: "No evidence checked; camera calibration and model release remain unapproved.",
+};
+function renderEvidenceCopy(): void {
+  cameraEvidenceStatus.textContent = locale === "en" ? lastEvidenceCopy.en : lastEvidenceCopy.zh;
+}
+openCameraEvidence.addEventListener("click", () => {
+  if (!cameraEvidenceDialog.open) cameraEvidenceDialog.showModal();
+});
+cameraEvidenceFile.addEventListener("change", async () => {
+  const file = cameraEvidenceFile.files?.[0];
+  if (!file) return;
+  // The original file and coordinates are not stored; only formatted summary
+  // strings are retained for the active browser page.
+  try {
+    if (file.size < 1 || file.size > MAX_CAMERA_EVIDENCE_BYTES ||
+        !file.name.toLocaleLowerCase().endsWith(".json")) {
+      throw new Error("unsupported file");
+    }
+    const result = reviewCameraEvidence(JSON.parse(await file.text()) as unknown);
+    const format = (metric: CameraEvidenceReview["holdout"]) =>
+      `${metric.count} / RMSE ${metric.rmsePx.toFixed(2)}px / p95 ${metric.p95Px.toFixed(2)}px`;
+    if (result.outcome === "invalid-depth") {
+      lastEvidenceCopy = {
+        zh: `深度验证失败（${result.rejectedDepthPoints} 个无效点）。未获相机标定或解剖叠加许可。`,
+        en: `Invalid projected depth (${result.rejectedDepthPoints} points). Camera and anatomy NOT approved.`,
+      };
+    } else {
+      const candidate = result.outcome === "external-consistent-unverified" ||
+        result.outcome === "synthetic-consistent";
+      const synthetic = result.provenance === "synthetic-fixture";
+      lastEvidenceCopy = {
+        zh: `${synthetic ? "合成证据" : "外部来源未核实"} · ${candidate ? "几何一致" : "几何不一致"} · 验证集 ${format(result.holdout)} · 未验证来源/未标定/未授权叠加`,
+        en: `${synthetic ? "SYNTHETIC" : "EXTERNAL UNVERIFIED"} · ${candidate ? "geometry consistent" : "inconsistent"} · holdout ${format(result.holdout)} · source NOT verified / NOT calibrated / anatomy NOT approved`,
+      };
+    }
+  } catch {
+    lastEvidenceCopy = {
+      zh: "证据文件无效或不符合独立标靶/相机坐标要求；未进行任何标定或授权。",
+      en: "Invalid or unsupported independent target/camera evidence; no calibration or approval.",
+    };
+  } finally {
+    cameraEvidenceFile.value = "";
+    renderEvidenceCopy();
+  }
+});
 const opacitySlider = element<HTMLInputElement>("#opacity");
 const opacityValue = element<HTMLOutputElement>("#opacity-value");
 const rigModeStatus = element<HTMLElement>("#rig-mode-status");
@@ -523,6 +590,7 @@ function setLocale(next: Locale): void {
   refreshRigModeCopy();
   worldMetric.textContent = locale === "en" ? lastWorldMetric.en : lastWorldMetric.zh;
   renderGeometrySelfCheck();
+  renderEvidenceCopy();
   renderCurrentNote();
 }
 function setCameraButtons(running: boolean): void {
