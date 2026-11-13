@@ -53,3 +53,19 @@ approval. The original "2a W2m" table row is therefore
 A real Z-Anatomy mesh/source hash and independent author/asset
 rights review have not been provided. See
 [W2M_ANATOMY_RIGHTS.md](W2M_ANATOMY_RIGHTS.md).
+
+## GitHub acceptance issues (created 2026-11-13)
+
+These represent **open external or source-verified acceptance**, not
+work executed in the background. Follow the dependency order.
+
+- [#78](https://github.com/Kevoyuan/MagicMirror-2.0/issues/78) W3d2 physical camera/3D target evidence
+- [#79](https://github.com/Kevoyuan/MagicMirror-2.0/issues/79) W2n lawful canonical anatomical rest rig and skinning
+- [#80](https://github.com/Kevoyuan/MagicMirror-2.0/issues/80) W3e actual atlas camera-space retargeting
+- [#81](https://github.com/Kevoyuan/MagicMirror-2.0/issues/81) W4 genuine layered anatomy and source-backed study
+- [#82](https://github.com/Kevoyuan/MagicMirror-2.0/issues/82) W1 real iPhone Safari/desktop Chrome hardware QA
+- [#83](https://github.com/Kevoyuan/MagicMirror-2.0/issues/83) W4 public release weight/SDK/privacy/mesh rights
+
+Engineered first slices: W3d1 [#74](https://github.com/Kevoyuan/MagicMirror-2.0/pull/74),
+and W2m1 [#76](https://github.com/Kevoyuan/MagicMirror-2.0/pull/76).
+Source work does not close physical/legal issues.
