@@ -13,6 +13,18 @@ const en: Record<string, string> = {
   "本地推理 · 尚未运行": "On-device inference · Not started",
   "诊断": "Diagnostics",
   "运行合成相机自检": "Run synthetic camera check",
+  "检查离线相机证据": "Check offline camera evidence",
+  "关闭离线相机证据": "Close offline camera evidence",
+  "离线相机几何证据": "Offline camera geometry evidence",
+  "仅检查你主动导入的本地 JSON 中声明的相机内参、刚体变换、三维标靶点和独立保留的 2D 观测点。不会上传、保存或启用摄像头，也不会将模型估计的关节点冒充实测标定点。":
+    "Only inspect declared intrinsics, rigid transform, 3D target points and independent held-out 2D observations from your local JSON. No uploads, persistence or camera capture; model-estimated body joints are never claimed as measured calibration.",
+  "即使误差很低，也不代表真实设备已标定，不能解锁真实解剖叠加。":
+    "Even tiny error does not establish real-device calibration or unlock genuine anatomy overlays.",
+  "选择离线标定证据 JSON（≤128 KB）": "Choose offline calibration evidence JSON (≤128 KB)",
+  "选择仅本地读取的标定证据 JSON": "Choose local-only calibration evidence JSON",
+  "文件不得包含相机画面、身份信息或网络资源。仅支持两组以上具有不同标靶点身份的参考 / 验证观测，要求明确的三维长度单位和相机坐标约定。":
+    "Do not include camera images, identifying information or network resources. Reference/holdout observations must use distinct 3D target point identities and an explicit camera coordinate convention.",
+  "查看格式与局限": "Schema and limitations",
   "阅读解剖说明": "Read anatomy note",
   "图层与许可说明": "Layers & licensing",
   "观察区域": "Body region",
