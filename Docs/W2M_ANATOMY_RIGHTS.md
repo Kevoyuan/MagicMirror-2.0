@@ -20,6 +20,29 @@ against the exact source archive and its evidence.
 An app may use the project-authored code under MIT, but **this does
 not relicense** third-party model artwork or model weights.
 
+## Simpler legal candidate: direct BodyParts3D (verify source version)
+
+The **official** [BodyParts3D database license page]
+(https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html),
+updated **2025-02-27**, currently specifies **CC BY 4.0** for
+the database and its requested attribution. This is potentially a
+simpler starting point for independently sourced anatomy geometry
+than importing Z-Anatomy's compound derivative collection, which
+also identifies noncommercial third-party exceptions.
+
+Do **not** transfer that modern database statement onto arbitrary
+older snapshots or Z-Anatomy derivatives: the
+[older 2010 archive README]
+(https://dbarchive.biosciencedbc.jp/data/bodyparts3d/20100816/README_e.html)
+explicitly specifies **CC BY-SA 2.1 Japan**, and older per-file
+notices may survive into mirrored archives. Pin the exact dataset
+release, URL, checksum, authors, model meshes and current provider
+terms, confirm any conflicting archive-specific notices with a
+qualified reviewer, and enter actual evidence **per mesh**.
+Direct BodyParts3D source does NOT include a ready-to-use
+human-motion skinning skeleton or physical camera calibration;
+the W2n and W3e engineering gates remain.
+
 ## Owner workflow (offline)
 
 1. Import an actual source FBX / self-contained GLB into the existing
