@@ -14,9 +14,13 @@ nonmedical, local video processing and fail-closed anatomy quality rules.
    sidecar, Unity runtime, cloud inference API, login, or proprietary
    client requirement.
 3. Preserve `Mobile/iOS/` SwiftUI/Metal history **unchanged and
-   frozen**. No Android work. The current unmerged iOS Draft PRs
-   #49–#53 remain historical/on-hold references, **not Web release
-   dependencies**. Do not merge them merely to close milestones.
+   frozen**. No Android work. As of 2026-11-13 the unmerged iOS Draft
+   PRs #49–#53 were closed at the owner's request; their original
+   heads are preserved as `archive/ios-pr-49-2026-11-13` through
+   `archive/ios-pr-53-2026-11-13` Git tags. The retired feature
+   branches were deleted after verifying the tags. These historical
+   native features are **not Web release dependencies** and were
+   never merged into the active Web mainline.
 4. Start with an honest GPU 3D **procedural reference proxy**;
    genuine articulated Z-Anatomy/BodyParts3D requires per-component
    rights, documented attribution/share-alike, authored geometry
