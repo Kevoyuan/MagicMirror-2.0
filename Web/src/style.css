@@ -394,7 +394,26 @@ a { color: inherit; }
   .rig-mode-option { font-size: 11px; min-height: 40px; }
 }
 
-/* W3b: local world-observation quality only, under the existing disclosure. */
+/* W2m: local per-mesh legal research checklist. Not a permission badge. */
+.atlas-rights-review {
+  margin: 14px 0;
+  padding: 13px;
+  border: 1px solid #ac9578;
+  border-radius: 9px;
+}
+.atlas-rights-review h4 { margin: 0 0 7px; font-size: 15px; }
+.atlas-rights-review p { font-size: 12px; line-height: 1.6; }
+.atlas-rights-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.atlas-rights-actions > button, .atlas-rights-actions > label {
+  min-height: 44px; padding: 10px; border-radius: 6px;
+  border: 1px solid #ad9974; font-size: 12px;
+}
+.atlas-rights-actions > button { cursor: pointer; }
+.atlas-rights-actions > label { display: inline-flex; align-items: center; }
+.atlas-rights-actions > input { width: 100%; min-height: 44px; font-size: 12px; }
+#atlas-rights-status { overflow-wrap: anywhere; }
+
+ /* W3b: local world-observation quality only, under the existing disclosure. */
 .world-pose-metric { display: block; margin-top: 5px; max-width: 270px; white-space: normal; font-size: 10px; line-height: 1.45; }
 
 /* Language toggle: small, keyboard-accessible, no locale cloud dependency */
