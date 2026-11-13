@@ -119,3 +119,8 @@ unknown model weights, camera frames or personal data.
 model-estimated world-landmark 2D consistency diagnostic. This does
 not turn the screen-aligned W3a original demonstration into calibrated
 anatomy AR or approve third-party model redistribution.
+
+**W3c work (Web):** Added a camera-free, deterministic, original-geometry
+perspective projection self-check inside the folded diagnostics UI.
+Even zero synthetic reprojection error is NOT real camera calibration,
+measured bones, authorized anatomical overlays or a public release.

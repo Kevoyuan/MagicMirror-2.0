@@ -12,6 +12,7 @@ const en: Record<string, string> = {
   "保存画面": "Save image",
   "本地推理 · 尚未运行": "On-device inference · Not started",
   "诊断": "Diagnostics",
+  "运行合成相机自检": "Run synthetic camera check",
   "阅读解剖说明": "Read anatomy note",
   "图层与许可说明": "Layers & licensing",
   "观察区域": "Body region",
@@ -237,7 +238,7 @@ export function translateStaticDOM(root: Element, locale: Locale): void {
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (node.parentElement?.closest(
-      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#world-pose-metric,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics,#rig-mode-status"
+      "#tracking-status,#guidance,#part-note,#part-title,#part-subtitle,#part-description,#atlas-info,#atlas-part,#frame-metric,#world-pose-metric,#registration-self-check-status,#opacity-value,#atlas-map-count,#atlas-map-error,#atlas-anchor-summary,#atlas-anchor-message,#atlas-rig-info,#atlas-part-count,#atlas-chain-status,#atlas-timeline-status,#atlas-timeline-display,#atlas-session-status,#atlas-session-diagnostics,#rig-mode-status"
     )) continue;
     const original = storedText.get(node) ?? node.textContent ?? "";
     if (!storedText.has(node)) storedText.set(node, original);

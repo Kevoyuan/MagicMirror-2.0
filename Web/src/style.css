@@ -95,8 +95,10 @@ a { color: inherit; }
 .registration-marks i:nth-child(2) { right: 0; top: 0; border-top: 1px solid; border-right: 1px solid; }
 .registration-marks i:nth-child(3) { left: 0; bottom: 0; border-bottom: 1px solid; border-left: 1px solid; }
 .registration-marks i:nth-child(4) { right: 0; bottom: 0; border-bottom: 1px solid; border-right: 1px solid; }
+/* Keep camera controls and diagnostics interactive even with the OFF-state
+   welcome layer above the video. The welcome panel remains underneath. */
 .stage-heading {
-  position: absolute; top: 17px; inset-inline: 25px; z-index: 5;
+  position: absolute; top: 17px; inset-inline: 25px; z-index: 8;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
   font: 10px Georgia, serif; letter-spacing: .13em;
   color: #e3d3ac; text-shadow: 0 2px 5px #0009;
@@ -1046,16 +1048,21 @@ a { color: inherit; }
   color: #f0e5ca;
   font: 600 11px/1.3 -apple-system, BlinkMacSystemFont, sans-serif;
 }
-.diagnostics-disclosure[open] > .frame-metric {
-  display: block;
+.diagnostics-disclosure > .diagnostics-panel {
+  display: none;
+}
+.diagnostics-disclosure[open] > .diagnostics-panel {
+  display: grid;
+  gap: 8px;
   position: absolute;
+  z-index: 20;
   top: calc(100% + 6px);
   right: 0;
-  width: min(300px, 74vw);
+  width: min(340px, 85vw);
   padding: 11px 13px;
   border: 1px solid #bea57b99;
   border-radius: 8px;
-  background: #12251eeF;
+  background: #12251eef;
   color: #f6ecd6;
   box-shadow: 0 8px 22px #0006;
   overflow-wrap: anywhere;
@@ -1063,7 +1070,41 @@ a { color: inherit; }
   white-space: normal;
   line-height: 1.5;
 }
-.diagnostics-disclosure:not([open]) > .frame-metric { display: none; }
+.diagnostics-panel > .frame-metric {
+  display: block;
+  position: static;
+  width: auto;
+  max-width: 100%;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: normal;
+  line-height: 1.45;
+}
+.diagnostics-panel > .world-pose-metric {
+  border-top: 1px solid #bea57b55;
+  padding-top: 7px;
+}
+.diagnostics-self-check {
+  min-height: 44px;
+  width: 100%;
+  padding: 8px;
+  color: #14291f;
+  background: #e9d6a4;
+  border: 1px solid #d1b87e;
+  border-radius: 6px;
+  font: 600 12px/1.4 -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+}
+.diagnostics-self-check:focus-visible { outline: 2px solid #f6ecd6; outline-offset: 2px; }
+.diagnostics-panel > .registration-self-check-status {
+  font-size: 10px;
+  color: #e2d3b2;
+}
 .part-note-more { margin-top: 6px; }
 .part-note-more > summary {
   min-height: 44px;
