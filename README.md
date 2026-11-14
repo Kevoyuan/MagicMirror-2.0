@@ -137,3 +137,10 @@ now exports and audits an exact-source-bound per-mesh rights worksheet,
 flagging noncommercial (NC), ShareAlike and missing-evidence items
 without automatically clearing copyright or enabling real anatomy
 retargeting. See [license research](Docs/W2M_ANATOMY_RIGHTS.md).
+
+**New W2n1 engineering demonstration:** the local anatomy study
+dialog can generate an entirely ORIGINAL 19-joint SkinnedMesh
+with real authored vertex weights and elbow/knee animation.
+It exercises the real GLB skinning pipeline but is an abstract
+mannequin, **not real anatomy or calibrated motion AR**.
+See [the W2n1 limitations](Docs/W2N1_CANONICAL_SKINNED_FIXTURE.md).
