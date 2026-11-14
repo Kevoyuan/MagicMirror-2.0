@@ -81,7 +81,11 @@ positions and its mesh is an abstract tubular mannequin, not real
 bone shapes. Rig quality samples are NOT exhaustive anatomical
 verification.
 
-Source/tests tracked in [PR #84](https://github.com/Kevoyuan/MagicMirror-2.0/pull/84).
+Merged source/test milestone [PR #84](https://github.com/Kevoyuan/MagicMirror-2.0/pull/84):
+**201/201 unit tests** and **26/26 hosted Chromium/WebKit engine
+browser tests**; main Web/Foundations CI passed. These verify a
+purely original GLB/skin/animation pipeline and do not provide
+real anatomical source or physical device acceptance.
 [W2n1 engineering contract](W2N1_CANONICAL_SKINNED_FIXTURE.md)
 defines all unreleased aspects. Issue #79 stays open until the
 actual lawful, anatomically reviewed rest source and real mesh
