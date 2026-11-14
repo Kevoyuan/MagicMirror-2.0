@@ -23,6 +23,9 @@ test("original 19-joint skinned GLB loads with authored skin weights and bend cl
   await expect(diagnostics).toContainText("越界关节 0");
   await expect(diagnostics).toContainText("权重和异常 0");
   await expect(diagnostics).toContainText("非绑定验收");
+  // A genuinely skinned ORIGINAL GLB still does not imply legal anatomical rights.
+  await expect(page.locator("#atlas-rights-export")).toBeEnabled();
+  await expect(page.locator("#atlas-rights-status")).toContainText("所有来源网格仍待逐项版权审核");
 
   const clip = page.locator("#atlas-clip");
   await expect(clip).toBeEnabled();
