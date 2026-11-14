@@ -28,6 +28,7 @@ import type { SourceAxis } from "./rigid-preview";
 import {
   ORIGINAL_STUDY_DEMO, createOriginalStudyDemoFile,
 } from "./study-demo";
+import { createOriginalCanonicalRigFile } from "./canonical-rig-demo";
 import {
   makeStudyTimelineDraft, parseStudyTimelineDraft,
   sampleStudyTimeline, studyFrameAt, timelineDownloadName,
@@ -218,6 +219,8 @@ root.innerHTML = `
     <input id="atlas-file" type="file" accept=".fbx,.glb" aria-label="选择仅本地读取的 FBX 或 GLB 文件"/>
     <button id="atlas-demo" class="atlas-demo-button" type="button">直接体验原创 3D 三连杆示例（无需下载文件）</button>
     <p class="atlas-demo-disclaimer">此示例由 MagicMirror 在浏览器内临时生成，包含三个简单方块及预设参考点；不是 Z-Anatomy、真实骨骼或人体摄像头追踪。</p>
+    <button id="atlas-skinned-demo" class="atlas-demo-button" type="button">体验原创 19 关节蒙皮模型与动作示例</button>
+    <p class="atlas-demo-disclaimer">W2n1：由程序生成的原创抽象人体装配模型，包含真正的 Three.js 关节、权重和预设弯曲动画；不是真实解剖网格、授权医学模型、摄像头配准或实时人体跟随。</p>
     <div class="atlas-viewport"><canvas id="atlas-canvas" aria-label="可以拖动旋转、滚轮缩放、点击查看原始部件名称的三维模型"></canvas></div>
     <div class="atlas-tools">
       <label>模型空间切面
@@ -1044,6 +1047,7 @@ const atlasDialog = element<HTMLDialogElement>("#atlas-dialog");
 const atlasCanvas = element<HTMLCanvasElement>("#atlas-canvas");
 const atlasFile = element<HTMLInputElement>("#atlas-file");
 const atlasDemoButton = element<HTMLButtonElement>("#atlas-demo");
+const atlasSkinnedDemoButton = element<HTMLButtonElement>("#atlas-skinned-demo");
 const atlasInfo = element<HTMLElement>("#atlas-info");
 const atlasPart = element<HTMLElement>("#atlas-part");
 const atlasRigInfo = element<HTMLElement>("#atlas-rig-info");
@@ -2254,6 +2258,7 @@ atlasDialog.addEventListener("close", () => {
 function loadAtlasFile(file: File, builtInDemo = false): void {
   atlasFile.disabled = true;
   atlasDemoButton.disabled = true;
+  atlasSkinnedDemoButton.disabled = true;
   atlasInfo.textContent = "正在本地解析模型；大体积 FBX 可能导致浏览器暂时变慢…";
   void ensureAtlasViewer().then((viewer) => viewer.load(file)).then((stats) => {
     resetStudyChainDraft();
@@ -2316,6 +2321,7 @@ function loadAtlasFile(file: File, builtInDemo = false): void {
   }).finally(() => {
     atlasFile.disabled = false;
     atlasDemoButton.disabled = false;
+    atlasSkinnedDemoButton.disabled = false;
     atlasFile.value = "";
   });
 }
@@ -2390,6 +2396,25 @@ atlasDemoButton.addEventListener("click", () => {
       ? `Could not generate the original demo: ${String(error)}`
       : `无法生成原创示例：${String(error)}`;
     console.error("Local original demo generation failed", error);
+  });
+});
+atlasSkinnedDemoButton.addEventListener("click", () => {
+  atlasSkinnedDemoButton.disabled = true;
+  atlasInfo.textContent = locale === "en"
+    ? "Generating an original 19-joint weighted and animated GLB locally…"
+    : "正在本地生成原创 19 关节带权重动画模型…";
+  void createOriginalCanonicalRigFile().then(file => {
+    if (!atlasDialog.open) {
+      atlasSkinnedDemoButton.disabled = false;
+      return;
+    }
+    // Independent, STATIC local SkinnedMesh preview; never live pose retargeting.
+    loadAtlasFile(file);
+  }).catch(() => {
+    atlasSkinnedDemoButton.disabled = false;
+    atlasInfo.textContent = locale === "en"
+      ? "Original rig generation failed. Camera / real atlas remain disabled."
+      : "原创 Rig 生成失败。不会启用相机配准或真实解剖模型。";
   });
 });
 atlasClipSelect.addEventListener("change", () => {
