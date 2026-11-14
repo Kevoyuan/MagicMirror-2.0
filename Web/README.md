@@ -761,3 +761,20 @@ layer. A user-supplied license label never approves publication
 or commercial use; no real Z-Anatomy mesh is bundled. Full workflow
 and upstream NC exceptions:
 [W2M_ANATOMY_RIGHTS.md](../Docs/W2M_ANATOMY_RIGHTS.md).
+
+## W2n1 — original weighted 19-joint full-body GLB (not actual anatomy)
+
+In **Layers → Local FBX/GLB study**, click
+**Try original 19-joint skinned rig + animation**. The browser
+generates an original, skeletal technical mannequin with actual Bone
+parent hierarchy, SkinnedMesh weights and a 1.9-second authored
+elbow/knee bend clip, then loads the resulting file through the
+existing local inspector. Select/play/pause the clip and inspect
+sampled weight diagnostics. This uses **no camera, downloaded
+model, external anatomy mesh, network inference or user data**.
+
+**It is NOT:** real bone anatomy, verified person-specific geometry,
+a lawful Z-Anatomy rig, MediaPipe retargeting or camera-space 3D AR.
+True anatomical source rights, human-reviewed weights, and hardware
+alignment remain separate. Details:
+[W2n1 technical rig fixture](../Docs/W2N1_CANONICAL_SKINNED_FIXTURE.md).

@@ -15,7 +15,7 @@ No automatic claim that a code check equals product acceptance.
 | 1a | W3d external camera evidence parser & independent holdout audit; W3c | Implementing | Strict bounded input, known 3D points vs unmirrored image pixels, positive depth, nondegenerate target, RMSE+p95 separately on disjoint reference/holdout; tests and EN/ZH offline UI; always unverified |
 | 1b | W3d physical camera acceptance; 1a | Blocked: no measured device evidence supplied | Source-image resolution and measured target, device/browser/rotation, true intrinsics/distortion, physical reference and independent holdout reprojection, named test engineer, dated acceptance |
 | 2a | W2m per-mesh provenance checklist; current local atlas | Source implemented, real assets remain unreviewed | Source SHA-locked inventory, all actual source mesh identities, author, origin, declared license and exception/NC flags; no automatic redistribution clearance |
-| 2b | W2n lawful rigged anatomical rest source; 2a + reviewed rights | Blocked: verified asset + authored weights absent | Human-reviewed source geometry, body axes, normalized connected joint graph, skin weights, isolated poses, validated rig errors & measurable GPU cost |
+| 2b | W2n lawful rigged anatomical rest source; 2a + reviewed rights | Original 19-joint SkinnedMesh study in progress (W2n1); **real source still blocked** | Human-reviewed source geometry, body axes, normalized connected joint graph, skin weights, isolated poses, validated rig errors & measurable GPU cost |
 | 3 | W3e camera/body to REAL atlas skinning; 1b + 2b | Blocked | Camera-space projection residuals on physical devices, stable left/right, moving torso/arms/legs, occlusion fallbacks; no fake inner-bone precision |
 | 4 | W4 semantic skeleton/muscle/organ layers and learning; 2b + 3 | Partially existing original notes/static local study | Real material/section hierarchy, selection and EN/ZH sourced notes backed by reviewed meshes |
 | 5 | W1 real browser QA; Web running | Blocked: physical/browser evidence needed | iPhone Safari/desktop Chrome camera permission, flip/crop, worker fallback, pause/background recovery, rate, thermal/battery and screenshots |
@@ -69,3 +69,20 @@ work executed in the background. Follow the dependency order.
 Engineered first slices: W3d1 [#74](https://github.com/Kevoyuan/MagicMirror-2.0/pull/74),
 and W2m1 [#76](https://github.com/Kevoyuan/MagicMirror-2.0/pull/76).
 Source work does not close physical/legal issues.
+
+### W2n1 mechanical completion ≠ anatomical product acceptance
+
+A generated original 19-joint full-body test rig demonstrates real
+Three.js Bone parent transforms, normalized `skinIndex/skinWeight`
+buffers, GLB export/import and an authored elbow/knee animation. This
+is **independent of** Z-Anatomy/BodyParts3D model copyright and
+MediaPipe camera measurements. Its joints use fictional authored
+positions and its mesh is an abstract tubular mannequin, not real
+bone shapes. Rig quality samples are NOT exhaustive anatomical
+verification.
+
+Source/tests tracked in [PR #84](https://github.com/Kevoyuan/MagicMirror-2.0/pull/84).
+[W2n1 engineering contract](W2N1_CANONICAL_SKINNED_FIXTURE.md)
+defines all unreleased aspects. Issue #79 stays open until the
+actual lawful, anatomically reviewed rest source and real mesh
+weights are available.

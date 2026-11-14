@@ -756,3 +756,21 @@ UI is part of the separate local model study dialog; it is never
 connected to live rig, public release gate, camera feed, a network
 service or any included Z-Anatomy geometry. See
 [W2M_ANATOMY_RIGHTS.md](W2M_ANATOMY_RIGHTS.md).
+
+## W2n1: genuine original SkinnedMesh mechanics, not anatomical AR
+
+The pure `canonical-rig.ts` defines a fixed 19-Bone ORIGINAL
+humanoid-like computing reference, fictional non-metric rest positions,
+parent topology and strict sampled influence validators. Its
+`*Approved` fields ALWAYS remain false; none of this source geometry
+is derived from a Z-Anatomy/BodyParts3D mesh or a real subject.
+
+`canonical-rig-demo.ts` builds one original skinned BufferGeometry
+with actual 4-slot `skinIndex` and normalized `skinWeight` attributes,
+a 19-joint Three.js Skeleton and one authored reference animation.
+Only on user click is it serialized to in-memory GLB. The existing
+`LocalAtlasViewer` imports the identical file and samples actual
+SkinnedMesh weight buffers, exposes its animation and SHA-bound local
+source inventory. It DOES NOT drive the primary camera overlay; no
+third-party assets are packaged, and `releaseApproved` remains false.
+See [W2N1_CANONICAL_SKINNED_FIXTURE.md](W2N1_CANONICAL_SKINNED_FIXTURE.md).

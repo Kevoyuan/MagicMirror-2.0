@@ -13,6 +13,9 @@ const en: Record<string, string> = {
   "本地推理 · 尚未运行": "On-device inference · Not started",
   "诊断": "Diagnostics",
   "运行合成相机自检": "Run synthetic camera check",
+  "体验原创 19 关节蒙皮模型与动作示例": "Try original 19-joint skinned rig + animation",
+  "W2n1：由程序生成的原创抽象人体装配模型，包含真正的 Three.js 关节、权重和预设弯曲动画；不是真实解剖网格、授权医学模型、摄像头配准或实时人体跟随。":
+    "W2n1: Original procedural mechanical figure with actual Three.js joint skinning, weights and an authored bend clip. NOT an anatomical mesh, licensed medical asset, camera calibration or live body retargeting.",
   "逐网格版权证据 · 待人工审核": "Per-mesh rights evidence · human review pending",
   "每个原始网格必须单独核对作者、出处、许可证、原始证据与署名。含 NC（禁止商业使用）的网格必须独立排除或获得真实额外授权。模板和检查结果都不会自动批准分发。":
     "Verify each source mesh's author, origin, license, evidence and attribution. Noncommercial (NC) structures require exclusion or separately evidenced permission. Neither the worksheet nor its diagnostics approve redistribution.",
