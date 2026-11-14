@@ -785,3 +785,23 @@ ShareAlike duties separately disclosed. Source/origin must be verified
 by a human before a legitimate distributed rig can be prepared.
 This does NOT change the currently blocked Google model-weight,
 SDK privacy, anatomical rig, iOS freeze or Web release gates.
+
+## 27. W2n1 original skinned GLB — mechanical rig only
+
+The 19-joint `canonical-rig.ts` is a fixed, ORIGINAL,
+author-chosen technical fixture with +X figure-left, +Y up,
++Z forward. It is NOT a standard for arbitrary imported model
+axes or actual measured anatomical landmarks. Its topology,
+parent/side/length and bounded weight samples must fail closed;
+the return flags for anatomical, camera, retargeting and publication
+approval MUST always stay FALSE.
+
+The opt-in `canonical-rig-demo.ts` GLB uses actual generated
+Three.js Bones/Skeleton/SkinnedMesh and normalized authored
+skinIndex/skinWeight attributes; it is never downloaded from
+third parties or sent to the main live pose overlay. Keep it
+inside the already separate, camera-off local FBX/GLB research
+dialog. Do not transform this fixture into Z-Anatomy licensing
+evidence, treat it as a true anatomical rig or bypass the
+Google model-weights/SDK privacy/physical Safari QA release lock.
+Full contract: `Docs/W2N1_CANONICAL_SKINNED_FIXTURE.md`.
